@@ -1,0 +1,169 @@
+export default {
+  nav: {
+    home: 'Главная',
+    courses: 'Обучение',
+    stations: 'Станции',
+    dashboard: 'Личный кабинет',
+    profile: 'Профиль',
+    login: 'Войти',
+    register: 'Регистрация',
+    logout: 'Выйти',
+    companyName: 'Asia Trans Gas',
+    corporateTraining: 'Корпоративное обучение'
+  },
+  home: {
+    badge: 'Официальная образовательная платформа',
+    title: 'Надёжное обучение',
+    subtitle: 'специалистов газотранспортной отрасли',
+    titleEnd: 'и промышленной безопасности',
+    description: 'От базовых знаний до профессиональной сертификации. Современные технологии обучения для специалистов Asia Trans Gas.',
+    startLearning: 'Начать обучение',
+    aboutCompany: 'О компании',
+    advantages: 'Наши преимущества',
+    advantagesDesc: 'Мы обеспечиваем качественное обучение персонала с использованием современных технологий',
+    popularCourses: 'Популярные курсы',
+    coursesDesc: 'Выберите курс, который подходит именно вам',
+    cta: {
+      title: 'Готовы начать обучение?',
+      description: 'Присоединяйтесь к команде профессионалов Asia Trans Gas и развивайте свои навыки',
+      register: 'Зарегистрироваться'
+    },
+    stats: {
+      employees: 'Сотрудников',
+      stations: 'Компрессорных станций',
+      pipeline: 'Км газопровода',
+      capacity: 'Млрд м³/год'
+    }
+  },
+  features: {
+    interactiveModules: {
+      title: 'Интерактивные модули',
+      description: 'Современные обучающие материалы с видеоуроками и интерактивными элементами'
+    },
+    experiencedInstructors: {
+      title: 'Опытные инструкторы',
+      description: 'Обучение проводят квалифицированные специалисты с многолетним опытом'
+    },
+    practicalSkills: {
+      title: 'Практические навыки',
+      description: 'Фокус на практическом применении знаний в реальных рабочих условиях'
+    },
+    flexibleSchedule: {
+      title: 'Гибкий график',
+      description: 'Возможность обучения в удобное время без отрыва от производства'
+    },
+    certification: {
+      title: 'Сертификация',
+      description: 'Получение официальных сертификатов по завершении обучения'
+    },
+    corporateCulture: {
+      title: 'Корпоративная культура',
+      description: 'Укрепление командного духа и корпоративных ценностей'
+    }
+  },
+  courses: {
+    title: 'Программы обучения',
+    description: 'Корпоративные курсы для профессионального развития сотрудников Asia Trans Gas',
+    searchPlaceholder: 'Поиск курсов...',
+    category: 'Категория',
+    level: 'Уровень',
+    sortBy: 'Сортировка',
+    sortPopularity: 'По популярности',
+    sortRating: 'По рейтингу',
+    sortDate: 'По дате',
+    details: 'Подробнее',
+    viewAll: 'Смотреть все курсы',
+    free: 'Бесплатно',
+    categories: {
+      stations: 'Компрессорные станции',
+      safety: 'Безопасность труда',
+      maintenance: 'Техническое обслуживание',
+      operation: 'Эксплуатация оборудования',
+      automation: 'Автоматизация',
+      ecology: 'Экология'
+    },
+    levels: {
+      beginner: 'Начинающий',
+      intermediate: 'Средний',
+      advanced: 'Продвинутый'
+    }
+  },
+  stations: {
+    title: 'Компрессорные станции',
+    description: 'Обучающие программы по эксплуатации и техническому обслуживанию компрессорных станций газопровода',
+    pipelineMap: 'Схема газопровода',
+    trainingPrograms: 'Программы обучения',
+    active: 'Активна',
+    maintenance: 'В ремонте',
+    power: 'Мощность',
+    commissionDate: 'Дата ввода',
+    courses: 'Курсов',
+    totalLength: 'Общая протяженность',
+    annualCapacity: 'Годовая пропускная способность'
+  },
+  dashboard: {
+    title: 'Личный кабинет',
+    welcome: 'Добро пожаловать в ваш личный кабинет',
+    stats: {
+      activeCourses: 'Активные курсы',
+      completedCourses: 'Завершенные курсы',
+      hoursStudied: 'Часов изучено',
+      certificates: 'Сертификаты'
+    },
+    activeCourses: {
+      title: 'Активные курсы',
+      viewAll: 'Все курсы',
+      continue: 'Продолжить',
+      completed: 'завершено'
+    },
+    activity: {
+      title: 'Недавняя активность'
+    },
+    achievements: {
+      title: 'Достижения',
+      firstSteps: 'Первые шаги',
+      firstStepsDesc: 'Завершили первый урок',
+      persistentStudent: 'Упорный ученик',
+      persistentStudentDesc: 'Изучили 10 часов',
+      certifiedSpecialist: 'Сертифицированный специалист',
+      certifiedSpecialistDesc: 'Получили первый сертификат'
+    },
+    recommended: {
+      title: 'Рекомендуемые курсы',
+      viewAll: 'Смотреть все',
+      details: 'Подробнее',
+      free: 'Бесплатно'
+    }
+  },
+  courseDetail: {
+    enroll: 'Записаться на курс',
+    addToFavorites: 'Добавить в избранное',
+    guarantee: '30-дневная гарантия возврата',
+    lifetimeAccess: 'Пожизненный доступ',
+    tabs: {
+      description: 'Описание',
+      curriculum: 'Программа',
+      reviews: 'Отзывы'
+    },
+    aboutCourse: 'О курсе',
+    whatYouLearn: 'Что вы изучите:',
+    curriculum: 'Программа курса',
+    studentReviews: 'Отзывы студентов',
+    instructor: 'Преподаватель',
+    sendMessage: 'Написать сообщение',
+    similarCourses: 'Похожие курсы',
+    reviews: 'отзывов',
+    students: 'студентов',
+    free: 'Бесплатно'
+  },
+  footer: {
+    description: 'СП ООО «Asia Trans Gas» - корпоративная платформа обучения для сотрудников газопровода «Туркменистан – Узбекистан – Казахстан – Китай». Профессиональное развитие персонала для обеспечения надежной эксплуатации газотранспортной системы.',
+    location: 'г. Бухара, Республика Узбекистан',
+    email: 'info@asiatransgas.uz',
+    website: 'asiatransgas.uz',
+    training: 'Обучение',
+    support: 'Поддержка',
+    copyright: 'СП ООО «Asia Trans Gas». Все права защищены.',
+    pipeline: 'Газопровод «Туркменистан – Узбекистан – Казахстан – Китай» | Протяженность: 1586 км'
+  }
+}

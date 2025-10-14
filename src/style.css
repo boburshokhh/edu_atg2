@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-white text-gray-900 transition-colors duration-300;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-tamex-blue-600 to-tamex-blue-700 hover:from-tamex-blue-700 hover:to-tamex-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-soft border border-gray-100;
+  }
+  
+  .card-hover {
+    @apply card hover:shadow-medium transition-all duration-300 transform hover:scale-[1.02];
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tamex-blue-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900;
+  }
+  
+  .page-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section-padding {
+    @apply py-20;
+  }
+  
+  .gradient-bg {
+    @apply bg-gradient-to-br from-gray-50 to-gray-100;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-tamex-blue-500 via-tamex-blue-600 to-tamex-blue-700 bg-clip-text text-transparent;
+  }
+  
+  .hero-bg {
+    @apply relative min-h-screen flex items-center justify-center overflow-hidden;
+    background-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=1920&h=1080&fit=crop');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+  }
+  
+  .hero-overlay {
+    @apply absolute inset-0 bg-gradient-to-br from-black/50 via-black/60 to-black/50;
+  }
+  
+  .hero-overlay-additional {
+    @apply absolute inset-0 bg-gradient-to-br from-tamex-blue-900/20 via-slate-900/30 to-tamex-blue-900/20;
+  }
+  
+  .section-pattern {
+    @apply absolute inset-0 opacity-5;
+  }
+  
+  .badge-style {
+    @apply inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 transition-all duration-700 opacity-100 translate-y-0;
+  }
+  
+  .title-style {
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 px-2 leading-tight transition-all duration-700 drop-shadow-2xl opacity-100 translate-y-0;
+  }
+  
+  .description-style {
+    @apply text-lg sm:text-xl md:text-2xl text-white/90 mb-6 sm:mb-8 max-w-4xl mx-auto px-4 leading-relaxed transition-all duration-700 drop-shadow-lg opacity-100 translate-y-0;
+  }
+  
+  .button-group {
+    @apply flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 mb-6 transition-all duration-700 opacity-100 translate-y-0;
+  }
+  
+  .scroll-indicator {
+    @apply hidden sm:block absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+  
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+  
+  .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+  }
+  
+  .backdrop-blur-xl {
+    backdrop-filter: blur(24px);
+  }
+}
