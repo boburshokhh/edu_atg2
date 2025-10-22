@@ -19,10 +19,13 @@
             :key="station.id"
             class="card-hover overflow-hidden"
           >
-            <div class="aspect-video bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center relative">
-              <el-icon :size="64" class="text-blue-600">
-                <component :is="station.icon" />
-              </el-icon>
+            <div class="aspect-video relative overflow-hidden">
+              <img 
+                :src="`/stations/${station.image}`" 
+                :alt="station.name"
+                class="w-full h-full object-cover"
+              />
+              <div class="absolute inset-0 bg-black bg-opacity-20"></div>
               <div class="absolute top-4 right-4">
                 <el-tag 
                   :type="station.status === 'active' ? 'success' : 'warning'"
@@ -184,7 +187,7 @@ export default {
         name: 'Компрессорная станция WKC1',
         shortName: 'WKC1',
         description: 'Головная компрессорная станция в Миришкорском районе Кашкадарьинской области',
-        icon: 'Setting',
+        image: 'WKC1.jpg',
         power: '25 МВт',
         commissionDate: '25.11.2009',
         coursesCount: 8,
@@ -192,58 +195,80 @@ export default {
       },
       {
         id: 2,
-        name: 'Компрессорная станция UCS1',
-        shortName: 'UCS1',
-        description: 'Компрессорная станция на территории Бухарской области',
-        icon: 'Setting',
-        power: '20 МВт',
-        commissionDate: '30.07.2014',
-        coursesCount: 6,
+        name: 'Компрессорная станция WKC2',
+        shortName: 'WKC2',
+        description: 'Компрессорная станция на участке газопровода',
+        image: 'WKC2.jpg',
+        power: '22 МВт',
+        commissionDate: '01.12.2009',
+        coursesCount: 7,
         status: 'active'
       },
       {
         id: 3,
-        name: 'Компрессорная станция UCS3',
-        shortName: 'UCS3',
-        description: 'Компрессорная станция в Навоийской области',
-        icon: 'Setting',
-        power: '18 МВт',
-        commissionDate: '30.07.2014',
-        coursesCount: 5,
-        status: 'active'
-      },
-      {
-        id: 4,
-        name: 'Компрессорная станция КС2',
-        shortName: 'КС2',
+        name: 'Компрессорная станция WKC3',
+        shortName: 'WKC3',
         description: 'Компрессорная станция на участке газопровода',
-        icon: 'Setting',
-        power: '22 МВт',
-        commissionDate: '01.12.2009',
-        coursesCount: 7,
-        status: 'maintenance'
-      },
-      {
-        id: 5,
-        name: 'Компрессорная станция КС3',
-        shortName: 'КС3',
-        description: 'Компрессорная станция на участке газопровода',
-        icon: 'Setting',
+        image: 'WKC3.jpg',
         power: '20 МВт',
         commissionDate: '15.06.2010',
         coursesCount: 6,
         status: 'active'
       },
       {
-        id: 6,
-        name: 'Компрессорная станция КС4',
-        shortName: 'КС4',
-        description: 'Компрессорная станция на участке газопровода',
-        icon: 'Setting',
-        power: '19 МВт',
-        commissionDate: '20.08.2010',
+        id: 4,
+        name: 'Компрессорная станция UCS1',
+        shortName: 'UCS1',
+        description: 'Компрессорная станция на территории Бухарской области',
+        image: 'UCS1.jpg',
+        power: '20 МВт',
+        commissionDate: '30.07.2014',
+        coursesCount: 6,
+        status: 'active'
+      },
+      {
+        id: 5,
+        name: 'Компрессорная станция UCS3',
+        shortName: 'UCS3',
+        description: 'Компрессорная станция в Навоийской области',
+        image: 'UCS3.jpg',
+        power: '18 МВт',
+        commissionDate: '30.07.2014',
         coursesCount: 5,
         status: 'active'
+      },
+      {
+        id: 6,
+        name: 'Газокомпрессорная станция GCS',
+        shortName: 'GCS',
+        description: 'Газокомпрессорная станция на магистральном газопроводе',
+        image: 'GCS.jpg',
+        power: '24 МВт',
+        commissionDate: '20.08.2010',
+        coursesCount: 7,
+        status: 'active'
+      },
+      {
+        id: 7,
+        name: 'Модульная станция MS',
+        shortName: 'MS',
+        description: 'Модульная компрессорная станция',
+        image: 'MS.jpg',
+        power: '16 МВт',
+        commissionDate: '10.05.2012',
+        coursesCount: 4,
+        status: 'active'
+      },
+      {
+        id: 8,
+        name: 'Узбекская компрессорная станция UKMS',
+        shortName: 'UKMS',
+        description: 'Узбекская компрессорная станция магистрального газопровода',
+        image: 'UKMS.jpg',
+        power: '21 МВт',
+        commissionDate: '12.03.2011',
+        coursesCount: 6,
+        status: 'maintenance'
       }
     ])
 

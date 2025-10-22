@@ -3,14 +3,11 @@
     <!-- Hero Section -->
     <HeroSection @scroll-to-features="scrollToFeatures" />
 
+    <!-- About Section -->
+    <AboutSection />
+
     <!-- Features Section -->
     <FeaturesSection ref="featuresSection" />
-
-    <!-- Popular Courses Section -->
-    <PopularCoursesSection />
-
-    <!-- Stats Section -->
-    <StatsSection />
 
     <!-- CTA Section -->
     <CTASection />
@@ -21,9 +18,8 @@
 import { ref } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import HeroSection from '@/components/sections/HeroSection.vue'
+import AboutSection from '@/components/sections/AboutSection.vue'
 import FeaturesSection from '@/components/sections/FeaturesSection.vue'
-import PopularCoursesSection from '@/components/sections/PopularCoursesSection.vue'
-import StatsSection from '@/components/sections/StatsSection.vue'
 import CTASection from '@/components/sections/CTASection.vue'
 
 export default {
@@ -31,9 +27,8 @@ export default {
   components: {
     AppLayout,
     HeroSection,
+    AboutSection,
     FeaturesSection,
-    PopularCoursesSection,
-    StatsSection,
     CTASection
   },
   setup() {

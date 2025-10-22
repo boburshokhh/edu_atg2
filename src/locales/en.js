@@ -1,6 +1,7 @@
 export default {
   nav: {
     home: 'Home',
+    about: 'About Us',
     courses: 'Training',
     stations: 'Stations',
     dashboard: 'Dashboard',
@@ -34,6 +35,12 @@ export default {
       pipeline: 'Km Pipeline',
       capacity: 'Billion m³/year'
     }
+  },
+  hero: {
+    welcome: 'Welcome to',
+    platform: 'educational platform',
+    company: 'Asia Trans Gas',
+    description: 'Reliable training for specialists in the gas transportation industry and industrial safety'
   },
   features: {
     interactiveModules: {
@@ -165,5 +172,52 @@ export default {
     support: 'Support',
     copyright: 'SP LLC «Asia Trans Gas». All rights reserved.',
     pipeline: 'Gas pipeline «Turkmenistan – Uzbekistan – Kazakhstan – China» | Length: 1586 km'
+  },
+  about: {
+    title: 'About Us',
+    subtitle: 'Asia Trans Gas',
+    motto: 'SP LLC «Asia Trans Gas» - flagship and model of Uzbek-Chinese energy cooperation',
+    staffDevelopment: {
+      title: 'Compressor Station Personnel Development',
+      description: 'A systematic process of improving qualifications, professional skills and competencies of workers employed at compressor stations (CS), in order to ensure safe, efficient and reliable operation of equipment and compliance with technological requirements.'
+    },
+    programs: {
+      technical: {
+        title: 'Technical Training',
+        desc: 'Regular courses on working with compressor equipment (gas pumping units, automation systems, instrumentation, etc.)'
+      },
+      technology: {
+        title: 'New Technologies',
+        desc: 'Training in new technologies, including digital solutions and control systems'
+      },
+      safety: {
+        title: 'Industrial Safety',
+        desc: 'Study of regulatory documentation, labor protection and industrial safety'
+      },
+      digital: {
+        title: 'Digital Platforms',
+        desc: 'Training in digital platforms (SCADA, ERP systems)'
+      }
+    },
+    certifications: {
+      title: 'International Management Systems',
+      subtitle: 'SP LLC «Asia Trans Gas» has been certified to standards and implemented them',
+      year: 'Certification received in 2012',
+      policy: 'The joint venture demonstrates and implements a policy of caring for all employees, occupational health and safety, and caring for future generations'
+    },
+    certs: {
+      iso9001: {
+        name: 'Quality',
+        desc: 'Quality management system to ensure high standards of work'
+      },
+      ohsas: {
+        name: 'Occupational Safety',
+        desc: 'Occupational health and industrial safety management system'
+      },
+      iso14001: {
+        name: 'Ecology',
+        desc: 'Environmental management and care for the environment'
+      }
+    }
   }
 }

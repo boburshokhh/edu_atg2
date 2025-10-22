@@ -45,31 +45,60 @@
     <div class="page-container relative z-10">
       <div class="text-center mb-12 sm:mb-16">
         <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-          {{ $t('home.advantages') }}
+          Преимущества
         </h2>
-        <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-          {{ $t('home.advantagesDesc') }}
-        </p>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
         <div 
           v-for="(feature, index) in features" 
           :key="index"
-          class="bg-white rounded-xl p-6 border border-gray-200 transition-all duration-500 opacity-100 translate-y-0 hover:shadow-xl hover:-translate-y-1"
+          class="group relative bg-white rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 border border-gray-100 hover:border-tamex-blue-200"
           :style="{ animationDelay: `${index * 100}ms` }"
         >
-          <div class="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-tamex-blue-50 to-tamex-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
-            <el-icon :size="24" class="text-tamex-blue-600 sm:w-8 sm:h-8">
-              <component :is="feature.icon" />
-            </el-icon>
+          <!-- Number Badge -->
+          <div class="absolute top-4 left-4 z-30">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-tamex-blue-500 to-tamex-blue-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <span class="text-white font-bold text-lg">{{ String(index + 1).padStart(2, '0') }}</span>
+            </div>
           </div>
-          <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">
-            {{ $t(feature.titleKey) }}
-          </h3>
-          <p class="text-sm sm:text-base text-gray-600">
-            {{ $t(feature.descriptionKey) }}
-          </p>
+
+          <!-- Icon Container -->
+          <div class="relative h-80 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8 overflow-hidden">
+            <!-- Background Decoration -->
+            <div class="absolute inset-0 opacity-5">
+              <svg class="w-full h-full" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="1" class="text-tamex-blue-500" />
+                <circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="1" class="text-tamex-blue-400" />
+              </svg>
+            </div>
+            
+            <!-- Icon -->
+            <img 
+              :src="feature.icon" 
+              :alt="feature.title"
+              class="relative z-10 w-48 h-48 sm:w-56 sm:h-56 object-contain transition-transform duration-300 group-hover:scale-105"
+            />
+            
+            <!-- Hover Overlay with Description -->
+            <div class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
+              <div class="text-center">
+                <p class="text-white text-sm sm:text-base leading-relaxed font-medium">
+                  {{ feature.description }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Title Section -->
+          <div class="p-6 bg-white">
+            <h3 class="text-lg sm:text-xl font-bold text-gray-900 leading-tight text-center group-hover:text-tamex-blue-600 transition-colors duration-300">
+              {{ feature.title }}
+            </h3>
+            
+            <!-- Bottom Accent Line -->
+            <div class="mt-4 h-1 w-16 bg-gradient-to-r from-tamex-blue-500 to-tamex-blue-700 rounded-full mx-auto group-hover:w-24 transition-all duration-300"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -77,49 +106,29 @@
 </template>
 
 <script>
-import { VideoPlay, User, Trophy, Clock, Medal, Star } from '@element-plus/icons-vue'
-
 export default {
   name: 'FeaturesSection',
-  components: {
-    VideoPlay,
-    User,
-    Trophy,
-    Clock,
-    Medal,
-    Star
-  },
   setup() {
     const features = [
       {
-        icon: 'VideoPlay',
-        titleKey: 'features.interactiveModules.title',
-        descriptionKey: 'features.interactiveModules.description'
+        icon: '/icons/Повышение безопасности работы.svg',
+        title: 'Повышение безопасности работы',
+        description: 'Умение правильно соблюдать процедуры и быстро реагировать на аварийные ситуации снижает риск инцидентов и аварий.'
       },
       {
-        icon: 'User',
-        titleKey: 'features.experiencedInstructors.title',
-        descriptionKey: 'features.experiencedInstructors.description'
+        icon: '/icons/Снижение простоев и аварий оборудования.svg',
+        title: 'Снижение простоев и аварий оборудования',
+        description: 'Квалифицированные инженеры оперативно выявляют и устраняют неисправности, что минимизирует незапланированные остановки.'
       },
       {
-        icon: 'Trophy',
-        titleKey: 'features.practicalSkills.title',
-        descriptionKey: 'features.practicalSkills.description'
+        icon: '/icons/Оптимизация затрат на ремонт и эксплуатацию.svg',
+        title: 'Оптимизация затрат на ремонт и эксплуатацию',
+        description: 'Предиктивное и своевременное обслуживание позволяет экономить на ремонтах и замене деталей.'
       },
       {
-        icon: 'Clock',
-        titleKey: 'features.flexibleSchedule.title',
-        descriptionKey: 'features.flexibleSchedule.description'
-      },
-      {
-        icon: 'Medal',
-        titleKey: 'features.certification.title',
-        descriptionKey: 'features.certification.description'
-      },
-      {
-        icon: 'Star',
-        titleKey: 'features.corporateCulture.title',
-        descriptionKey: 'features.corporateCulture.description'
+        icon: '/icons/Соответствие нормативным требованиям.svg',
+        title: 'Соответствие нормативным требованиям',
+        description: 'Обеспечение соответствия требованиям безопасности и законодательства предотвращает штрафы и юридические риски.'
       }
     ]
     
