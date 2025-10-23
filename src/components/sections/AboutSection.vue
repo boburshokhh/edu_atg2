@@ -15,6 +15,14 @@
       </div>
     </div>
 
+    <!-- Image Lightbox -->
+    <vue-easy-lightbox
+      :visible="lightboxVisible"
+      :imgs="lightboxImages"
+      :index="lightboxIndex"
+      @hide="handleHideLightbox"
+    ></vue-easy-lightbox>
+
     <div class="page-container relative z-10">
       <!-- Заголовок секции -->
       <div class="text-center mb-12 sm:mb-16">
@@ -55,6 +63,31 @@
               </div>
             </div>
           </div>
+
+          <!-- Кнопка "Подробнее" для секции О нас -->
+          <div class="mt-8 text-center">
+            <a 
+              href="https://asiatransgas.uz/ru/about" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-tamex-blue-600 to-tamex-blue-700 text-white font-semibold text-base rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 hover:from-tamex-blue-700 hover:to-tamex-blue-800 group"
+            >
+              <span>{{ $t('about.readMore') }}</span>
+              <svg 
+                class="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  stroke-width="2" 
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -90,33 +123,64 @@
           <div 
             v-for="(cert, index) in certifications" 
             :key="index"
-            class="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 border-2 border-gray-100 hover:border-tamex-gold-500 overflow-hidden"
+            class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border-2 border-gray-100 hover:border-tamex-gold-500 overflow-hidden cursor-pointer"
+            @click="openLightbox(index)"
           >
-            <!-- Декоративный элемент -->
-            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-tamex-blue-50 to-transparent rounded-bl-full opacity-50"></div>
+            <!-- Изображение сертификата -->
+            <div class="relative h-64 sm:h-72 overflow-hidden bg-gray-50">
+              <img 
+                :src="cert.image" 
+                :alt="cert.standard"
+                class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+              />
+              <!-- Overlay при наведении -->
+              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div class="bg-white rounded-full p-3 shadow-lg">
+                    <svg class="w-6 h-6 text-tamex-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
             
-            <div class="relative z-10">
+            <!-- Информация о сертификате -->
+            <div class="p-6">
               <!-- Стандарт -->
-              <div class="text-center mb-4">
-                <div class="inline-block px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 group-hover:border-tamex-gold-500 transition-colors">
-                  <span class="text-lg font-bold text-tamex-blue-800">
+              <div class="flex justify-center mb-4">
+                <div class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-tamex-blue-50 to-tamex-blue-100 rounded-lg border border-tamex-blue-200 group-hover:border-tamex-gold-500 transition-colors">
+                  <span class="text-base sm:text-lg font-bold text-tamex-blue-800">
                     {{ cert.standard }}
                   </span>
                 </div>
               </div>
 
               <!-- Название -->
-              <h4 class="text-lg font-bold text-center mb-3 text-gray-800 group-hover:text-tamex-blue-700 transition-colors">
+              <h4 class="text-lg sm:text-xl font-bold text-center mb-3 text-gray-800 group-hover:text-tamex-blue-700 transition-colors">
                 {{ $t(cert.nameKey) }}
               </h4>
 
               <!-- Описание -->
-              <p class="text-xs sm:text-sm text-gray-600 text-center leading-relaxed">
+              <p class="text-xs sm:text-sm text-gray-600 text-center leading-relaxed mb-4">
                 {{ $t(cert.descKey) }}
               </p>
 
+              <!-- Кнопка просмотра -->
+              <div class="flex justify-center">
+                <button 
+                  class="inline-flex items-center text-sm font-semibold text-tamex-blue-600 hover:text-tamex-blue-800 transition-colors group"
+                >
+                  <span>{{ $t('about.viewCertificate') }}</span>
+                  <svg class="w-4 h-4 ml-2 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
+
               <!-- Декоративная линия -->
-              <div class="mt-6 pt-4 border-t border-gray-200 group-hover:border-tamex-gold-500 transition-colors">
+              <div class="mt-4 pt-4 border-t border-gray-200 group-hover:border-tamex-gold-500 transition-colors">
                 <div class="flex justify-center">
                   <div class="h-1 w-16 bg-gradient-to-r from-tamex-blue-600 to-tamex-gold-500 rounded-full group-hover:w-24 transition-all duration-500"></div>
                 </div>
@@ -133,15 +197,52 @@
             </p>
           </div>
         </div>
+
+        <!-- Кнопка "Подробнее" -->
+        <div class="mt-12 text-center">
+          <a 
+            href="https://asiatransgas.uz/ru/certificates" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-tamex-blue-600 to-tamex-blue-700 text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:from-tamex-blue-700 hover:to-tamex-blue-800 group"
+          >
+            <span>{{ $t('about.readMore') }}</span>
+            <svg 
+              class="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                stroke-linecap="round" 
+                stroke-linejoin="round" 
+                stroke-width="2" 
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+          </a>
+        </div>
       </div>
     </div>
   </section>
 </template>
 
 <script>
+import { ref, computed } from 'vue'
+import VueEasyLightbox from 'vue-easy-lightbox'
+import { useI18n } from 'vue-i18n'
+
 export default {
   name: 'AboutSection',
+  components: {
+    VueEasyLightbox
+  },
   setup() {
+    const { locale } = useI18n()
+    
+    const lightboxVisible = ref(false)
+    const lightboxIndex = ref(0)
+
     const trainingPrograms = [
       {
         titleKey: 'about.programs.technical.title',
@@ -161,27 +262,71 @@ export default {
       }
     ]
 
-    const certifications = [
+    // Функция для определения изображения сертификата на основе языка
+    const getCertImage = (certId, currentLocale) => {
+      const lang = currentLocale === 'en' ? 'en' : 'ru'
+      
+      // Проверяем доступные изображения для каждого сертификата
+      const images = {
+        'ISO 9001': {
+          en: '/sertification/ISO_9001_en.jpg',
+          ru: '/sertification/ISO_9001_en.jpg' // используем английскую версию, так как русской нет
+        },
+        'ISO 45001': {
+          en: '/sertification/ISO_45001_ru.jpg', // используем русскую версию, так как английской нет
+          ru: '/sertification/ISO_45001_ru.jpg'
+        },
+        'ISO 14001': {
+          en: '/sertification/ISO_14001_en.jpg',
+          ru: '/sertification/ISO_14001_ru.jpg'
+        }
+      }
+      
+      return images[certId]?.[lang] || images[certId]?.ru || '/sertification/image.png'
+    }
+
+    const certifications = computed(() => [
       {
         standard: 'ISO 9001',
         nameKey: 'about.certs.iso9001.name',
-        descKey: 'about.certs.iso9001.desc'
+        descKey: 'about.certs.iso9001.desc',
+        image: getCertImage('ISO 9001', locale.value)
       },
       {
-        standard: 'OHSAS 18001',
+        standard: 'ISO 45001',
         nameKey: 'about.certs.ohsas.name',
-        descKey: 'about.certs.ohsas.desc'
+        descKey: 'about.certs.ohsas.desc',
+        image: getCertImage('ISO 45001', locale.value)
       },
       {
         standard: 'ISO 14001',
         nameKey: 'about.certs.iso14001.name',
-        descKey: 'about.certs.iso14001.desc'
+        descKey: 'about.certs.iso14001.desc',
+        image: getCertImage('ISO 14001', locale.value)
       }
-    ]
+    ])
+
+    const lightboxImages = computed(() => {
+      return certifications.value.map(cert => cert.image)
+    })
+
+    const openLightbox = (index) => {
+      lightboxIndex.value = index
+      lightboxVisible.value = true
+    }
+
+    const handleHideLightbox = () => {
+      lightboxVisible.value = false
+    }
 
     return {
       trainingPrograms,
-      certifications
+      certifications,
+      lightboxVisible,
+      lightboxIndex,
+      lightboxImages,
+      openLightbox,
+      handleHideLightbox
     }
   }
 }

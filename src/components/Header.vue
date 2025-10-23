@@ -53,18 +53,6 @@
           </a>
           
           <router-link 
-            to="/courses" 
-            class="nav-link relative group"
-            :class="[
-              (isScrolled || $route.name !== 'Home') ? 'text-gray-700 hover:text-gray-900' : 'text-white/90 hover:text-white',
-              $route.name === 'Courses' ? ((isScrolled || $route.name !== 'Home') ? 'text-gray-900 font-semibold' : 'text-white font-semibold') : ''
-            ]"
-          >
-            {{ $t('nav.courses') }}
-            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full"></div>
-          </router-link>
-          
-          <router-link 
             to="/stations" 
             class="nav-link relative group"
             :class="[
@@ -203,7 +191,7 @@
           <button
             @click="mobileMenuOpen = !mobileMenuOpen"
             class="lg:hidden p-2 rounded-lg transition-all duration-200"
-            :class="isScrolled 
+            :class="(isScrolled || $route.name !== 'Home') 
               ? 'text-gray-700 hover:bg-gray-100' 
               : 'text-white hover:bg-white/10'"
           >
@@ -244,7 +232,9 @@
         <div 
           v-if="mobileMenuOpen" 
           class="lg:hidden mt-4 pb-4 border-t"
-          :class="(isScrolled || $route.name !== 'Home') ? 'border-gray-100' : 'border-white/10'"
+          :class="(isScrolled || $route.name !== 'Home') 
+            ? 'border-gray-100 bg-white/95 backdrop-blur-md' 
+            : 'border-white/10 bg-white/10 backdrop-blur-md'"
         >
           <div class="flex flex-col space-y-1 mt-4">
             <router-link
@@ -264,15 +254,6 @@
             >
               {{ $t('nav.about') }}
             </a>
-            
-            <router-link
-              to="/courses"
-              class="mobile-nav-link"
-              :class="(isScrolled || $route.name !== 'Home') ? 'text-gray-700 hover:bg-gray-50' : 'text-white hover:bg-white/10'"
-              @click="mobileMenuOpen = false"
-            >
-              {{ $t('nav.courses') }}
-            </router-link>
             
             <router-link
               to="/stations"

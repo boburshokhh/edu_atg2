@@ -1,54 +1,93 @@
 <template>
-  <footer class="bg-gray-900 text-white">
-    <div class="page-container section-padding">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-        <div class="col-span-1 sm:col-span-2 lg:col-span-2">
-          <div class="flex items-center space-x-3 mb-4">
-            <img 
-              src="/logo.e75fb66.svg" 
-              alt="Asia Trans Gas Logo" 
-              class="w-8 h-8 sm:w-10 sm:h-10"
-              @error="handleLogoError"
-            />
-            <div class="flex flex-col">
-              <span class="text-base sm:text-lg font-bold">{{ $t('nav.companyName') }}</span>
-              <span class="text-xs text-gray-400 -mt-1">{{ $t('nav.corporateTraining') }}</span>
-            </div>
-          </div>
-          <p class="text-gray-400 mb-4 text-sm sm:text-base">
-            {{ $t('footer.description') }}
-          </p>
-          <div class="text-xs sm:text-sm text-gray-400 space-y-1">
-            <p>📍 {{ $t('footer.location') }}</p>
-            <p>📧 {{ $t('footer.email') }}</p>
-            <p>🌐 <a href="https://asiatransgas.uz" target="_blank" class="hover:text-white">{{ $t('footer.website') }}</a></p>
-          </div>
-        </div>
+  <footer class="relative bg-gray-800 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <!-- Main Content -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         
+        <!-- Column 1: Useful Links -->
         <div>
-          <h3 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">{{ $t('footer.training') }}</h3>
-          <ul class="space-y-2 text-gray-400 text-sm">
-            <li><a href="#" class="hover:text-white transition-colors">{{ $t('courses.categories.stations') }}</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">{{ $t('courses.categories.safety') }}</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">{{ $t('courses.categories.maintenance') }}</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">{{ $t('courses.categories.operation') }}</a></li>
+          <h3 class="text-lg font-bold text-white mb-4 relative">
+            Полезные ссылки
+            <div class="absolute bottom-0 left-0 w-12 h-0.5 bg-red-500"></div>
+          </h3>
+          <ul class="space-y-3">
+            <li class="flex items-center">
+              <span class="text-gray-400 mr-2">></span>
+              <a href="#about" class="text-gray-400 hover:text-white transition-colors">О нас</a>
+            </li>
+            <li class="flex items-center">
+              <span class="text-gray-400 mr-2">></span>
+              <a href="/courses" class="text-gray-400 hover:text-white transition-colors">Обучение</a>
+            </li>
+            <li class="flex items-center">
+              <span class="text-gray-400 mr-2">></span>
+              <a href="/stations" class="text-gray-400 hover:text-white transition-colors">Станции</a>
+            </li>
+            <li class="flex items-center">
+              <span class="text-gray-400 mr-2">></span>
+              <a href="#contact" class="text-gray-400 hover:text-white transition-colors">Контакты</a>
+            </li>
           </ul>
         </div>
-        
+
+        <!-- Column 2: Contact Information -->
         <div>
-          <h3 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">{{ $t('footer.support') }}</h3>
-          <ul class="space-y-2 text-gray-400 text-sm">
-            <li><a href="#" class="hover:text-white transition-colors">Техническая поддержка</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">Контакты</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">Документация</a></li>
+          <h3 class="text-lg font-bold text-white mb-4 relative">
+            Контактные данные
+            <div class="absolute bottom-0 left-0 w-12 h-0.5 bg-red-500"></div>
+          </h3>
+          <ul class="space-y-3">
+            <li class="flex items-center">
+              <svg class="w-4 h-4 text-white mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+              </svg>
+              <span class="text-gray-400">Ташкент, Узбекистан</span>
+            </li>
+            <li class="flex items-center">
+              <svg class="w-4 h-4 text-white mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+              </svg>
+              <span class="text-gray-400">info@asiatransgas.uz</span>
+            </li>
+            <li class="flex items-center">
+              <svg class="w-4 h-4 text-white mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+              </svg>
+              <span class="text-gray-400">+998 71 123 45 67</span>
+            </li>
+            <li class="flex items-center">
+              <svg class="w-4 h-4 text-white mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+              </svg>
+              <span class="text-gray-400">Пн-Пт: 9:00-18:00</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Column 3: Company Information -->
+        <div>
+          <h3 class="text-lg font-bold text-white mb-4 relative">
+            Информация о компании
+            <div class="absolute bottom-0 left-0 w-12 h-0.5 bg-red-500"></div>
+          </h3>
+          <ul class="space-y-3">
+            <li class="text-gray-400">СП ООО «Asia Trans Gas»</li>
+            <li class="text-gray-400">Основана: 20 сентября 2024</li>
+            <li class="text-gray-400">География: Узбекистан, СНГ</li>
+            <li class="text-gray-400">Деятельность: Нефтегазовое оборудование</li>
           </ul>
         </div>
       </div>
-      
-      <div class="border-t border-gray-800 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400">
-        <p class="text-sm">&copy; 2024 {{ $t('footer.copyright') }}</p>
-        <p class="mt-2 text-xs sm:text-sm">{{ $t('footer.pipeline') }}</p>
+
+      <!-- Bottom Section -->
+      <div class="border-t border-gray-600 pt-6">
+        <div class="flex flex-col sm:flex-row justify-between items-center text-gray-400 text-sm">
+          <p>Asia Trans Gas © Все права защищены</p>
+          <p class="mt-2 sm:mt-0">
+            <a href="#" class="hover:text-white transition-colors">Условия обработки персональных данных</a>
+          </p>
+        </div>
       </div>
     </div>
   </footer>

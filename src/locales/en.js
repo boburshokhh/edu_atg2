@@ -9,6 +9,7 @@ export default {
     login: 'Login',
     register: 'Register',
     logout: 'Logout',
+    back: 'Back',
     companyName: 'Asia Trans Gas',
     corporateTraining: 'Corporate Training'
   },
@@ -205,19 +206,40 @@ export default {
       year: 'Certification received in 2012',
       policy: 'The joint venture demonstrates and implements a policy of caring for all employees, occupational health and safety, and caring for future generations'
     },
-    certs: {
-      iso9001: {
-        name: 'Quality',
-        desc: 'Quality management system to ensure high standards of work'
-      },
-      ohsas: {
-        name: 'Occupational Safety',
-        desc: 'Occupational health and industrial safety management system'
-      },
-      iso14001: {
-        name: 'Ecology',
-        desc: 'Environmental management and care for the environment'
-      }
+           certs: {
+             iso9001: {
+               name: 'Quality',
+               desc: 'Quality management system to ensure high standards of work'
+             },
+             ohsas: {
+               name: 'Occupational Safety',
+               desc: 'Occupational health and industrial safety management system'
+             },
+             iso14001: {
+               name: 'Ecology',
+               desc: 'Environmental management and care for the environment'
+             }
+           },
+           readMore: 'Read More',
+           viewCertificate: 'View Certificate'
+  },
+  login: {
+    title: 'EDUCATION PORTAL',
+    subtitle: 'Sign in to continue',
+    username: 'Username',
+    password: 'Password',
+    loginButton: 'LOGIN',
+    divider: 'or',
+    createAccount: 'Create new account',
+    forgotPassword: 'Forgot password?',
+    copyright: '© 2025 Asia Trans Gas. All rights reserved.',
+    validation: {
+      usernameRequired: 'Please enter username',
+      passwordRequired: 'Please enter password',
+      passwordMinLength: 'Password must contain at least 6 characters'
+    },
+    messages: {
+      loginSuccess: 'Login successful!'
     }
   }
 }

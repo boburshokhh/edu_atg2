@@ -1,119 +1,189 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-primary-50 to-orange-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-      <!-- Header -->
-      <div class="text-center">
-        <div class="flex justify-center mb-6">
-          <div class="w-16 h-16 bg-gradient-to-br from-primary-600 to-orange-600 rounded-xl flex items-center justify-center">
-            <span class="text-white font-bold text-xl">ATG</span>
+  <div class="min-h-screen flex relative overflow-hidden">
+    <!-- Кнопка "Назад" -->
+    <button 
+      @click="$router.go(-1)"
+      class="back-button absolute top-6 left-6 z-50 inline-flex items-center bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300 group px-4 py-2 rounded-lg border border-white/30 hover:border-white/50 shadow-lg hover:shadow-xl"
+    >
+      <svg class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      <span class="text-sm font-semibold">{{ $t('nav.back') }}</span>
+    </button>
+
+    <!-- Левая часть - синий фон с 3D моделью турбины -->
+    <div class="hidden lg:flex lg:w-1/2 xl:w-[55%] bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 relative overflow-hidden">
+      <!-- Декоративная диагональная граница -->
+      <div class="absolute right-0 top-0 bottom-0 w-40 bg-white/5 transform skew-x-[-12deg] translate-x-20"></div>
+      
+      <!-- 3D модель турбины -->
+      <div class="flex items-center justify-center w-full relative z-10 px-8 py-12">
+        <div class="w-full max-w-3xl relative">
+          <img 
+            src="/login/turbine.png" 
+            alt="Gas Turbine Engine" 
+            class="w-full h-auto object-contain drop-shadow-2xl transform hover:scale-105 transition-all duration-700 ease-out"
+          />
+        </div>
+      </div>
+      
+      <!-- Декоративные элементы -->
+      <div class="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+      <div class="absolute bottom-20 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
+      <div class="absolute top-1/3 right-24 w-20 h-20 bg-white/10 rounded-full blur-lg"></div>
+      <div class="absolute bottom-1/4 right-1/3 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
+    </div>
+
+    <!-- Правая часть - форма входа -->
+    <div class="w-full lg:w-1/2 xl:w-[45%] flex items-center justify-center bg-white px-6 sm:px-12 lg:px-16 xl:px-20 relative">
+      <!-- Декоративный градиент фон -->
+      <div class="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-blue-50/30"></div>
+      
+      <div class="w-full max-w-md relative z-10">
+        <!-- Логотип и заголовок -->
+        <div class="text-center mb-12 space-y-6">
+          <div class="flex justify-center mb-8 animate-fade-in">
+            <div class="relative">
+              <img 
+                src="/login/logo 1.svg" 
+                alt="ATG Logo" 
+                class="h-20 w-auto sm:h-24 drop-shadow-lg"
+              />
+            </div>
+          </div>
+          <div class="space-y-2 animate-slide-up">
+            <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900 tracking-tight leading-tight">
+              {{ $t('login.title') }}
+            </h1>
+            <p class="text-gray-500 text-sm sm:text-base">
+              {{ $t('login.subtitle') }}
+            </p>
           </div>
         </div>
-        <h2 class="text-3xl font-bold text-gray-900">Вход в аккаунт</h2>
-        <p class="mt-2 text-gray-600">
-          Или
-          <router-link to="/register" class="text-primary-600 hover:text-primary-500 font-medium">
-            создайте новый аккаунт
-          </router-link>
-        </p>
-      </div>
 
-      <!-- Form -->
-      <div class="card p-8">
-        <el-form 
-          ref="loginForm" 
-          :model="form" 
-          :rules="rules" 
-          @submit.prevent="handleLogin"
-        >
-          <el-form-item prop="email">
-            <el-input
-              v-model="form.email"
-              type="email"
-              placeholder="Email"
-              :prefix-icon="Message"
-              size="large"
-            />
-          </el-form-item>
-
-          <el-form-item prop="password">
-            <el-input
-              v-model="form.password"
-              type="password"
-              placeholder="Пароль"
-              :prefix-icon="Lock"
-              size="large"
-              show-password
-            />
-          </el-form-item>
-
-          <div class="flex items-center justify-between mb-6">
-            <el-checkbox v-model="form.rememberMe">
-              Запомнить меня
-            </el-checkbox>
-            <a href="#" class="text-primary-600 hover:text-primary-500 text-sm">
-              Забыли пароль?
-            </a>
-          </div>
-
-          <el-button 
-            type="primary" 
-            size="large" 
-            class="w-full mb-4"
-            :loading="loading"
-            @click="handleLogin"
+        <!-- Форма входа -->
+        <div class="space-y-6 animate-fade-in-delay">
+          <el-form 
+            ref="loginForm" 
+            :model="form" 
+            :rules="rules" 
+            @submit.prevent="handleLogin"
+            class="space-y-5"
           >
-            Войти
-          </el-button>
+            <!-- Username -->
+            <el-form-item prop="username" class="mb-5">
+              <el-input
+                v-model="form.username"
+                :placeholder="$t('login.username')"
+                size="large"
+                class="login-input"
+              >
+                <template #prefix>
+                  <el-icon class="input-icon"><User /></el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
 
-          <div class="text-center">
-            <span class="text-gray-500 text-sm">Или войдите через</span>
+            <!-- Password -->
+            <el-form-item prop="password" class="mb-6">
+              <el-input
+                v-model="form.password"
+                type="password"
+                :placeholder="$t('login.password')"
+                size="large"
+                show-password
+                class="login-input"
+              >
+                <template #prefix>
+                  <el-icon class="input-icon"><Lock /></el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+
+            <!-- Login Button -->
+            <el-button 
+              type="primary" 
+              size="large" 
+              class="w-full login-button"
+              :loading="loading"
+              @click="handleLogin"
+            >
+              <span class="flex items-center justify-center gap-2">
+                <span>{{ $t('login.loginButton') }}</span>
+                <svg v-if="!loading" class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+            </el-button>
+          </el-form>
+
+          <!-- Разделитель -->
+          <div class="relative my-8">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-200"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-4 bg-white text-gray-500">{{ $t('login.divider') }}</span>
+            </div>
           </div>
 
-          <div class="flex gap-4 mt-4">
-            <el-button size="large" class="flex-1">
-              <el-icon><svg viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg></el-icon>
-              Google
-            </el-button>
-            <el-button size="large" class="flex-1">
-              <el-icon><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.746-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z"/></svg></el-icon>
-              Facebook
-            </el-button>
+          <!-- Дополнительные ссылки -->
+          <div class="text-center space-y-3">
+            <router-link 
+              to="/register" 
+              class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group"
+            >
+              <span>{{ $t('login.createAccount') }}</span>
+              <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </router-link>
+            <div>
+              <a href="#" class="text-gray-500 hover:text-gray-700 text-xs transition-colors">
+                {{ $t('login.forgotPassword') }}
+              </a>
+            </div>
           </div>
-        </el-form>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-12 text-center text-xs text-gray-400">
+          <p>{{ $t('login.copyright') }}</p>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Message, Lock } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 export default {
   name: 'Login',
   setup() {
     const router = useRouter()
+    const { t } = useI18n()
     const loginForm = ref(null)
     const loading = ref(false)
     
     const form = reactive({
-      email: '',
-      password: '',
-      rememberMe: false
+      username: '',
+      password: ''
     })
     
-    const rules = {
-      email: [
-        { required: true, message: 'Пожалуйста, введите email', trigger: 'blur' },
-        { type: 'email', message: 'Пожалуйста, введите корректный email', trigger: 'blur' }
+    const rules = computed(() => ({
+      username: [
+        { required: true, message: t('login.validation.usernameRequired'), trigger: 'blur' }
       ],
       password: [
-        { required: true, message: 'Пожалуйста, введите пароль', trigger: 'blur' },
-        { min: 6, message: 'Пароль должен содержать минимум 6 символов', trigger: 'blur' }
+        { required: true, message: t('login.validation.passwordRequired'), trigger: 'blur' },
+        { min: 6, message: t('login.validation.passwordMinLength'), trigger: 'blur' }
       ]
-    }
+    }))
     
     const handleLogin = async () => {
       if (!loginForm.value) return
@@ -128,15 +198,15 @@ export default {
         // Сохраняем данные пользователя
         const userData = {
           id: 1,
-          name: 'Иван Иванов',
-          email: form.email,
+          name: form.username,
+          username: form.username,
           avatar: ''
         }
         
         localStorage.setItem('auth_token', 'mock_token_123')
         localStorage.setItem('user', JSON.stringify(userData))
         
-        ElMessage.success('Успешный вход!')
+        ElMessage.success(t('login.messages.loginSuccess'))
         router.push('/dashboard')
         
       } catch (error) {
@@ -152,9 +222,186 @@ export default {
       rules,
       loading,
       handleLogin,
-      Message,
+      User,
       Lock
     }
   }
 }
 </script>
+
+<style scoped>
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.8s ease-out 0.2s backwards;
+}
+
+.animate-fade-in-delay {
+  animation: fadeIn 0.8s ease-out 0.4s backwards;
+}
+
+/* Стили для инпутов */
+:deep(.login-input .el-input__wrapper) {
+  background-color: #f3f4f6;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 56px;
+}
+
+:deep(.login-input .el-input__wrapper:hover) {
+  background-color: #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+:deep(.login-input .el-input__wrapper.is-focus) {
+  background-color: #ffffff;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.1), 0 4px 16px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+:deep(.login-input .el-input__inner) {
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+:deep(.login-input .el-input__inner::placeholder) {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+:deep(.login-input .input-icon) {
+  color: #6b7280;
+  font-size: 18px;
+  transition: color 0.3s ease;
+}
+
+:deep(.login-input .el-input__wrapper.is-focus .input-icon) {
+  color: #3b82f6;
+}
+
+/* Стили для кнопки входа */
+:deep(.login-button) {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  border: none;
+  border-radius: 14px;
+  padding: 16px 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.25), 0 4px 8px rgba(59, 130, 246, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+:deep(.login-button::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+:deep(.login-button:hover::before) {
+  left: 100%;
+}
+
+:deep(.login-button:hover) {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.35), 0 6px 12px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px) scale(1.01);
+}
+
+:deep(.login-button:active) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+:deep(.login-button.is-loading) {
+  background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
+}
+
+/* Убираем отступы у form-item */
+:deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+:deep(.el-form-item__error) {
+  padding-top: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 640px) {
+  :deep(.login-input .el-input__wrapper) {
+    height: 52px;
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+  
+  :deep(.login-button) {
+    height: 52px;
+    padding: 14px 0;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+}
+
+/* Дополнительные улучшения */
+:deep(.el-loading-mask) {
+  border-radius: 14px;
+}
+
+/* Плавный переход для всех интерактивных элементов */
+a, button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Адаптивные стили для кнопки "Назад" */
+@media (max-width: 1024px) {
+  .back-button {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    color: #3b82f6 !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+  }
+  
+  .back-button:hover {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    border-color: rgba(59, 130, 246, 0.5) !important;
+  }
+}
+</style>

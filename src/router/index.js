@@ -3,6 +3,7 @@ import Home from '@/views/Home.vue'
 import Courses from '@/views/Courses.vue'
 import CourseDetail from '@/views/CourseDetail.vue'
 import Stations from '@/views/Stations.vue'
+import StationDetail from '@/views/StationDetail.vue'
 import Profile from '@/views/Profile.vue'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
@@ -29,6 +30,12 @@ const routes = [
     path: '/stations',
     name: 'Stations',
     component: Stations
+  },
+  {
+    path: '/station/:id',
+    name: 'StationDetail',
+    component: StationDetail,
+    props: true
   },
   {
     path: '/profile',
