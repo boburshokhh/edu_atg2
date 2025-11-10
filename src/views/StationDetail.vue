@@ -587,6 +587,8 @@
                 <img 
                   :src="station?.techMapImage" 
                   :alt="`Технологическая карта ${station?.shortName}`"
+                  loading="lazy"
+                  decoding="async"
                   class="w-full h-auto rounded-lg shadow-lg border-4 border-white transition-transform duration-300 group-hover:scale-[1.02]"
                 />
                 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-lg flex items-center justify-center">

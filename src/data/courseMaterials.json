@@ -1,0 +1,169 @@
+{
+  "lessons": [
+    {
+      "lessonTitle": "Урок № 1. Зона замера газа",
+      "topics": [
+        {
+          "topicCode": "Тема 1.1",
+          "topicTitle": "Ультразвуковые расходомеры",
+          "files": [
+            {
+              "fileName": "Тема 1. Ультразвукового расходомера газа.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Teма 1.1. Ультразвуковые расходомеры/Тема 1. Ультразвукового расходомера газа.pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 4305510,
+              "sizeFormatted": "4.1 MB"
+            },
+            {
+              "fileName": "Backer Hughes Ультразвуковые расходомеры.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Teма 1.1. Ультразвуковые расходомеры/Backer Hughes Ультразвуковые расходомеры.pdf",
+              "is_main_file": false,
+              "fileType": "pdf",
+              "fileSize": 1144210,
+              "sizeFormatted": "1.1 MB"
+            },
+            {
+              "fileName": "manual-ultrasonic-flow-meters-ultrasonic-mark-iii-cpu-board-field-replacement-en-55822.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Teма 1.1. Ультразвуковые расходомеры/manual-ultrasonic-flow-meters-ultrasonic-mark-iii-cpu-board-field-replacement-en-55822.pdf",
+              "is_main_file": false,
+              "fileType": "pdf",
+              "fileSize": 17554224,
+              "sizeFormatted": "16.7 MB"
+            },
+            {
+              "fileName": "re-t1-03.03.2022.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Teма 1.1. Ультразвуковые расходомеры/re-t1-03.03.2022.pdf",
+              "is_main_file": false,
+              "fileType": "pdf",
+              "fileSize": 1477775,
+              "sizeFormatted": "1.4 MB"
+            },
+            {
+              "fileName": "Руководства  Ультразвуковые расходомеры.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Teма 1.1. Ультразвуковые расходомеры/Руководства  Ультразвуковые расходомеры.pdf",
+              "is_main_file": false,
+              "fileType": "pdf",
+              "fileSize": 2194830,
+              "sizeFormatted": "2.1 MB"
+            },
+            {
+              "fileName": "Ультразвуковые расходомеры.mp4",
+              "objectName": "Урок № 1. Зона замера газа/Teма 1.1. Ультразвуковые расходомеры/Ультразвуковые расходомеры.mp4",
+              "is_main_file": false,
+              "fileType": "video",
+              "fileSize": 70053123,
+              "sizeFormatted": "66.8 MB"
+            }
+          ]
+        },
+        {
+          "topicCode": "Тема 1.2",
+          "topicTitle": "Вычислители расхода газа",
+          "files": [
+            {
+              "fileName": "Тема 1.2 Вычислители расхода газа.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.2. Вычислители расхода газа/Тема 1.2 Вычислители расхода газа.pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 1785158,
+              "sizeFormatted": "1.7 MB"
+            },
+            {
+              "fileName": "01-Контроллеры измерительных систем.mp4",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.2. Вычислители расхода газа/01-Контроллеры измерительных систем.mp4",
+              "is_main_file": false,
+              "fileType": "video",
+              "fileSize": 14547695,
+              "sizeFormatted": "13.9 MB"
+            },
+            {
+              "fileName": "2011-38623-11.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.2. Вычислители расхода газа/2011-38623-11.pdf",
+              "is_main_file": false,
+              "fileType": "pdf",
+              "fileSize": 117633,
+              "sizeFormatted": "115 KB"
+            },
+            {
+              "fileName": "FloBoss_S600_rukovodstvo_po_ekpluatatsii.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.2. Вычислители расхода газа/FloBoss_S600_rukovodstvo_po_ekpluatatsii.pdf",
+              "is_main_file": false,
+              "fileType": "pdf",
+              "fileSize": 3558312,
+              "sizeFormatted": "3.4 MB"
+            },
+            {
+              "fileName": "SUMMIT 8800 – The Graphic Touchscreen Flow Computer _ KROHNE.mp4",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.2. Вычислители расхода газа/SUMMIT 8800 – The Graphic Touchscreen Flow Computer _ KROHNE.mp4",
+              "is_main_file": false,
+              "fileType": "video",
+              "fileSize": 70869179,
+              "sizeFormatted": "67.6 MB"
+            },
+            {
+              "fileName": "floboss-s600-panel-mounted-fiscal-flow-computer-russian-jan-2011-ru-133078.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.2. Вычислители расхода газа/floboss-s600-panel-mounted-fiscal-flow-computer-russian-jan-2011-ru-133078.pdf",
+              "is_main_file": false,
+              "fileType": "pdf",
+              "fileSize": 757898,
+              "sizeFormatted": "740 KB"
+            }
+          ]
+        },
+        {
+          "topicCode": "Тема 1.3",
+          "topicTitle": "Кабина анализа газа",
+          "files": [
+            {
+              "fileName": "Тема 1.3 Кабина_анализа_газа_Предназначение,_марки_приборов_Заданные_параметры.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.3. Кабина анализа газа/Тема 1.3 Кабина_анализа_газа_Предназначение,_марки_приборов_Заданные_параметры.pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 5607622,
+              "sizeFormatted": "5.3 MB"
+            },
+            {
+              "fileName": "1502111477_Natural-Gas-Analysis-rus.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.3. Кабина анализа газа/1502111477_Natural-Gas-Analysis-rus.pdf",
+              "is_main_file": false,
+              "fileType": "pdf",
+              "fileSize": 3790390,
+              "sizeFormatted": "3.6 MB"
+            }
+          ]
+        },
+        {
+          "topicCode": "Тема 1.4",
+          "topicTitle": "Система CBM",
+          "files": [
+            {
+              "fileName": "Тема Система CBM Часть 1.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.4. Система СВМ/Тема Система CBM Часть 1.pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 0,
+              "sizeFormatted": "Размер неизвестен"
+            },
+            {
+              "fileName": "Тема Система CBM Часть 2.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.4. Система СВМ/Тема Система CBM Часть 2.pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 0,
+              "sizeFormatted": "Размер неизвестен"
+            },
+            {
+              "fileName": "Мониторинг состояния оборудования.mp4",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.4. Система СВМ/Мониторинг состояния оборудования.mp4",
+              "is_main_file": false,
+              "fileType": "video",
+              "fileSize": 0,
+              "sizeFormatted": "Размер неизвестен"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

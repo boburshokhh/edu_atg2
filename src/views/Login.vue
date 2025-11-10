@@ -129,15 +129,6 @@
 
           <!-- Дополнительные ссылки -->
           <div class="text-center space-y-3">
-            <router-link 
-              to="/register" 
-              class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group"
-            >
-              <span>{{ $t('login.createAccount') }}</span>
-              <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </router-link>
             <div>
               <a href="#" class="text-gray-500 hover:text-gray-700 text-xs transition-colors">
                 {{ $t('login.forgotPassword') }}
@@ -156,11 +147,12 @@
 </template>
 
 <script>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import authService from '@/services/auth'
 
 export default {
   name: 'Login',
@@ -192,29 +184,40 @@ export default {
         await loginForm.value.validate()
         loading.value = true
         
-        // Имитация API запроса
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Авторизация через Supabase
+        const result = await authService.login(form.username, form.password)
         
-        // Сохраняем данные пользователя
-        const userData = {
-          id: 1,
-          name: form.username,
-          username: form.username,
-          avatar: ''
+        if (result.success) {
+          ElMessage.success(t('login.messages.loginSuccess'))
+          
+          // Перенаправляем в зависимости от роли пользователя
+          if (result.user.role === 'admin') {
+            router.push('/dashboard')
+          } else if (result.user.role === 'instructor') {
+            router.push('/dashboard')
+          } else {
+            router.push('/dashboard')
+          }
+        } else {
+          ElMessage.error(result.error || t('login.messages.loginError'))
         }
-        
-        localStorage.setItem('auth_token', 'mock_token_123')
-        localStorage.setItem('user', JSON.stringify(userData))
-        
-        ElMessage.success(t('login.messages.loginSuccess'))
-        router.push('/dashboard')
         
       } catch (error) {
         console.error('Validation failed:', error)
+        ElMessage.error(t('login.messages.validationError'))
       } finally {
         loading.value = false
       }
     }
+    
+    // Проверяем авторизацию при загрузке компонента
+    onMounted(async () => {
+      const authResult = await authService.checkAuth()
+      if (authResult.isAuthenticated) {
+        // Пользователь уже авторизован, перенаправляем
+        router.push('/dashboard')
+      }
+    })
     
     return {
       loginForm,

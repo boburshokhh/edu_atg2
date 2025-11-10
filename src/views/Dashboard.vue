@@ -4,8 +4,17 @@
       <div class="page-container">
         <!-- Header -->
         <div class="mb-6 sm:mb-8">
-          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{{ $t('dashboard.title') }}</h1>
-          <p class="text-sm sm:text-base text-gray-600">{{ $t('dashboard.welcome') }}</p>
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{{ $t('dashboard.title') }}</h1>
+              <p class="text-sm sm:text-base text-gray-600">{{ $t('dashboard.welcome') }}</p>
+            </div>
+            <div v-if="isAdmin">
+              <el-button type="primary" @click="$router.push('/admin')" :icon="Setting">
+                Админ-панель
+              </el-button>
+            </div>
+          </div>
         </div>
 
         <!-- Stats Cards -->
@@ -192,9 +201,11 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/AppLayout.vue'
+import authService from '@/services/auth'
+import userProfileService from '@/services/userProfile'
 import { 
   VideoPlay, 
   Trophy, 
@@ -205,7 +216,8 @@ import {
   Tools, 
   Check, 
   Star, 
-  Monitor 
+  Monitor,
+  UserFilled
 } from '@element-plus/icons-vue'
 
 export default {
@@ -221,16 +233,45 @@ export default {
     Tools,
     Check,
     Star,
-    Monitor
+    Monitor,
+    UserFilled
   },
   setup() {
     const { t } = useI18n()
+    const loading = ref(false)
+    
+    const isAdmin = computed(() => authService.isAdmin())
     
     const stats = ref({
-      activeCourses: 3,
-      completedCourses: 5,
-      hoursStudied: 120,
-      certificates: 2
+      activeCourses: 0,
+      completedCourses: 0,
+      hoursStudied: 0,
+      certificates: 0
+    })
+
+    const loadUserStats = async () => {
+      const currentUser = authService.getCurrentUser()
+      if (!currentUser) return
+
+      loading.value = true
+      try {
+        // Здесь будет загрузка данных из Supabase через userProfileService
+        // Пока используем mock данные
+        stats.value = {
+          activeCourses: 3,
+          completedCourses: 5,
+          hoursStudied: 120,
+          certificates: 2
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error)
+      } finally {
+        loading.value = false
+      }
+    }
+
+    onMounted(() => {
+      loadUserStats()
     })
 
     const activeCourses = ref([
@@ -318,11 +359,14 @@ export default {
     ])
 
     return {
+      isAdmin,
+      loading,
       stats,
       activeCourses,
       recentActivity,
       achievements,
-      recommendedCourses
+      recommendedCourses,
+      loadUserStats
     }
   }
 }

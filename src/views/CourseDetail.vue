@@ -23,11 +23,15 @@
                   <span class="text-gray-600">({{ course.reviews }} {{ $t('courseDetail.reviews') }})</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <el-icon><User /></el-icon>
+                  <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
                   <span class="text-gray-600">{{ course.students }} {{ $t('courseDetail.students') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <el-icon><Clock /></el-icon>
+                  <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                   <span class="text-gray-600">{{ course.duration }}</span>
                 </div>
               </div>
@@ -40,9 +44,10 @@
             <div class="lg:w-1/3">
               <div class="card p-6">
                 <div class="aspect-video bg-gradient-to-br from-blue-100 to-orange-100 rounded-lg flex items-center justify-center mb-4">
-                  <el-icon :size="64" class="text-blue-600">
-                    <component :is="course.icon" />
-                  </el-icon>
+                  <svg class="w-16 h-16 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
                 </div>
                 <el-button type="primary" size="large" class="w-full mb-4">
                   {{ $t('courseDetail.enroll') }}
@@ -63,6 +68,59 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <!-- Main Content -->
           <div class="lg:col-span-2">
+            <!-- Lessons Sidebar -->
+            <div class="card p-4 mb-6">
+              <h3 class="text-lg font-semibold mb-4">{{ $t('courseDetail.lessons') || 'Уроки курса' }}</h3>
+              <div class="space-y-2 max-h-96 overflow-y-auto">
+                <div
+                  v-for="(lesson, index) in allLessons"
+                  :key="lesson.id"
+                  class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-blue-50 border"
+                  :class="{
+                    'bg-blue-50 border-blue-200': currentLessonIndex === index,
+                    'border-gray-200': currentLessonIndex !== index
+                  }"
+                  @click="playLesson(index)"
+                >
+                  <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                       :class="lesson.completed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'">
+                    <svg v-if="lesson.completed" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span v-else class="text-xs font-semibold">{{ index + 1 }}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ lesson.title }}</p>
+                    <p class="text-xs text-gray-500">{{ lesson.duration }}</p>
+                  </div>
+                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lesson Materials -->
+            <div class="card p-6 mb-6" v-if="currentLesson && lessonMaterials[currentLesson.id]?.length > 0">
+              <h3 class="text-lg font-semibold mb-4">Материалы урока</h3>
+              <div class="space-y-2">
+                <div 
+                  v-for="file in lessonMaterials[currentLesson.id]" 
+                  :key="file.objectName"
+                  class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                  @click="downloadMaterial(file)"
+                >
+                  <el-icon :size="24" class="text-blue-600"><Document /></el-icon>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ file.original_name || file.originalName }}</p>
+                    <p class="text-xs text-gray-500">{{ file.sizeFormatted }}</p>
+                  </div>
+                  <el-icon class="text-blue-600"><Download /></el-icon>
+                </div>
+              </div>
+            </div>
+
             <!-- Tabs -->
             <el-tabs v-model="activeTab" class="mb-8">
               <el-tab-pane :label="$t('courseDetail.tabs.description')" name="description">
@@ -97,9 +155,13 @@
                           class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                         >
                           <div class="flex items-center gap-3">
-                            <el-icon class="text-blue-600">
-                              <component :is="lesson.type === 'video' ? 'VideoPlay' : 'Document'" />
-                            </el-icon>
+                            <svg v-if="lesson.type === 'video'" class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <svg v-else class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
                             <span>{{ lesson.title }}</span>
                           </div>
                           <span class="text-gray-500">{{ lesson.duration }}</span>
@@ -161,9 +223,10 @@
                   @click="$router.push(`/course/${similarCourse.id}`)"
                 >
                   <div class="w-16 h-12 bg-gradient-to-br from-blue-100 to-orange-100 rounded flex items-center justify-center">
-                    <el-icon class="text-blue-600">
-                      <component :is="similarCourse.icon" />
-                    </el-icon>
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
                   </div>
                   <div class="flex-1">
                     <h4 class="font-medium text-sm">{{ similarCourse.title }}</h4>
@@ -179,6 +242,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Video Player -->
+    <VideoPlayer
+      v-model="showVideoPlayer"
+      :video-url="currentLesson?.videoUrl || ''"
+      :video-title="currentLesson?.title || ''"
+      :video-description="currentLesson?.sectionTitle || ''"
+      :video-id="currentLesson?.id"
+      :lessons="allLessons"
+      :current-index="currentLessonIndex"
+      @video-end="handleVideoEnd"
+      @close="handleVideoClose"
+      @next="playNext"
+      @previous="playPrevious"
+    />
   </AppLayout>
 </template>
 
@@ -186,32 +264,21 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { ElMessage } from 'element-plus'
+import { Document, Download } from '@element-plus/icons-vue'
 import AppLayout from '@/components/AppLayout.vue'
-import { 
-  User, 
-  Clock, 
-  VideoPlay, 
-  Document, 
-  Setting, 
-  Lock, 
-  Tools, 
-  Monitor, 
-  Star 
-} from '@element-plus/icons-vue'
+import VideoPlayer from '@/components/VideoPlayer.vue'
+import videoService from '@/services/videoService'
+import authService from '@/services/auth'
+import minioService from '@/services/minioService'
 
 export default {
   name: 'CourseDetail',
   components: {
     AppLayout,
-    User,
-    Clock,
-    VideoPlay,
+    VideoPlayer,
     Document,
-    Setting,
-    Lock,
-    Tools,
-    Monitor,
-    Star
+    Download
   },
   props: {
     id: {
@@ -224,6 +291,11 @@ export default {
     const { t } = useI18n()
     const activeTab = ref('description')
     const activeCollapse = ref([0])
+    const showVideoPlayer = ref(false)
+    const currentLessonIndex = ref(0)
+    const currentLesson = ref(null)
+    const lessonMaterials = ref({}) // { lessonId: [files] }
+    const loadingMaterials = ref(false)
     
     const course = ref({
       id: 1,
@@ -287,6 +359,122 @@ export default {
         bio: 'Опытный инженер с 15-летним стажем работы с компрессорными станциями. Специализируется на эксплуатации и техническом обслуживании газотранспортного оборудования.'
       }
     })
+
+    // Получаем все уроки из курса
+    const allLessons = computed(() => {
+      const lessons = []
+      course.value.curriculum.forEach((section, sectionIndex) => {
+        section.lessons.forEach((lesson, lessonIndex) => {
+          lessons.push({
+            ...lesson,
+            sectionIndex,
+            sectionTitle: section.title,
+            completed: false // Здесь можно загрузить прогресс из Supabase
+          })
+        })
+      })
+      return lessons
+    })
+
+    // Играть урок
+    const playLesson = async (index) => {
+      currentLessonIndex.value = index
+      currentLesson.value = allLessons.value[index]
+      
+      // Для демо используем тестовые видео
+      // В продакшене: await videoService.getVideoUrl(currentLesson.value.id)
+      currentLesson.value.videoUrl = `https://storage.googleapis.com/gtv-videos-bucket/sample/${['BigBuckBunny', 'ElephantsDream', 'ForBiggerBlazes'][index % 3]}.mp4`
+      
+      // Загружаем материалы для урока из MinIO
+      await loadLessonMaterials(currentLesson.value.title)
+      
+      // Загружаем прогресс из Supabase
+      const currentUser = authService.getCurrentUser()
+      if (currentUser && currentLesson.value.id) {
+        const progressResult = await videoService.getLessonProgress(
+          currentUser.id, 
+          currentLesson.value.id
+        )
+        if (progressResult.success && progressResult.progress) {
+          // Применяем сохраненную позицию к видео
+        }
+      }
+      
+      showVideoPlayer.value = true
+    }
+
+    // Загрузить материалы урока из MinIO
+    const loadLessonMaterials = async (lessonTitle) => {
+      if (!lessonTitle) return
+      
+      try {
+        loadingMaterials.value = true
+        
+        // Создаем folder path из названия урока
+        // Экранируем специальные символы для MinIO
+        const folderName = lessonTitle.replace(/[<>:"/\\|?*]/g, '_')
+        
+        // Получаем содержимое папки с этим названием
+        const contents = await minioService.getFolderContents(folderName)
+        
+        // Сохраняем файлы для текущего урока
+        if (currentLesson.value) {
+          lessonMaterials.value[currentLesson.value.id] = contents.files
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки материалов урока:', error)
+        // Не показываем ошибку, если папка не найдена
+        if (!error.message.includes('Not Found')) {
+          ElMessage.warning(`Не удалось загрузить материалы для урока: ${lessonTitle}`)
+        }
+      } finally {
+        loadingMaterials.value = false
+      }
+    }
+
+    // Скачать материалы урока
+    const downloadMaterial = (file) => {
+      if (file.file_url || file.url) {
+        const link = document.createElement('a')
+        link.href = file.file_url || file.url
+        link.download = file.original_name || file.originalName
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+    }
+
+    // Обработчики видеоплеера
+    const handleVideoEnd = async () => {
+      // Отмечаем урок как завершенный
+      if (allLessons.value[currentLessonIndex.value]) {
+        allLessons.value[currentLessonIndex.value].completed = true
+        
+        // Сохраняем прогресс в Supabase
+        const currentUser = authService.getCurrentUser()
+        if (currentUser && currentLesson.value.id) {
+          await videoService.completeLesson(currentUser.id, currentLesson.value.id)
+          ElMessage.success('Урок завершен!')
+        }
+      }
+    }
+
+    const handleVideoClose = () => {
+      showVideoPlayer.value = false
+    }
+
+    const playNext = () => {
+      if (currentLessonIndex.value < allLessons.value.length - 1) {
+        playLesson(currentLessonIndex.value + 1)
+      }
+    }
+
+    const playPrevious = () => {
+      if (currentLessonIndex.value > 0) {
+        playLesson(currentLessonIndex.value - 1)
+      }
+    }
     
     const similarCourses = ref([
       {
@@ -318,7 +506,20 @@ export default {
       activeTab,
       activeCollapse,
       course,
-      similarCourses
+      similarCourses,
+      allLessons,
+      showVideoPlayer,
+      currentLessonIndex,
+      currentLesson,
+      lessonMaterials,
+      loadingMaterials,
+      playLesson,
+      loadLessonMaterials,
+      downloadMaterial,
+      handleVideoEnd,
+      handleVideoClose,
+      playNext,
+      playPrevious
     }
   }
 }

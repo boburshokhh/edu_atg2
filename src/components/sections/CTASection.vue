@@ -23,12 +23,12 @@
         {{ $t('home.cta.description') }}
       </p>
       <el-button 
-        @click="$router.push('/register')" 
+        @click="$router.push('/stations')" 
         type="primary" 
         size="large"
         class="px-6 sm:px-8 py-3 bg-gradient-to-r from-tamex-blue-600 to-tamex-blue-700 hover:from-tamex-blue-700 hover:to-tamex-blue-800 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg"
       >
-        {{ $t('home.cta.register') }}
+        {{ $t('nav.stations') }}
       </el-button>
     </div>
   </section>

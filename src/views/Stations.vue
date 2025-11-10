@@ -20,14 +20,21 @@
             class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-blue-200 hover:-translate-y-2"
           >
             <!-- Image Container -->
-            <div class="relative h-48 overflow-hidden">
+            <div class="relative h-48 overflow-hidden bg-gray-200">
+              <!-- Loading Skeleton -->
+              <div class="skeleton-loader absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200"></div>
+              
               <img 
-                :src="`/stations/${station.image}`" 
+                :src="getStationImageUrl(station.image)" 
                 :alt="station.name"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                loading="lazy"
+                decoding="async"
+                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 relative z-10"
+                @load="imageLoaded"
+                @error="imageError"
               />
               <!-- Gradient Overlay -->
-              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20"></div>
             </div>
             
             <!-- Content -->
@@ -64,8 +71,9 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
+import minioService from '@/services/minioService'
 
 export default {
   name: 'Stations',
@@ -73,6 +81,11 @@ export default {
     AppLayout
   },
   setup() {
+    // Хранилище URL изображений из MinIO
+    const stationImageUrls = ref({})
+    const loadingImages = ref(false)
+
+    // Данные станций
     const stations = ref([
       {
         id: 1,
@@ -164,9 +177,111 @@ export default {
       }
     ])
 
+    // Получить URL изображения станции
+    const getStationImageUrl = (imageName) => {
+      const objectName = `stations/${imageName}`
+      // Возвращаем URL из кэша, если он есть, иначе возвращаем пустую строку или placeholder
+      if (stationImageUrls.value[imageName]) {
+        return stationImageUrls.value[imageName]
+      }
+      // Возвращаем прямой URL как fallback (пока не загружен presigned URL)
+      return minioService.getFileUrl(objectName)
+    }
+
+    // Загрузить все URL изображений из MinIO
+    const loadStationImages = async () => {
+      loadingImages.value = true
+      try {
+        const promises = stations.value.map(async (station) => {
+          const objectName = `stations/${station.image}`
+          try {
+            // Получаем presigned URL (действителен 7 дней)
+            const url = await minioService.getPresignedDownloadUrl(
+              objectName, 
+              7 * 24 * 60 * 60, // 7 дней в секундах
+              'image/jpeg'
+            )
+            stationImageUrls.value[station.image] = url
+          } catch (error) {
+            console.error(`Ошибка загрузки изображения ${station.image}:`, error)
+            // Fallback к прямому URL
+            stationImageUrls.value[station.image] = minioService.getFileUrl(objectName)
+          }
+        })
+        
+        await Promise.all(promises)
+      } catch (error) {
+        console.error('Ошибка загрузки изображений станций:', error)
+      } finally {
+        loadingImages.value = false
+      }
+    }
+
+    // Handle image loading
+    const imageLoaded = (event) => {
+      event.target.classList.add('loaded')
+      // Remove skeleton
+      const skeleton = event.target.parentElement.querySelector('.skeleton-loader')
+      if (skeleton) {
+        skeleton.style.opacity = '0'
+        setTimeout(() => skeleton.remove(), 300)
+      }
+    }
+
+    const imageError = (event) => {
+      event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EИзображение не загружено%3C/text%3E%3C/svg%3E'
+    }
+
+    // Загружаем URL изображений при монтировании компонента
+    onMounted(() => {
+      loadStationImages()
+    })
+
     return {
-      stations
+      stations,
+      stationImageUrls,
+      loadingImages,
+      getStationImageUrl,
+      imageLoaded,
+      imageError
     }
   }
 }
 </script>
+
+<style scoped>
+/* Skeleton loader animation */
+.skeleton-loader {
+  animation: pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(to right, #e5e7eb 0%, #d1d5db 50%, #e5e7eb 100%);
+  background-size: 200% 100%;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Smooth fade-in animation for loaded images */
+img.loaded {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Smooth transition for skeleton removal */
+.skeleton-loader {
+  transition: opacity 0.3s ease-out;
+}
+</style>

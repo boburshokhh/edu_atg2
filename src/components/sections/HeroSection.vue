@@ -65,11 +65,11 @@
         <!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-200">
           <button
-            @click="$router.push('/courses')"
+            @click="$router.push('/stations')"
             class="group relative w-full sm:w-auto px-8 py-4 bg-tamex-blue-600 text-white rounded-xl font-semibold text-base overflow-hidden transition-all duration-300 hover:bg-tamex-blue-700 hover:scale-105 hover:shadow-2xl hover:shadow-tamex-blue-500/50"
           >
             <span class="relative z-10 flex items-center justify-center space-x-2">
-              <span>{{ $t('home.startLearning') }}</span>
+              <span>{{ $t('nav.stations') }}</span>
               <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>

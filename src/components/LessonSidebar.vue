@@ -1,0 +1,319 @@
+<template>
+  <div class="lesson-sidebar h-screen sticky top-0 bg-white border-r border-gray-200 flex flex-col w-72 lg:w-80">
+    <!-- Compact Header -->
+    <div class="p-4 border-b border-gray-200">
+      <h2 class="text-sm font-bold text-gray-900 mb-1 uppercase tracking-wide">Содержание</h2>
+      <button 
+        @click="toggleAllLessons"
+        class="text-xs text-blue-600 hover:text-blue-700 font-medium"
+      >
+        {{ allExpanded ? 'Свернуть' : 'Развернуть' }}
+      </button>
+    </div>
+
+    <!-- Lessons List -->
+    <div class="flex-1 overflow-y-auto">
+      <div v-for="(lesson, lessonIndex) in lessons" :key="lessonIndex" class="border-b border-gray-100">
+        <!-- Compact Lesson Header -->
+        <button
+          @click="toggleLesson(lessonIndex)"
+          class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors group"
+        >
+          <div class="flex-1 text-left min-w-0">
+            <div class="text-xs font-semibold text-blue-600 mb-0.5">
+              Модуль {{ lessonIndex + 1 }}
+            </div>
+            <div class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+              {{ lesson.title }}
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5">
+              {{ lesson.topics?.length || 0 }} {{ lesson.topics?.length === 1 ? 'тема' : 'тем' }}
+            </div>
+          </div>
+          <el-icon 
+            :class="[
+              'text-gray-400 transition-transform duration-200 flex-shrink-0 ml-2',
+              expandedLessons.includes(lessonIndex) ? 'rotate-180' : ''
+            ]"
+            :size="14"
+          >
+            <ArrowDown />
+          </el-icon>
+        </button>
+
+        <!-- Compact Topics -->
+        <el-collapse-transition>
+          <div v-show="expandedLessons.includes(lessonIndex)" class="bg-gray-50">
+            <!-- Topics -->
+            <button
+              v-for="(topic, topicIndex) in lesson.topics"
+              :key="topicIndex"
+              @click="selectTopic(lessonIndex, topicIndex)"
+              :class="[
+                'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3',
+                isCurrentTopic(lessonIndex, topicIndex)
+                  ? 'border-blue-600 bg-blue-50'
+                  : 'border-transparent'
+              ]"
+            >
+              <!-- Compact Status Icon -->
+              <div class="flex-shrink-0 mt-0.5">
+                <div 
+                  v-if="isTopicCompleted(lessonIndex, topicIndex)"
+                  class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"
+                >
+                  <el-icon class="text-white" :size="12">
+                    <Check />
+                  </el-icon>
+                </div>
+                <div 
+                  v-else-if="isCurrentTopic(lessonIndex, topicIndex)"
+                  class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"
+                >
+                  <el-icon class="text-white" :size="12">
+                    <VideoPlay />
+                  </el-icon>
+                </div>
+                <div 
+                  v-else
+                  class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center"
+                >
+                  <div class="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                </div>
+              </div>
+
+              <!-- Compact Topic Info -->
+              <div class="flex-1 min-w-0">
+                <div 
+                  :class="[
+                    'text-xs font-medium mb-0.5 leading-tight',
+                    isCurrentTopic(lessonIndex, topicIndex)
+                      ? 'text-blue-600'
+                      : 'text-gray-900'
+                  ]"
+                >
+                  {{ lessonIndex + 1 }}.{{ topicIndex + 1 }}: {{ topic.title }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ topic.duration || '15 мин' }}
+                </div>
+              </div>
+
+              <!-- Play Icon for current -->
+              <div v-if="isCurrentTopic(lessonIndex, topicIndex)" class="flex-shrink-0">
+                <el-icon class="text-blue-600" :size="14">
+                  <CaretRight />
+                </el-icon>
+              </div>
+            </button>
+
+            <!-- Lesson Test -->
+            <button
+              @click="selectTest(lessonIndex)"
+              :class="[
+                'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3 border-t border-gray-200',
+                isCurrentTest(lessonIndex)
+                  ? 'border-purple-600 bg-purple-50'
+                  : 'border-transparent'
+              ]"
+            >
+              <!-- Test Icon -->
+              <div class="flex-shrink-0 mt-0.5">
+                <div 
+                  v-if="isLessonTestPassed(lessonIndex)"
+                  class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"
+                >
+                  <el-icon class="text-white" :size="12">
+                    <Check />
+                  </el-icon>
+                </div>
+                <div 
+                  v-else-if="isCurrentTest(lessonIndex)"
+                  class="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center"
+                >
+                  <el-icon class="text-white" :size="12">
+                    <Document />
+                  </el-icon>
+                </div>
+                <div 
+                  v-else
+                  class="w-5 h-5 rounded-lg border-2 border-purple-300 flex items-center justify-center"
+                >
+                  <el-icon class="text-purple-500" :size="12">
+                    <Document />
+                  </el-icon>
+                </div>
+              </div>
+
+              <!-- Test Info -->
+              <div class="flex-1 min-w-0">
+                <div 
+                  :class="[
+                    'text-xs font-medium mb-0.5 leading-tight flex items-center gap-1',
+                    isCurrentTest(lessonIndex)
+                      ? 'text-purple-600'
+                      : 'text-gray-900'
+                  ]"
+                >
+                  <span>Тест модуля {{ lessonIndex + 1 }}</span>
+                  <el-tag v-if="isLessonTestPassed(lessonIndex)" type="success" size="small" class="ml-1">✓</el-tag>
+                </div>
+                <div class="text-xs text-gray-500">
+                  Проверка знаний
+                </div>
+              </div>
+
+              <!-- Arrow Icon for current -->
+              <div v-if="isCurrentTest(lessonIndex)" class="flex-shrink-0">
+                <el-icon class="text-purple-600" :size="14">
+                  <CaretRight />
+                </el-icon>
+              </div>
+            </button>
+          </div>
+        </el-collapse-transition>
+      </div>
+    </div>
+
+    <!-- Compact Progress Summary -->
+    <div class="p-4 border-t border-gray-200 bg-gray-50">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-medium text-gray-700">Прогресс</span>
+        <span class="text-xs font-bold text-blue-600">
+          {{ completedCount }} / {{ totalTopics }}
+        </span>
+      </div>
+      <el-progress 
+        :percentage="progressPercentage" 
+        :stroke-width="6"
+        :color="progressColor"
+        :show-text="false"
+      />
+      <div class="text-center mt-1">
+        <span class="text-xs font-semibold text-gray-700">{{ progressPercentage }}%</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch } from 'vue'
+import { ArrowDown, Check, VideoPlay, CaretRight, Document } from '@element-plus/icons-vue'
+
+const props = defineProps({
+  lessons: {
+    type: Array,
+    default: () => []
+  },
+  currentLessonIndex: {
+    type: Number,
+    default: 0
+  },
+  currentTopicIndex: {
+    type: Number,
+    default: 0
+  },
+  completedTopics: {
+    type: Set,
+    default: () => new Set()
+  },
+  passedTests: {
+    type: Set,
+    default: () => new Set()
+  },
+  isTestMode: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['select-lesson', 'select-test'])
+
+const expandedLessons = ref([props.currentLessonIndex])
+const allExpanded = ref(false)
+
+// Computed
+const totalTopics = computed(() => {
+  return props.lessons.reduce((sum, lesson) => sum + (lesson.topics?.length || 0), 0)
+})
+
+const completedCount = computed(() => {
+  return props.completedTopics.size
+})
+
+const progressPercentage = computed(() => {
+  if (totalTopics.value === 0) return 0
+  return Math.round((completedCount.value / totalTopics.value) * 100)
+})
+
+const progressColor = computed(() => {
+  if (progressPercentage.value < 30) return '#f56c6c'
+  if (progressPercentage.value < 70) return '#e6a23c'
+  return '#67c23a'
+})
+
+// Methods
+const toggleLesson = (index) => {
+  const idx = expandedLessons.value.indexOf(index)
+  if (idx > -1) {
+    expandedLessons.value.splice(idx, 1)
+  } else {
+    expandedLessons.value.push(index)
+  }
+}
+
+const toggleAllLessons = () => {
+  if (allExpanded.value) {
+    expandedLessons.value = [props.currentLessonIndex]
+    allExpanded.value = false
+  } else {
+    expandedLessons.value = props.lessons.map((_, index) => index)
+    allExpanded.value = true
+  }
+}
+
+const selectTopic = (lessonIndex, topicIndex) => {
+  emit('select-lesson', { lessonIndex, topicIndex })
+}
+
+const selectTest = (lessonIndex) => {
+  emit('select-test', { lessonIndex })
+}
+
+const isCurrentTopic = (lessonIndex, topicIndex) => {
+  return lessonIndex === props.currentLessonIndex && topicIndex === props.currentTopicIndex && !props.isTestMode
+}
+
+const isCurrentTest = (lessonIndex) => {
+  return lessonIndex === props.currentLessonIndex && props.isTestMode
+}
+
+const isTopicCompleted = (lessonIndex, topicIndex) => {
+  const topicId = `${lessonIndex}-${topicIndex}`
+  return props.completedTopics.has(topicId)
+}
+
+const isLessonTestPassed = (lessonIndex) => {
+  // Проверяем, есть ли пройденный тест для этого модуля
+  const testId = `test-module-${lessonIndex + 1}` // Например test-module-1, test-module-2
+  return props.passedTests.has(testId)
+}
+
+// Watch for current lesson changes to auto-expand
+watch(() => props.currentLessonIndex, (newIndex) => {
+  if (!expandedLessons.value.includes(newIndex)) {
+    expandedLessons.value.push(newIndex)
+  }
+}, { immediate: true })
+</script>
+
+<style scoped>
+.lesson-sidebar {
+  max-height: 100vh;
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+</style>
+
