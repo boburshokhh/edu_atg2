@@ -1,8 +1,18 @@
 <template>
-  <div class="lesson-sidebar h-screen sticky top-0 bg-white border-r border-gray-200 flex flex-col w-72 lg:w-80">
+  <div class="lesson-sidebar bg-white border-r border-gray-200 flex flex-col w-72 lg:w-80">
     <!-- Compact Header -->
-    <div class="p-4 border-b border-gray-200">
-      <h2 class="text-sm font-bold text-gray-900 mb-1 uppercase tracking-wide">Содержание</h2>
+    <div class="p-4 border-b border-gray-200 relative">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Содержание</h2>
+        <el-button
+          @click="handleToggleSidebar"
+          :icon="Fold"
+          circle
+          size="small"
+          class="sidebar-toggle-btn"
+          title="Свернуть сайдбар"
+        />
+      </div>
       <button 
         @click="toggleAllLessons"
         class="text-xs text-blue-600 hover:text-blue-700 font-medium"
@@ -12,7 +22,7 @@
     </div>
 
     <!-- Lessons List -->
-    <div class="flex-1 overflow-y-auto">
+    <div class="lessons-list-container">
       <div v-for="(lesson, lessonIndex) in lessons" :key="lessonIndex" class="border-b border-gray-100">
         <!-- Compact Lesson Header -->
         <button
@@ -175,30 +185,12 @@
       </div>
     </div>
 
-    <!-- Compact Progress Summary -->
-    <div class="p-4 border-t border-gray-200 bg-gray-50">
-      <div class="flex items-center justify-between mb-1.5">
-        <span class="text-xs font-medium text-gray-700">Прогресс</span>
-        <span class="text-xs font-bold text-blue-600">
-          {{ completedCount }} / {{ totalTopics }}
-        </span>
-      </div>
-      <el-progress 
-        :percentage="progressPercentage" 
-        :stroke-width="6"
-        :color="progressColor"
-        :show-text="false"
-      />
-      <div class="text-center mt-1">
-        <span class="text-xs font-semibold text-gray-700">{{ progressPercentage }}%</span>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { ArrowDown, Check, VideoPlay, CaretRight, Document } from '@element-plus/icons-vue'
+import { ArrowDown, Check, VideoPlay, CaretRight, Document, Fold } from '@element-plus/icons-vue'
 
 const props = defineProps({
   lessons: {
@@ -227,30 +219,10 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['select-lesson', 'select-test'])
+const emit = defineEmits(['select-lesson', 'select-test', 'toggle-sidebar'])
 
 const expandedLessons = ref([props.currentLessonIndex])
 const allExpanded = ref(false)
-
-// Computed
-const totalTopics = computed(() => {
-  return props.lessons.reduce((sum, lesson) => sum + (lesson.topics?.length || 0), 0)
-})
-
-const completedCount = computed(() => {
-  return props.completedTopics.size
-})
-
-const progressPercentage = computed(() => {
-  if (totalTopics.value === 0) return 0
-  return Math.round((completedCount.value / totalTopics.value) * 100)
-})
-
-const progressColor = computed(() => {
-  if (progressPercentage.value < 30) return '#f56c6c'
-  if (progressPercentage.value < 70) return '#e6a23c'
-  return '#67c23a'
-})
 
 // Methods
 const toggleLesson = (index) => {
@@ -278,6 +250,10 @@ const selectTopic = (lessonIndex, topicIndex) => {
 
 const selectTest = (lessonIndex) => {
   emit('select-test', { lessonIndex })
+}
+
+const handleToggleSidebar = () => {
+  emit('toggle-sidebar')
 }
 
 const isCurrentTopic = (lessonIndex, topicIndex) => {
@@ -309,11 +285,63 @@ watch(() => props.currentLessonIndex, (newIndex) => {
 
 <style scoped>
 .lesson-sidebar {
-  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+}
+
+/* Desktop styles */
+.sidebar-desktop {
+  position: sticky;
+  top: 64px; /* Высота LessonHeader */
+  height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
+/* Mobile styles */
+.sidebar-mobile {
+  position: fixed;
+  left: 0;
+  top: 64px;
+  height: calc(100vh - 64px);
+  z-index: 40;
+  overflow: hidden;
+}
+
+.lessons-list-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0; /* Важно для правильной работы flex с overflow */
 }
 
 .rotate-180 {
   transform: rotate(180deg);
+}
+
+.sidebar-toggle-btn {
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* Кастомный скроллбар для сайдбара */
+.lessons-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lessons-list-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.lessons-list-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.lessons-list-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style>
 

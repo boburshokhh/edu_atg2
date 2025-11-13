@@ -62,39 +62,75 @@ export const getPdfPage = async (pdf, pageNumber) => {
  * @param {Object} page - Объект страницы PDF
  * @param {HTMLCanvasElement} canvas - Canvas элемент для отрисовки
  * @param {number} scale - Масштаб отрисовки (по умолчанию 2.0)
- * @returns {Promise<void>}
+ * @returns {Promise<{rotation: number, needsTransform: boolean}>} Информация о повороте
  */
 export const renderPdfPage = async (page, canvas, scale = 2.0) => {
   try {
     const context = canvas.getContext('2d')
     
-    // Явно устанавливаем rotation: 0, чтобы игнорировать любую ориентацию из метаданных PDF
-    // Также используем offsetX: 0, offsetY: 0 для правильного позиционирования
+    // Получаем оригинальную ориентацию страницы
+    const originalRotation = page.rotate || 0
+    
+    // Всегда используем rotation: 0 в viewport, но сохраняем информацию о повороте
+    // для применения CSS transform
     const viewport = page.getViewport({ 
       scale: scale, 
-      rotation: 0,
+      rotation: 0, // Всегда 0 для правильных размеров canvas
       offsetX: 0,
       offsetY: 0
     })
 
-    // Устанавливаем размеры canvas
+    // Устанавливаем размеры canvas на основе viewport без поворота
     canvas.height = viewport.height
     canvas.width = viewport.width
 
-    // Очищаем canvas перед отрисовкой (важно для правильного отображения)
+    // Очищаем canvas перед отрисовкой
     context.clearRect(0, 0, canvas.width, canvas.height)
     
     // Сбрасываем любые трансформации контекста
     context.setTransform(1, 0, 0, 1, 0, 0)
 
-    // Отрисовываем страницу без дополнительных трансформаций
+    // Если страница повернута, применяем трансформацию через canvas context
+    if (originalRotation !== 0) {
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+      
+      // Перемещаем в центр
+      context.translate(centerX, centerY)
+      
+      // Поворачиваем на нужный угол (в радианах)
+      const rotationRad = (originalRotation * Math.PI) / 180
+      context.rotate(rotationRad)
+      
+      // Возвращаем обратно
+      context.translate(-centerX, -centerY)
+      
+      // Если поворот 90 или 270, нужно поменять местами ширину и высоту viewport
+      if (originalRotation === 90 || originalRotation === 270) {
+        // Используем viewport с поворотом для правильных размеров
+        const rotatedViewport = page.getViewport({ scale: scale, rotation: originalRotation })
+        canvas.width = rotatedViewport.width
+        canvas.height = rotatedViewport.height
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        context.setTransform(1, 0, 0, 1, 0, 0)
+        context.translate(canvas.width / 2, canvas.height / 2)
+        context.rotate(rotationRad)
+        context.translate(-canvas.width / 2, -canvas.height / 2)
+      }
+    }
+
+    // Отрисовываем страницу
     const renderContext = {
       canvasContext: context,
       viewport: viewport
-      // Не указываем transform, чтобы использовать стандартное поведение
     }
 
     await page.render(renderContext).promise
+    
+    return {
+      rotation: originalRotation,
+      needsTransform: originalRotation !== 0
+    }
   } catch (error) {
     console.error('Ошибка отрисовки страницы:', error)
     throw error
@@ -108,8 +144,14 @@ export const renderPdfPage = async (page, canvas, scale = 2.0) => {
  * @returns {number} Оптимальный масштаб
  */
 export const calculateOptimalScale = (page, containerWidth = 1200) => {
-  // Используем rotation: 0 для правильного расчета размеров
-  const viewport = page.getViewport({ scale: 1.0, rotation: 0 })
+  // Автоопределение и исправление ориентации для правильного расчета размеров
+  const originalRotation = page.rotate || 0
+  const rotation = (originalRotation === 180 || originalRotation === 90 || originalRotation === 270)
+    ? 0
+    : originalRotation
+  
+  // Используем исправленную rotation для правильного расчета размеров
+  const viewport = page.getViewport({ scale: 1.0, rotation: rotation })
   const scale = containerWidth / viewport.width
   // Ограничиваем масштаб для производительности
   return Math.min(Math.max(scale, 1.0), 3.0)
