@@ -25,7 +25,7 @@
               <div class="skeleton-loader absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200"></div>
               
               <img 
-                :src="getStationImageUrl(station.image)" 
+                :src="getStationImageUrl(station)" 
                 :alt="station.name"
                 loading="lazy"
                 decoding="async"
@@ -74,6 +74,8 @@
 import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import minioService from '@/services/minioService'
+import stationService from '@/services/stationService'
+import { resolveStationMedia } from '@/utils/stationsMedia'
 
 export default {
   name: 'Stations',
@@ -84,108 +86,49 @@ export default {
     // Хранилище URL изображений из MinIO
     const stationImageUrls = ref({})
     const loadingImages = ref(false)
+    const loadingStations = ref(false)
+    const stationsError = ref('')
 
     // Данные станций
-    const stations = ref([
-      {
-        id: 1,
-        name: 'Компрессорная станция WKC1',
-        shortName: 'WKC1',
-        description: 'Головная компрессорная станция в Миришкорском районе Кашкадарьинской области',
-        image: 'WKC1.jpg',
-        power: '25 МВт',
-        commissionDate: '25.11.2009',
-        coursesCount: 8,
-        status: 'active'
-      },
-      {
-        id: 2,
-        name: 'Компрессорная станция WKC2',
-        shortName: 'WKC2',
-        description: 'Компрессорная станция на участке газопровода',
-        image: 'WKC2.jpg',
-        power: '22 МВт',
-        commissionDate: '01.12.2009',
-        coursesCount: 7,
-        status: 'active'
-      },
-      {
-        id: 3,
-        name: 'Компрессорная станция WKC3',
-        shortName: 'WKC3',
-        description: 'Компрессорная станция на участке газопровода',
-        image: 'WKC3.jpg',
-        power: '20 МВт',
-        commissionDate: '15.06.2010',
-        coursesCount: 6,
-        status: 'active'
-      },
-      {
-        id: 4,
-        name: 'Компрессорная станция UCS1',
-        shortName: 'UCS1',
-        description: 'Компрессорная станция на территории Бухарской области',
-        image: 'UCS1.jpg',
-        power: '20 МВт',
-        commissionDate: '30.07.2014',
-        coursesCount: 6,
-        status: 'active'
-      },
-      {
-        id: 5,
-        name: 'Компрессорная станция UCS3',
-        shortName: 'UCS3',
-        description: 'Компрессорная станция в Навоийской области',
-        image: 'UCS3.jpg',
-        power: '18 МВт',
-        commissionDate: '30.07.2014',
-        coursesCount: 5,
-        status: 'active'
-      },
-      {
-        id: 6,
-        name: 'Газокомпрессорная станция GCS',
-        shortName: 'GCS',
-        description: 'Газокомпрессорная станция на магистральном газопроводе',
-        image: 'GCS.jpg',
-        power: '24 МВт',
-        commissionDate: '20.08.2010',
-        coursesCount: 7,
-        status: 'active'
-      },
-      {
-        id: 7,
-        name: 'Модульная станция MS',
-        shortName: 'MS',
-        description: 'Модульная компрессорная станция',
-        image: 'MS.jpg',
-        power: '16 МВт',
-        commissionDate: '10.05.2012',
-        coursesCount: 4,
-        status: 'active'
-      },
-      {
-        id: 8,
-        name: 'Узбекская компрессорная станция UKMS',
-        shortName: 'UKMS',
-        description: 'Узбекская компрессорная станция магистрального газопровода',
-        image: 'UKMS.jpg',
-        power: '21 МВт',
-        commissionDate: '12.03.2011',
-        coursesCount: 6,
-        status: 'maintenance'
+    const stations = ref([])
+
+    const mapStationRow = (s) => ({
+      id: s.id,
+      name: s.name || '',
+      shortName: s.short_name || s.shortName || '',
+      description: s.description || '',
+      image: s.image || '',
+      power: s.power || '',
+      commissionDate: s.commission_date || s.commissionDate || '',
+      coursesCount: s.courses_count ?? s.coursesCount ?? 0,
+      status: s.status || 'active',
+    })
+
+    const loadStations = async () => {
+      loadingStations.value = true
+      stationsError.value = ''
+      try {
+        const data = await stationService.getStations()
+        stations.value = (data || []).map(mapStationRow)
+      } catch (e) {
+        stationsError.value = e?.message || 'Не удалось загрузить список станций'
+        stations.value = []
+      } finally {
+        loadingStations.value = false
       }
-    ])
+    }
 
     // Получить URL изображения станции
-    const getStationImageUrl = (imageName) => {
-      const objectName = `stations/${imageName}`
-      // Возвращаем URL из кэша, если он есть, иначе возвращаем пустую строку или placeholder
-      if (stationImageUrls.value[imageName]) {
-        return stationImageUrls.value[imageName]
+    const getStationImageUrl = (station) => {
+      const cacheKey = String(station?.id ?? station?.image ?? '')
+      if (cacheKey && stationImageUrls.value[cacheKey]) {
+        return stationImageUrls.value[cacheKey]
       }
-      // Возвращаем прямой URL как fallback (пока не загружен presigned URL)
-      return minioService.getFileUrl(objectName)
+
+      const resolved = resolveStationMedia(station?.image, { defaultFolder: 'stations' })
+      if (resolved.kind === 'url' || resolved.kind === 'public') return resolved.url
+      if (resolved.kind === 'minio') return minioService.getFileUrl(resolved.objectKey)
+      return ''
     }
 
     // Загрузить все URL изображений из MinIO
@@ -193,19 +136,30 @@ export default {
       loadingImages.value = true
       try {
         const promises = stations.value.map(async (station) => {
-          const objectName = `stations/${station.image}`
+          const cacheKey = String(station?.id ?? station?.image ?? '')
+          const resolved = resolveStationMedia(station?.image, { defaultFolder: 'stations' })
+          if (!cacheKey) return
+
+          if (resolved.kind === 'url' || resolved.kind === 'public') {
+            stationImageUrls.value[cacheKey] = resolved.url
+            return
+          }
+
+          if (resolved.kind !== 'minio') return
+
           try {
             // Получаем presigned URL (действителен 7 дней)
             const url = await minioService.getPresignedDownloadUrl(
-              objectName, 
+              resolved.objectKey, 
               7 * 24 * 60 * 60, // 7 дней в секундах
-              'image/jpeg'
+              resolved.contentType
             )
-            stationImageUrls.value[station.image] = url
+            stationImageUrls.value[cacheKey] = url
           } catch (error) {
-            console.error(`Ошибка загрузки изображения ${station.image}:`, error)
-            // Fallback к прямому URL
-            stationImageUrls.value[station.image] = minioService.getFileUrl(objectName)
+            console.error(`Ошибка загрузки изображения станции ${station?.id}:`, error)
+            // Fallback к public или direct MinIO URL
+            stationImageUrls.value[cacheKey] =
+              resolved.fallbackPublicPath || minioService.getFileUrl(resolved.objectKey)
           }
         })
         
@@ -233,14 +187,17 @@ export default {
     }
 
     // Загружаем URL изображений при монтировании компонента
-    onMounted(() => {
-      loadStationImages()
+    onMounted(async () => {
+      await loadStations()
+      await loadStationImages()
     })
 
     return {
       stations,
       stationImageUrls,
       loadingImages,
+      loadingStations,
+      stationsError,
       getStationImageUrl,
       imageLoaded,
       imageError

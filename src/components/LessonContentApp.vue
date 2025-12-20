@@ -1,19 +1,19 @@
 <template>
-  <div class="lesson-content-app h-screen bg-gray-50 overflow-hidden">
+  <div class="lesson-content-app min-h-screen bg-gray-50">
     <!-- Lesson Header with User Account -->
     <LessonHeader
       :station-id="stationId"
       :station="station"
-      :current-lesson="currentLesson"
+      :current-lesson="processedCurrentLesson"
     />
 
     <!-- Main Content Layout -->
-    <el-container class="max-w-[1920px] mx-auto flex-1 overflow-hidden">
+    <el-container class="main-container">
       <!-- Left Sidebar (Lessons) -->
       <transition name="slide">
         <LessonSidebar
           v-show="showSidebar"
-          :lessons="lessons"
+          :lessons="processedLessons"
           :current-lesson-index="currentLessonIndex"
           :current-topic-index="currentTopicIndex"
           :completed-topics="completedTopics"
@@ -29,11 +29,18 @@
         />
       </transition>
 
-      <!-- Mobile Overlay -->
+      <!-- Mobile Overlay for Left Sidebar -->
       <div
         v-if="showSidebar && isMobile"
         @click="showSidebar = false"
-        class="fixed inset-0 bg-black/50 z-30 lg:hidden"
+        class="mobile-overlay"
+      ></div>
+
+      <!-- Mobile Overlay for Right Sidebar (Materials) -->
+      <div
+        v-if="showMaterialsSidebar && isMobile"
+        @click="showMaterialsSidebar = false"
+        class="mobile-overlay"
       ></div>
 
       <!-- Expand Left Sidebar Button (when sidebar is hidden) -->
@@ -48,10 +55,10 @@
       />
 
       <!-- Main Content Area -->
-      <el-main class="flex-1 p-3 md:p-4 min-w-0 overflow-y-auto">
+      <el-main class="main-content-area">
         <el-card class="lesson-content-card" shadow="never">
           <!-- Test Mode -->
-          <div v-if="isTestMode" class="p-4">
+          <div v-if="isTestMode" class="test-container">
             <TestQuiz 
               v-if="currentLessonTest"
               :test-data="currentLessonTest"
@@ -61,143 +68,46 @@
             <el-empty v-else description="Тест для этого модуля пока недоступен" :image-size="80" />
           </div>
 
-          <!-- PDF/Video Viewer -->
-          <div 
-            v-else 
-            ref="fullscreenContainer"
-            class="relative bg-gray-100" 
-            :class="isFullscreen ? 'fixed inset-0 z-50' : ''"
-          >
-            <!-- Controls Bar -->
-            <div 
-              v-if="!isFullscreen || currentFileType !== 'video'"
-              class="absolute top-2 left-2 right-2 z-10 flex items-center justify-between"
-            >
-              <div class="flex items-center gap-1.5">
-                <el-button 
-                  :icon="ZoomOut" 
-                  circle 
-                  size="small"
-                  @click="zoomOut"
-                  class="bg-white/90 backdrop-blur-sm"
-                  :disabled="currentFileType === 'video' && isFullscreen"
-                />
-                <el-button 
-                  :icon="ZoomIn" 
-                  circle 
-                  size="small"
-                  @click="zoomIn"
-                  class="bg-white/90 backdrop-blur-sm"
-                  :disabled="currentFileType === 'video' && isFullscreen"
-                />
-                <el-tag class="bg-white/90 backdrop-blur-sm">
-                  {{ currentZoom }}%
-                </el-tag>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <el-button 
-                  :icon="FullScreen" 
-                  circle 
-                  size="small"
-                  @click="toggleFullscreen"
-                  class="bg-white/90 backdrop-blur-sm"
-                  title="Полный экран"
-                />
-              </div>
-            </div>
-
-            <!-- PDF Viewer -->
-            <PdfViewer
-              v-if="currentFile && currentFileType === 'pdf'"
-              :source="currentFile.url || currentFile.file_url"
-              :zoom="currentZoom"
-              :is-fullscreen="isFullscreen"
-            />
-
-            <!-- Video Player -->
-            <div 
-              v-else-if="currentFile && currentFileType === 'video'"
-              :class="[
-                'video-content-viewer flex items-center justify-center',
-                isFullscreen ? 'h-screen bg-black' : ''
-              ]"
-              :style="isFullscreen ? {} : { 
-                transform: `scale(${currentZoom / 100})`,
-                transformOrigin: 'center center'
-              }"
-            >
-              <vue-plyr
-                ref="videoPlayer"
-                :class="isFullscreen ? 'w-full h-full' : 'w-full max-w-full'"
-                :key="currentFile.url || currentFile.file_url"
-                style="max-height: 100vh;"
-              >
-                <video
-                  :src="currentFile.url || currentFile.file_url"
-                  preload="metadata"
-                  playsinline
-                  crossorigin="anonymous"
-                >
-                  Ваш браузер не поддерживает воспроизведение видео.
-                </video>
-              </vue-plyr>
-            </div>
-
-            <!-- Unsupported File Type -->
-            <div 
-              v-else-if="currentFile && currentFileType === 'unknown'"
-              class="flex flex-col items-center justify-center min-h-[400px] p-8"
-            >
-              <el-icon :size="64" class="text-gray-400 mb-4">
-                <Document />
-              </el-icon>
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">
-                Неподдерживаемый формат файла
-              </h3>
-              <p class="text-sm text-gray-500 mb-4">
-                {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
-              </p>
-              <el-button 
-                type="primary" 
-                @click="downloadFile(currentFile)"
-              >
-                Скачать файл
-              </el-button>
-            </div>
-
-            <!-- No Content Placeholder -->
-            <div v-else class="flex items-center justify-center min-h-[400px]">
-              <el-empty description="Выберите материал для просмотра" :image-size="80" />
-            </div>
-          </div>
+          <!-- Content Viewer (PDF/Video/Other) -->
+          <ContentViewer
+            v-else
+            :current-file="currentFile"
+            :current-file-type="currentFileType"
+            :current-zoom="currentZoom"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
+            @download-file="downloadFile"
+          />
 
           <!-- Navigation and Tabs -->
-          <div class="border-t border-gray-200">
+          <div class="navigation-section">
             <!-- Navigation Buttons -->
-            <div class="flex items-center justify-between px-3 md:px-4 py-3 bg-gray-50 gap-2">
+            <div class="navigation-buttons">
               <el-button
                 @click="previousLesson"
                 :disabled="!hasPreviousLesson"
                 :icon="ArrowLeft"
                 size="small"
+                class="nav-btn"
               >
-                <span class="hidden sm:inline">Назад</span>
+                <span class="nav-btn-text">Назад</span>
               </el-button>
               
-              <div class="flex items-center gap-2">
+              <div class="nav-center">
                 <el-button
                   v-if="!isTopicCompleted"
                   type="success"
                   @click="markAsCompleted"
                   :icon="Check"
                   size="small"
+                  class="nav-btn"
                 >
-                  <span class="hidden md:inline">Завершить</span>
-                  <span class="md:hidden">✓</span>
+                  <span class="nav-btn-text-desktop">Завершить</span>
+                  <span class="nav-btn-text-mobile">✓</span>
                 </el-button>
-                <el-tag v-else type="success" size="small">
+                <el-tag v-else type="success" size="small" class="completed-tag">
                   <el-icon><Check /></el-icon>
-                  <span class="ml-1 hidden sm:inline">Завершено</span>
+                  <span class="completed-text">Завершено</span>
                 </el-tag>
               </div>
 
@@ -206,12 +116,12 @@
                 :disabled="!hasNextLesson"
                 type="primary"
                 size="small"
+                class="nav-btn"
               >
-                <span class="hidden sm:inline">Далее</span>
-                <el-icon class="sm:ml-2"><ArrowRight /></el-icon>
+                <span class="nav-btn-text">Далее</span>
+                <el-icon class="nav-icon"><ArrowRight /></el-icon>
               </el-button>
             </div>
-
           </div>
         </el-card>
       </el-main>
@@ -245,15 +155,28 @@
       />
     </el-container>
 
-    <!-- Mobile Menu Button -->
+    <!-- Mobile Menu Buttons -->
     <el-button
       @click="showSidebar = !showSidebar"
-      class="fixed bottom-4 left-4 z-40 lg:hidden w-12 h-12 rounded-full shadow-lg"
+      class="mobile-menu-btn mobile-menu-btn-left"
       type="primary"
       circle
     >
-      <el-icon :size="20">
+      <el-icon class="mobile-menu-icon">
         <Menu v-if="!showSidebar" />
+        <Close v-else />
+      </el-icon>
+    </el-button>
+
+    <!-- Mobile Materials Button -->
+    <el-button
+      @click="showMaterialsSidebar = !showMaterialsSidebar"
+      class="mobile-menu-btn mobile-menu-btn-right"
+      type="primary"
+      circle
+    >
+      <el-icon class="mobile-menu-icon">
+        <Folder v-if="!showMaterialsSidebar" />
         <Close v-else />
       </el-icon>
     </el-button>
@@ -261,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
@@ -270,23 +193,23 @@ import {
   Check,
   ArrowLeft,
   ArrowRight,
-  FullScreen,
   Menu,
   Close,
   VideoPlay,
-  Document
+  Document,
+  Folder
 } from '@element-plus/icons-vue'
 import LessonHeader from '@/components/LessonHeader.vue'
 import LessonSidebar from '@/components/LessonSidebar.vue'
 import TestQuiz from '@/components/TestQuiz.vue'
-import PdfViewer from '@/components/PdfViewer.vue'
 import CourseMaterialsPanel from '@/components/CourseMaterialsPanel.vue'
-import { stationsData } from '@/data/stationsData.js'
 import courseMaterials from '@/data/courseMaterials.json'
 import testsData from '@/data/testsData.json'
 import minioService from '@/services/minioService'
-import pdfService from '@/services/pdfService'
 import authService from '@/services/auth'
+import stationService from '@/services/stationService'
+
+const ContentViewer = defineAsyncComponent(() => import('@/components/ContentViewer.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -298,27 +221,128 @@ const currentTopicIndex = ref(parseInt(route.params.topicIndex) || 0)
 const isTestMode = ref(false)
 
 // Data
-const station = computed(() => stationsData[stationId.value] || stationsData[1])
-const lessons = computed(() => station.value?.courseProgram?.lessons || [])
+const station = ref(null)
+const courseProgram = ref(null)
+const lessons = computed(() => courseProgram.value?.lessons || [])
+
+// Fast lookup for materials by stable topicKey (preferred over title/code matching)
+const materialsByTopicKey = computed(() => {
+  const m = new Map()
+  try {
+    const lessons = courseMaterials?.lessons || []
+    for (const l of lessons) {
+      for (const t of l.topics || []) {
+        if (t?.topicKey) {
+          m.set(t.topicKey, t)
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[LessonContentApp] Failed to build materialsByTopicKey index', e)
+  }
+  return m
+})
+
+const fallbackWarned = ref(new Set())
+
+const loadStationAndProgram = async () => {
+  try {
+    const stationResp = await stationService.getStation(stationId.value)
+    station.value = stationResp?.station || null
+  } catch (e) {
+    console.error('[LessonContentApp] Failed to load station:', e)
+    station.value = null
+  }
+  try {
+    courseProgram.value = await stationService.getStationCourseProgram(stationId.value)
+  } catch (e) {
+    console.error('[LessonContentApp] Failed to load course program:', e)
+    courseProgram.value = null
+  }
+}
+
+// Функция для удаления префикса "Урок N" из названия
+const getLessonTitle = (title) => {
+  if (!title) return ''
+  // Убираем паттерны: "Урок N:", "Урок № N:", "Урок N " и т.д.
+  return title
+    .replace(/^Урок\s*№?\s*\d+\s*:?\s*/i, '') // Убираем "Урок N:" или "Урок № N:"
+    .replace(/^Урок\s*№?\s*\d+\s*/i, '') // Убираем "Урок N " или "Урок № N "
+    .trim()
+}
+
+// Обработанные уроки без префикса "Урок N"
+const processedLessons = computed(() => {
+  return lessons.value.map(lesson => ({
+    ...lesson,
+    title: getLessonTitle(lesson.title)
+  }))
+})
+
 const currentLesson = computed(() => lessons.value[currentLessonIndex.value])
+
+// Обработанный текущий урок без префикса "Урок N"
+const processedCurrentLesson = computed(() => {
+  if (!currentLesson.value) return null
+  return {
+    ...currentLesson.value,
+    title: getLessonTitle(currentLesson.value.title)
+  }
+})
+
 const currentTopic = computed(() => currentLesson.value?.topics?.[currentTopicIndex.value])
 
 // ID for tracking completed topics
 const currentTopicId = computed(() => `${stationId.value}-${currentLessonIndex.value}-${currentTopicIndex.value}`)
 
-// PDF State
-const pdfPages = ref([])
-const totalPages = ref(0)
-const canvasRefs = ref([])
+// Viewer state
 const currentZoom = ref(100)
-const pdfViewerContainer = ref(null)
-const currentPdfDocument = ref(null)
-const fullscreenContainer = ref(null)
 
 // Current file
 const currentFile = ref(null)
 const mainMaterials = ref([])
 const additionalMaterials = ref([])
+
+const currentFileType = computed(() => {
+  const f = currentFile.value
+  if (!f) return 'unknown'
+  const t = (f.type || '').toLowerCase()
+  const name = (f.original_name || f.originalName || '').toLowerCase()
+  if (t.includes('pdf') || name.endsWith('.pdf')) return 'pdf'
+  if (
+    t.includes('video') ||
+    name.endsWith('.mp4') ||
+    name.endsWith('.webm') ||
+    name.endsWith('.ogg') ||
+    name.endsWith('.mov')
+  ) {
+    return 'video'
+  }
+  return 'unknown'
+})
+
+const downloadFile = async (file) => {
+  if (!file) return
+  const direct = file.url || file.file_url
+  if (direct) {
+    window.open(direct, '_blank')
+    return
+  }
+  const key = file.objectName || file.object_key || file.objectKey
+  if (!key) {
+    ElMessage.warning('Файл недоступен')
+    return
+  }
+  try {
+    const url = await minioService.getPresignedDownloadUrl(key, 7 * 24 * 60 * 60, file.type || null)
+    window.open(url, '_blank')
+  } catch (e) {
+    ElMessage.error('Не удалось открыть файл')
+  }
+}
+
+// Comments
+const comments = ref([])
 
 // Tests
 const passedTests = ref(new Set())
@@ -349,22 +373,27 @@ const courseProgress = computed(() => {
 
 // UI State
 const isFullscreen = ref(false)
-const isMobile = ref(window.innerWidth < 1024)
-const showSidebar = ref(!isMobile.value) // По умолчанию виден на десктопе, скрыт на мобильном
-const showMaterialsSidebar = ref(!isMobile.value) // По умолчанию виден на десктопе, скрыт на мобильном
+const isMobile = ref(window.innerWidth < 768)
+const isTablet = ref(window.innerWidth >= 768 && window.innerWidth < 1024)
+const showSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном
+const showMaterialsSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном
 
 // Handle window resize
 const handleResize = () => {
   const wasMobile = isMobile.value
-  isMobile.value = window.innerWidth < 1024
+  const wasTablet = isTablet.value
+  const currentWidth = window.innerWidth
   
-  // При переходе с мобильного на десктоп показываем сайдбары
-  if (wasMobile && !isMobile.value) {
+  isMobile.value = currentWidth < 768
+  isTablet.value = currentWidth >= 768 && currentWidth < 1024
+  
+  // При переходе с мобильного/планшета на десктоп показываем сайдбары
+  if ((wasMobile || wasTablet) && !isMobile.value && !isTablet.value) {
     showSidebar.value = true
     showMaterialsSidebar.value = true
   }
-  // При переходе с десктопа на мобильный скрываем сайдбары
-  if (!wasMobile && isMobile.value) {
+  // При переходе с десктопа на мобильный/планшет скрываем сайдбары
+  if (!wasMobile && !wasTablet && (isMobile.value || isTablet.value)) {
     showSidebar.value = false
     showMaterialsSidebar.value = false
   }
@@ -390,84 +419,137 @@ const hasNextLesson = computed(() => {
 })
 
 // Methods
-const setCanvasRef = (el, index) => {
-  if (el) {
-    canvasRefs.value[index] = el
-  }
-}
 
 const loadTopicMaterials = async () => {
   try {
-    const lessonData = courseMaterials.lessons.find(l => 
-      l.lessonTitle === currentLesson.value.title ||
-      l.lessonTitle.replace(':', '.') === currentLesson.value.title.replace(':', '.')
-    )
-
-    if (!lessonData) {
-      console.warn('Lesson data not found')
+    if (!currentLesson.value || !currentTopic.value) {
       return
     }
 
-    const topicData = lessonData.topics.find(t => {
-      const topicCodeNormalized = (t.topicCode || '').replace(/\.$/, '').trim()
-      const topicCodeFromData = (currentTopic.value.code || '').replace(/\.$/, '').trim()
-      return topicCodeNormalized === topicCodeFromData
-    })
+    // 1) Prefer DB-backed topic files (course_program_topic_files)
+    const dbFiles = Array.isArray(currentTopic.value?.files) ? currentTopic.value.files : []
+    if (dbFiles.length > 0) {
+      const filePromises = dbFiles.map(async (f) => {
+        try {
+          const fileType = f.fileType || f.file_type
+          const objectKey = f.objectKey || f.object_key || f.objectName || f.object_name
+          const originalName = f.originalName || f.original_name || f.fileName || f.file_name || f.title || 'file'
+          const fileSize = f.fileSize ?? f.file_size ?? null
+          const mimeType = f.mimeType || f.mime_type || null
+          const isMain = f.isMain ?? f.is_main ?? false
+
+          const nameForDetect = String(originalName || objectKey || '').toLowerCase()
+          const contentType =
+            mimeType ||
+            (fileType === 'pdf' || nameForDetect.endsWith('.pdf')
+              ? 'application/pdf'
+              : fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
+                ? (nameForDetect.endsWith('.webm')
+                  ? 'video/webm'
+                  : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
+                    ? 'video/ogg'
+                    : nameForDetect.endsWith('.mov')
+                      ? 'video/quicktime'
+                      : 'video/mp4')
+                : 'application/octet-stream')
+
+          if (!objectKey) {
+            console.warn('[LessonContentApp] Topic file missing objectKey:', f)
+            return null
+          }
+
+          const fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 7 * 24 * 60 * 60, contentType)
+
+          return {
+            id: f.id,
+            objectName: objectKey,
+            fileName: originalName,
+            original_name: originalName,
+            originalName: originalName,
+            file_size: fileSize,
+            url: fileUrl,
+            file_url: fileUrl,
+            type: contentType,
+            is_main_file: !!(isMain && (fileType === 'pdf' || contentType.includes('pdf')))
+          }
+        } catch (e) {
+          console.error('[LessonContentApp] Failed to presign topic file:', f, e)
+          return null
+        }
+      })
+
+      const results = await Promise.allSettled(filePromises)
+      const allFiles = results
+        .filter(r => r.status === 'fulfilled' && r.value !== null)
+        .map(r => r.value)
+
+      const mainFiles = allFiles.filter(f => f.is_main_file)
+      const additionals = allFiles.filter(f => !f.is_main_file)
+
+      mainMaterials.value = mainFiles
+      additionalMaterials.value = additionals
+
+      if (mainFiles.length > 0) {
+        currentFile.value = mainFiles[0]
+      } else if (additionals.length > 0) {
+        currentFile.value = additionals[0]
+      } else {
+        currentFile.value = null
+      }
+      return
+    }
+
+    // Prefer stable topicKey mapping
+    let topicData = null
+    const stableKey = currentTopic.value?.topicKey || currentTopic.value?.topic_key
+    if (stableKey && materialsByTopicKey.value.has(stableKey)) {
+      topicData = materialsByTopicKey.value.get(stableKey)
+    } else {
+      // Fallback legacy lookup by lesson title + topic code
+      const lessonData = courseMaterials.lessons.find(l => 
+        l.lessonTitle === currentLesson.value.title ||
+        l.lessonTitle.replace(':', '.') === currentLesson.value.title.replace(':', '.')
+      )
+
+      if (!lessonData) {
+        console.warn('[LessonContentApp] DB topic files empty; fallback lesson not found in courseMaterials.json')
+        return
+      }
+
+      topicData = lessonData.topics.find(t => {
+        const topicCodeNormalized = (t.topicCode || '').replace(/\.$/, '').trim()
+        const topicCodeFromData = (currentTopic.value.code || '').replace(/\.$/, '').trim()
+        return topicCodeNormalized === topicCodeFromData
+      })
+    }
 
     if (!topicData || !topicData.files) {
-      console.warn('Topic data not found')
+      console.warn('[LessonContentApp] DB topic files empty; fallback topic not found in courseMaterials.json')
       return
     }
 
-    const mainFiles = []
-    const additionals = []
+    // Warn once per topic when using legacy JSON fallback
+    if (stableKey && !fallbackWarned.value.has(stableKey)) {
+      fallbackWarned.value.add(stableKey)
+      ElMessage.warning('Материалы загружены из legacy JSON (в БД нет файлов для этой темы)')
+    }
 
-    for (const fileConfig of topicData.files) {
+    // ✅ ПАРАЛЛЕЛЬНАЯ загрузка всех presigned URL
+    const filePromises = topicData.files.map(async (fileConfig) => {
       try {
-        // Determine MIME type based on file extension and config
-        const fileName = (fileConfig.fileName || fileConfig.objectName || '').toLowerCase()
-        let mimeType = 'application/octet-stream'
-        
-        // Check by fileConfig.fileType first
-        if (fileConfig.fileType === 'pdf') {
-          mimeType = 'application/pdf'
-        } else if (fileConfig.fileType === 'video') {
-          // Determine specific video MIME type by extension
-          if (fileName.endsWith('.webm')) {
-            mimeType = 'video/webm'
-          } else if (fileName.endsWith('.ogg')) {
-            mimeType = 'video/ogg'
-          } else if (fileName.endsWith('.mov')) {
-            mimeType = 'video/quicktime'
-          } else {
-            mimeType = 'video/mp4'
-          }
-        } else {
-          // Auto-detect by extension if fileType not specified
-          if (fileName.endsWith('.pdf')) {
-            mimeType = 'application/pdf'
-          } else if (fileName.endsWith('.mp4')) {
-            mimeType = 'video/mp4'
-          } else if (fileName.endsWith('.webm')) {
-            mimeType = 'video/webm'
-          } else if (fileName.endsWith('.ogg')) {
-            mimeType = 'video/ogg'
-          } else if (fileName.endsWith('.mov')) {
-            mimeType = 'video/quicktime'
-          } else if (fileName.endsWith('.avi')) {
-            mimeType = 'video/x-msvideo'
-          } else if (fileName.endsWith('.mkv')) {
-            mimeType = 'video/x-matroska'
-          }
-        }
-        
+        const contentType = fileConfig.fileType === 'pdf' 
+          ? 'application/pdf' 
+          : fileConfig.fileType === 'video' 
+            ? 'video/mp4' 
+            : 'application/octet-stream'
+            
         const fileUrl = await minioService.getPresignedDownloadUrl(
           fileConfig.objectName,
           7 * 24 * 60 * 60,
-          mimeType
+          contentType
         )
 
-        const fileObject = {
+        return {
           objectName: fileConfig.objectName,
           fileName: fileConfig.fileName,
           original_name: fileConfig.fileName,
@@ -476,28 +558,34 @@ const loadTopicMaterials = async () => {
           sizeFormatted: fileConfig.sizeFormatted,
           url: fileUrl,
           file_url: fileUrl,
-          type: mimeType
-        }
-
-        if (fileConfig.is_main_file) {
-          mainFiles.push(fileObject)
-        } else {
-          additionals.push(fileObject)
+          type: contentType,
+          is_main_file: fileConfig.is_main_file
         }
       } catch (error) {
         console.error('Error loading file:', error)
+        return null
       }
-    }
+    })
+
+    // ✅ Ждем все файлы параллельно
+    const fileResults = await Promise.allSettled(filePromises)
+    const allFiles = fileResults
+      .filter(r => r.status === 'fulfilled' && r.value !== null)
+      .map(r => r.value)
+
+    // Разделяем на основные и дополнительные
+    const mainFiles = allFiles.filter(f => f.is_main_file)
+    const additionals = allFiles.filter(f => !f.is_main_file)
 
     mainMaterials.value = mainFiles
     additionalMaterials.value = additionals
 
     if (mainFiles.length > 0) {
       currentFile.value = mainFiles[0]
-      const fileType = detectFileType(currentFile.value)
-      if (fileType === 'pdf') {
-        await loadPdfDocument(currentFile.value)
-      }
+    } else if (additionals.length > 0) {
+      currentFile.value = additionals[0]
+    } else {
+      currentFile.value = null
     }
   } catch (error) {
     console.error('Error loading topic materials:', error)
@@ -505,117 +593,16 @@ const loadTopicMaterials = async () => {
   }
 }
 
-const loadPdfDocument = async (file) => {
-  if (!file || !file.url) return
-  
-  try {
-    const pdf = await pdfService.loadPdfDocument(file.url)
-    currentPdfDocument.value = pdf
-    totalPages.value = pdf.numPages
-    pdfPages.value = new Array(totalPages.value).fill(null)
-    
-    await nextTick()
-    await renderAllPages(pdf)
-  } catch (error) {
-    console.error('Error loading PDF:', error)
-    ElMessage.error('Не удалось загрузить PDF документ')
-  }
-}
-
-const renderAllPages = async (pdf) => {
-  await nextTick()
-  await new Promise(resolve => setTimeout(resolve, 300))
-  
-  for (let pageNum = 1; pageNum <= totalPages.value; pageNum++) {
-    try {
-      const page = await pdfService.getPdfPage(pdf, pageNum)
-      let canvas = canvasRefs.value[pageNum - 1]
-      
-      let retries = 0
-      while (!canvas && retries < 5) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        canvas = canvasRefs.value[pageNum - 1]
-        retries++
-      }
-      
-      if (!canvas) continue
-      
-      const optimalScale = pdfService.calculateOptimalScale(page, 1000)
-      await pdfService.renderPdfPage(page, canvas, optimalScale)
-    } catch (error) {
-      console.error(`Error rendering page ${pageNum}:`, error)
-    }
-  }
-}
-
-// File type detection
-const detectFileType = (file) => {
-  if (!file) return 'unknown'
-  
-  const fileName = (file.original_name || file.originalName || file.fileName || '').toLowerCase()
-  const fileType = (file.type || '').toLowerCase()
-  const url = (file.url || file.file_url || '').toLowerCase()
-  
-  // Check by MIME type first (most reliable)
-  if (fileType.includes('pdf') || fileType === 'application/pdf') {
-    return 'pdf'
-  }
-  
-  if (fileType.includes('video')) {
-    return 'video'
-  }
-  
-  // Check by file extension
-  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.m4v', '.3gp']
-  const pdfExtensions = ['.pdf']
-  
-  // Check URL extension
-  if (url) {
-    for (const ext of pdfExtensions) {
-      if (url.includes(ext)) return 'pdf'
-    }
-    for (const ext of videoExtensions) {
-      if (url.includes(ext)) return 'video'
-    }
-  }
-  
-  // Check filename extension
-  if (fileName) {
-    for (const ext of pdfExtensions) {
-      if (fileName.endsWith(ext)) return 'pdf'
-    }
-    for (const ext of videoExtensions) {
-      if (fileName.endsWith(ext)) return 'video'
-    }
-  }
-  
-  // Check by objectName if available
-  const objectName = (file.objectName || '').toLowerCase()
-  if (objectName) {
-    for (const ext of pdfExtensions) {
-      if (objectName.endsWith(ext)) return 'pdf'
-    }
-    for (const ext of videoExtensions) {
-      if (objectName.endsWith(ext)) return 'video'
-    }
-  }
-  
-  return 'unknown'
-}
-
 const isVideoFile = (file) => {
-  return detectFileType(file) === 'video'
+  if (!file) return false
+  const fileName = (file.original_name || file.originalName || '').toLowerCase()
+  const fileType = (file.type || '').toLowerCase()
+  return fileName.endsWith('.mp4') || 
+         fileName.endsWith('.webm') || 
+         fileName.endsWith('.ogg') ||
+         fileName.endsWith('.mov') ||
+         fileType.includes('video')
 }
-
-const isPdfFile = (file) => {
-  return detectFileType(file) === 'pdf'
-}
-
-// Computed property for current file type
-const currentFileType = computed(() => {
-  if (!currentFile.value) return 'unknown'
-  return detectFileType(currentFile.value)
-})
 
 const formatFileSize = (bytes) => {
   if (!bytes) return 'N/A'
@@ -637,28 +624,6 @@ const zoomOut = () => {
 }
 
 const toggleFullscreen = async () => {
-  // Если это видео, используем встроенный fullscreen Plyr
-  if (currentFileType.value === 'video' && videoPlayer.value && videoPlayer.value.player) {
-    try {
-      if (!isFullscreen.value) {
-        await videoPlayer.value.player.fullscreen.enter()
-        isFullscreen.value = true
-      } else {
-        await videoPlayer.value.player.fullscreen.exit()
-        isFullscreen.value = false
-      }
-    } catch (error) {
-      console.error('Error toggling Plyr fullscreen:', error)
-      // Fallback to container fullscreen
-      toggleContainerFullscreen()
-    }
-  } else if (fullscreenContainer.value) {
-    // Для PDF используем стандартный fullscreen API
-    toggleContainerFullscreen()
-  }
-}
-
-const toggleContainerFullscreen = async () => {
   if (!fullscreenContainer.value) return
   
   try {
@@ -701,46 +666,17 @@ const toggleContainerFullscreen = async () => {
 }
 
 const handleFullscreenChange = () => {
-  // Проверяем стандартный fullscreen API
   if (!document.fullscreenElement && 
       !document.webkitFullscreenElement && 
       !document.mozFullScreenElement && 
       !document.msFullscreenElement) {
-    // Проверяем Plyr fullscreen для видео
-    if (currentFileType.value === 'video' && videoPlayer.value && videoPlayer.value.player) {
-      if (!videoPlayer.value.player.fullscreen.active) {
-        isFullscreen.value = false
-        document.body.style.overflow = ''
-      }
-    } else {
-      isFullscreen.value = false
-      document.body.style.overflow = ''
-    }
+    isFullscreen.value = false
+    document.body.style.overflow = ''
   }
 }
 
 const openMaterial = (material) => {
   currentFile.value = material
-  const fileType = detectFileType(material)
-  if (fileType === 'pdf') {
-    loadPdfDocument(material)
-  }
-}
-
-const downloadFile = (file) => {
-  if (!file || (!file.url && !file.file_url)) {
-    ElMessage.error('URL файла недоступен')
-    return
-  }
-  
-  const url = file.url || file.file_url
-  const link = document.createElement('a')
-  link.href = url
-  link.download = file.original_name || file.originalName || file.fileName || 'download'
-  link.target = '_blank'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
 }
 
 const markAsCompleted = () => {
@@ -864,27 +800,6 @@ watch(() => [currentLessonIndex.value, currentTopicIndex.value], () => {
   }
 }, { immediate: true })
 
-// Watch for current file changes to auto-load PDF or update video
-watch(() => currentFile.value, async (newFile, oldFile) => {
-  if (newFile && newFile !== oldFile) {
-    if (currentFileType.value === 'pdf') {
-      await loadPdfDocument(newFile)
-    } else if (currentFileType.value === 'video' && videoPlayer.value && videoPlayer.value.player) {
-      // Обновляем источник видео в Plyr
-      const player = videoPlayer.value.player
-      if (player.media) {
-        player.source = {
-          type: 'video',
-          sources: [{
-            src: newFile.url || newFile.file_url,
-            type: newFile.type || 'video/mp4'
-          }]
-        }
-      }
-    }
-  }
-}, { immediate: false })
-
 onMounted(async () => {
   const authResult = await authService.checkAuth()
   if (!authResult.isAuthenticated) {
@@ -892,6 +807,8 @@ onMounted(async () => {
     router.push(`/station/${stationId.value}/courses`)
     return
   }
+
+  await loadStationAndProgram()
 
   loadCompletedTopics()
   loadPassedTests()
@@ -903,25 +820,6 @@ onMounted(async () => {
   document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
   document.addEventListener('mozfullscreenchange', handleFullscreenChange)
   document.addEventListener('MSFullscreenChange', handleFullscreenChange)
-  
-  // Добавляем обработчики событий Plyr для видео
-  watch(() => videoPlayer.value, (plyrComponent) => {
-    if (plyrComponent && plyrComponent.player) {
-      const player = plyrComponent.player
-      
-      // Обработчик входа в fullscreen
-      player.on('enterfullscreen', () => {
-        isFullscreen.value = true
-        document.body.style.overflow = 'hidden'
-      })
-      
-      // Обработчик выхода из fullscreen
-      player.on('exitfullscreen', () => {
-        isFullscreen.value = false
-        document.body.style.overflow = ''
-      })
-    }
-  }, { immediate: true })
 })
 
 onUnmounted(() => {
@@ -950,66 +848,261 @@ onUnmounted(() => {
 <style scoped>
 .lesson-content-app {
   padding-top: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   height: 100vh;
+}
+
+/* Main Container */
+.main-container {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  height: calc(100vh - clamp(3.5rem, 10vw, 4.5rem)); /* Вычитаем высоту header */
+}
+
+:deep(.el-main) {
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.main-content-area {
+  flex: 1;
+  min-width: 0;
+  padding: clamp(0.5rem, 1.5vw, 1rem) !important;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.lesson-content-card {
+  border-radius: clamp(0.5rem, 1vw, 0.75rem);
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Test Container */
+.test-container {
+  padding: clamp(0.75rem, 2vw, 1rem);
+  width: 100%;
+  max-width: 100%;
+  flex: 1;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-:deep(.el-main) {
+/* Viewer Container */
+.viewer-container {
+  position: relative;
+  background: #f3f4f6;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-container.fullscreen-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  min-height: 100vh;
+  aspect-ratio: auto;
+}
+
+/* Controls Bar */
+.controls-bar {
+  position: absolute;
+  top: clamp(0.25rem, 1vw, 0.5rem);
+  left: clamp(0.25rem, 1vw, 0.5rem);
+  right: clamp(0.25rem, 1vw, 0.5rem);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.25rem, 1vw, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.controls-group {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.25rem, 1vw, 0.375rem);
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(4px);
+  width: clamp(2rem, 5vw, 2.5rem);
+  height: clamp(2rem, 5vw, 2.5rem);
+}
+
+.zoom-tag {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(4px);
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  padding: clamp(0.25rem, 0.5vw, 0.375rem) clamp(0.5rem, 1vw, 0.75rem);
+}
+
+/* Video Viewer */
+.video-content-viewer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: clamp(0.5rem, 2vw, 1rem);
+}
+
+.video-content-viewer.fullscreen-video {
+  height: 100vh;
+  background: #000;
   padding: 0;
 }
 
-.lesson-content-card {
-  border-radius: 12px;
-}
-
-.pdf-content-viewer {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-}
-
-.pdf-content-viewer .pdf-canvas {
-  user-drag: none;
-  -webkit-user-drag: none;
-  display: block;
+.video-player {
+  width: 100%;
   max-width: 100%;
   height: auto;
-  image-orientation: from-image;
-  -webkit-image-orientation: from-image;
-}
-
-.pdf-content-viewer > div {
-  transition: transform 0.2s ease-out;
-  will-change: transform;
-}
-
-.video-content-viewer {
-  transition: transform 0.2s ease-out;
-  will-change: transform;
-  overflow: hidden;
-}
-
-.video-content-viewer :deep(.plyr) {
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100vh;
-}
-
-.video-content-viewer :deep(.plyr__video-wrapper) {
-  width: 100%;
-  height: 100%;
-}
-
-.video-content-viewer :deep(.plyr__video) {
-  width: 100%;
-  height: 100%;
+  max-height: 100%;
   object-fit: contain;
+  transition: transform 0.2s ease-out;
+  will-change: transform;
 }
 
+/* Empty Placeholder */
+.empty-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(20rem, 50vh, 25rem);
+  width: 100%;
+}
+
+/* Navigation Section */
+.navigation-section {
+  border-top: 1px solid #e5e7eb;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.navigation-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(0.5rem, 1.5vw, 0.75rem) clamp(0.5rem, 2vw, 1rem);
+  background: #f9fafb;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  min-width: clamp(2.5rem, 8vw, 4rem);
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+}
+
+.nav-btn-text {
+  display: inline;
+}
+
+.nav-btn-text-desktop {
+  display: none;
+}
+
+.nav-btn-text-mobile {
+  display: inline;
+}
+
+.nav-center {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.25rem, 1vw, 0.5rem);
+}
+
+.completed-tag {
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  padding: clamp(0.25rem, 0.5vw, 0.375rem) clamp(0.5rem, 1vw, 0.75rem);
+}
+
+.completed-text {
+  margin-left: clamp(0.25rem, 0.5vw, 0.5rem);
+  display: none;
+}
+
+.nav-icon {
+  margin-left: clamp(0.25rem, 0.5vw, 0.5rem);
+}
+
+/* Mobile Overlay */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 30;
+}
+
+/* Mobile Menu Buttons */
+.mobile-menu-btn {
+  position: fixed;
+  bottom: clamp(1rem, 4vw, 1.5rem);
+  z-index: 40;
+  width: clamp(3rem, 8vw, 3.5rem);
+  height: clamp(3rem, 8vw, 3.5rem);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-menu-btn-left {
+  left: clamp(1rem, 4vw, 1.5rem);
+}
+
+.mobile-menu-btn-right {
+  right: clamp(1rem, 4vw, 1.5rem);
+}
+
+.mobile-menu-icon {
+  font-size: clamp(1rem, 3vw, 1.25rem);
+}
+
+/* Sidebar Expand Buttons */
+.sidebar-expand-btn {
+  position: fixed;
+  top: clamp(4.5rem, 12vw, 5rem);
+  z-index: 50;
+  width: clamp(2.5rem, 6vw, 2.75rem);
+  height: clamp(2.5rem, 6vw, 2.75rem);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.sidebar-expand-btn-left {
+  left: clamp(0.75rem, 2vw, 1rem);
+}
+
+.sidebar-expand-btn-right {
+  right: clamp(0.75rem, 2vw, 1rem);
+}
+
+.sidebar-expand-btn:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+/* Transitions */
 .slide-enter-active,
 .slide-leave-active {
   transition: transform 0.3s ease;
@@ -1036,112 +1129,139 @@ onUnmounted(() => {
   transform: translateX(100%);
 }
 
-:deep(.lesson-tabs) {
-  .el-tabs__header {
-    margin: 0;
-    padding: 0 16px;
-    background: #f9fafb;
+/* Media Queries */
+/* Mobile phones (max-width: 480px) */
+@media (max-width: 480px) {
+  .main-content-area {
+    padding: clamp(0.5rem, 2vw, 0.75rem) !important;
+}
+
+  .controls-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: clamp(0.25rem, 1.5vw, 0.5rem);
+}
+
+  .controls-group {
+    width: 100%;
+    justify-content: space-between;
   }
-  
-  .el-tabs__nav-wrap::after {
+
+  .navigation-buttons {
+    flex-direction: column;
+    gap: clamp(0.5rem, 2vw, 0.75rem);
+  }
+
+  .nav-btn {
+    width: 100%;
+  justify-content: center;
+  }
+
+  .nav-center {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .completed-text {
+    display: inline;
+}
+}
+
+/* Tablets (max-width: 768px) */
+@media (max-width: 768px) {
+  .nav-btn-text-desktop {
     display: none;
   }
-  
-  .el-tabs__item {
-    font-weight: 600;
-    font-size: 13px;
-    padding: 0 12px;
+
+  .nav-btn-text-mobile {
+    display: inline;
+  }
+
+  .completed-text {
+    display: none;
+}
+
+  .mobile-overlay {
+    display: block;
   }
 }
 
-@media (max-width: 768px) {
-  :deep(.el-tabs__item) {
-    font-size: 12px;
-    padding: 0 8px;
+/* Small laptops (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .main-container {
+    flex-wrap: wrap;
+}
+
+  .nav-btn-text {
+    display: inline;
+  }
+
+  .nav-btn-text-desktop {
+    display: none;
+  }
+
+  .nav-btn-text-mobile {
+    display: inline;
   }
 }
 
-.material-card {
-  cursor: pointer;
-  transition: all 0.2s;
+/* Desktop (min-width: 1025px) */
+@media (min-width: 1025px) {
+  .main-container {
+    max-width: 1920px;
+  }
+
+  .nav-btn-text {
+    display: inline;
+  }
+
+  .nav-btn-text-desktop {
+    display: inline;
+  }
+
+  .nav-btn-text-mobile {
+    display: none;
 }
 
-.material-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
+  .completed-text {
+    display: inline;
+  }
+
+  .mobile-overlay {
+    display: none;
+  }
 }
 
-.material-card-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Wide monitors (min-width: 1440px) */
+@media (min-width: 1440px) {
+  .main-container {
+    max-width: 1920px;
+    margin: 0 auto;
+  }
+
+  .viewer-container {
+    min-height: clamp(31.25rem, 60vh, 43.75rem);
+  }
 }
 
-.material-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+/* Hide mobile menu on desktop */
+@media (min-width: 1025px) {
+  .mobile-menu-btn {
+    display: none;
+}
 }
 
-.material-icon-video {
-  background-color: #fee2e2;
-  color: #dc2626;
+/* Mobile phones - adjust button positions */
+@media (max-width: 480px) {
+  .mobile-menu-btn-left {
+    left: clamp(0.75rem, 3vw, 1rem);
+    bottom: clamp(0.75rem, 3vw, 1rem);
 }
 
-.material-icon-doc {
-  background-color: #dbeafe;
-  color: #2563eb;
-}
-
-.material-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.material-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.material-size {
-  font-size: 12px;
-  color: #6b7280;
-  margin: 0;
-  padding: 0;
-}
-
-/* Sidebar Expand Buttons */
-.sidebar-expand-btn {
-  position: fixed;
-  top: 80px;
-  z-index: 50;
-  width: 40px;
-  height: 40px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-}
-
-.sidebar-expand-btn-left {
-  left: 16px;
-}
-
-.sidebar-expand-btn-right {
-  right: 16px;
-}
-
-.sidebar-expand-btn:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  transform: scale(1.1);
+  .mobile-menu-btn-right {
+    right: clamp(0.75rem, 3vw, 1rem);
+    bottom: clamp(0.75rem, 3vw, 1rem);
+  }
 }
 </style>
 

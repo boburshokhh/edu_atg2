@@ -44,11 +44,22 @@
 
     <!-- PDF Viewer -->
     <VirtualizedPdfViewer
-      v-if="currentFile && currentFileType === 'pdf'"
+      v-if="currentFile && currentFileType === 'pdf' && (currentFile.url || currentFile.file_url)"
       :source="currentFile.url || currentFile.file_url"
       :zoom="currentZoom"
       :is-fullscreen="isFullscreen"
     />
+    
+    <!-- Loading PDF URL -->
+    <div 
+      v-else-if="currentFile && currentFileType === 'pdf' && !(currentFile.url || currentFile.file_url)"
+      class="flex items-center justify-center min-h-[400px]"
+    >
+      <el-icon class="is-loading" :size="32">
+        <Loading />
+      </el-icon>
+      <span class="ml-2">Загрузка файла...</span>
+    </div>
 
     <!-- Video Player -->
     <OptimizedVideoPlayer
@@ -89,9 +100,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { defineAsyncComponent } from 'vue'
-import { ZoomIn, ZoomOut, FullScreen, Document } from '@element-plus/icons-vue'
+import { ZoomIn, ZoomOut, FullScreen, Document, Loading } from '@element-plus/icons-vue'
 
 // Lazy load viewers
 const VirtualizedPdfViewer = defineAsyncComponent(() => import('./VirtualizedPdfViewer.vue'))
@@ -167,13 +178,29 @@ const handleDocumentFullscreenChange = () => {
   }
 }
 
-// Подписка на события fullscreen
-if (typeof document !== 'undefined') {
+const addFullscreenListeners = () => {
+  if (typeof document === 'undefined') return
   document.addEventListener('fullscreenchange', handleDocumentFullscreenChange)
   document.addEventListener('webkitfullscreenchange', handleDocumentFullscreenChange)
   document.addEventListener('mozfullscreenchange', handleDocumentFullscreenChange)
   document.addEventListener('MSFullscreenChange', handleDocumentFullscreenChange)
 }
+
+const removeFullscreenListeners = () => {
+  if (typeof document === 'undefined') return
+  document.removeEventListener('fullscreenchange', handleDocumentFullscreenChange)
+  document.removeEventListener('webkitfullscreenchange', handleDocumentFullscreenChange)
+  document.removeEventListener('mozfullscreenchange', handleDocumentFullscreenChange)
+  document.removeEventListener('MSFullscreenChange', handleDocumentFullscreenChange)
+}
+
+onMounted(() => {
+  addFullscreenListeners()
+})
+
+onUnmounted(() => {
+  removeFullscreenListeners()
+})
 </script>
 
 <style scoped>

@@ -31,7 +31,7 @@
           <nav class="mt-4 flex items-center space-x-2 text-sm text-white/70">
             <a href="/stations" class="hover:text-white transition-colors">Станции</a>
             <ChevronRightIcon class="w-4 h-4" />
-            <a :href="`/station/${stationId}`" class="hover:text-white transition-colors">{{ station?.shortName }}</a>
+            <a :href="`/station/${stationId}`" class="hover:text-white transition-colors">{{ station?.short_name || station?.shortName }}</a>
             <ChevronRightIcon class="w-4 h-4" />
             <span class="text-white font-medium">Обучающая программа</span>
           </nav>
@@ -119,7 +119,7 @@
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     ]"
                   >
-                    Программа курса
+                    Программа тренинга
                     <div v-if="activeTab === 'curriculum'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
                   </button>
                 </nav>
@@ -255,7 +255,7 @@
                   </el-button>
 
                   <el-divider />
-
+                  
                   <div class="enrollment-info">
                     <div class="enrollment-info-item">
                       <div class="enrollment-info-label">
@@ -377,14 +377,15 @@
 <script>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import useNotify from '@/composables/useNotify'
 import AppLayout from '@/components/AppLayout.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import CourseCurriculum from '@/components/CourseCurriculum.vue'
-import { stationsData } from '@/data/stationsData.js'
 import courseMaterials from '@/data/courseMaterials.json'
 import minioService from '@/services/minioService'
 import pdfService from '@/services/pdfService'
 import authService from '@/services/auth'
+import stationService from '@/services/stationService'
 import { ElMessage } from 'element-plus'
 import { ClockIcon, PlayCircleIcon, DocumentTextIcon, BookOpenIcon, ChevronRightIcon, ChevronLeftIcon, TrophyIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
@@ -406,10 +407,12 @@ export default {
   setup() {
     const route = useRoute()
     const router = useRouter()
+    const notify = useNotify()
     const stationId = computed(() => parseInt(route.params.id))
-    const station = computed(() => stationsData[stationId.value] || stationsData[1])
+    const station = ref(null)
+    const courseProgramData = ref(null)
     const expandedLessons = ref([]) // Все уроки закрыты по умолчанию
-    const activeTab = ref('curriculum') // Программа курса по умолчанию
+    const activeTab = ref('curriculum') // Программа тренинга по умолчанию
     
     // Проверка авторизации
     const isAuthenticated = computed(() => {
@@ -418,6 +421,24 @@ export default {
     // Материалы из MinIO для каждой темы
     const topicMaterials = ref({}) // { 'lessonIndex-topicIndex': { mainPdf: {...}, additionals: [...] } }
     const loadingLessons = ref(false)
+
+    // Fast lookup for materials by stable topicKey (preferred over title/code matching)
+    const materialsByTopicKey = computed(() => {
+      const m = new Map()
+      try {
+        const lessons = courseMaterials?.lessons || []
+        for (const l of lessons) {
+          for (const t of l.topics || []) {
+            if (t?.topicKey) {
+              m.set(t.topicKey, t)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[StationCourses] Failed to build materialsByTopicKey index', e)
+      }
+      return m
+    })
     
     // Изображение станции из MinIO
     const stationImageUrl = ref(null)
@@ -454,7 +475,7 @@ export default {
       }
     }
 
-    const courseProgram = computed(() => station.value?.courseProgram)
+    const courseProgram = computed(() => courseProgramData.value)
 
     // Computed для URL изображения станции
     const stationImageSrc = computed(() => {
@@ -468,7 +489,7 @@ export default {
       }
       // Иначе возвращаем прямой URL как fallback
       try {
-        const objectName = `stations/${imageName}`
+        const objectName = imageName.includes('/') ? imageName : `stations/${imageName}`
         return minioService.getFileUrl(objectName)
       } catch (error) {
         console.error('Ошибка получения URL изображения:', error)
@@ -480,7 +501,8 @@ export default {
     const loadStationImage = async () => {
       if (!station.value?.image) return
       try {
-        const objectName = `stations/${station.value.image}`
+        // station.image can be either "WKC1.jpg" or "stations/WKC1.jpg"
+        const objectName = station.value.image.includes('/') ? station.value.image : `stations/${station.value.image}`
         const url = await minioService.getPresignedDownloadUrl(
           objectName,
           7 * 24 * 60 * 60,
@@ -492,65 +514,21 @@ export default {
       }
     }
 
-    // Загрузить видео для бокового меню из MinIO
+    // Загрузить короткое видео о станции (promo video)
     const loadSidebarVideo = async () => {
       try {
         loadingSidebarVideo.value = true
-        const videoObjectName = 'video_2025-11-09_17-39-52.mp4'
-        
-        // Пытаемся найти видео в разных возможных папках
-        const possiblePaths = [
-          videoObjectName, // В корне
-          `videos/${videoObjectName}`,
-          `uploads/${videoObjectName}`,
-          `courses/${videoObjectName}`
-        ]
-        
-        let videoUrl = null
-        for (const path of possiblePaths) {
-          try {
-            const exists = await minioService.fileExists(path)
-            if (exists) {
-              videoUrl = await minioService.getPresignedDownloadUrl(
-                path,
-                7 * 24 * 60 * 60, // 7 дней
-                'video/mp4'
-              )
-              break
-            }
-          } catch (err) {
-            console.warn(`Видео не найдено по пути: ${path}`, err)
-            continue
-          }
+        const promo = await stationService.getStationPromoVideo(stationId.value)
+        if (!promo?.objectKey) {
+          sidebarVideoUrl.value = null
+          return
         }
-        
-        if (!videoUrl) {
-          // Если не нашли по путям, попробуем найти в списке файлов
-          try {
-            const files = await minioService.listFiles()
-            const videoFile = files.find(f => 
-              f.fileName === videoObjectName || 
-              f.originalName === videoObjectName ||
-              f.fileName.includes('video_2025-11-09_17-39-52')
-            )
-            
-            if (videoFile) {
-              videoUrl = await minioService.getPresignedDownloadUrl(
-                videoFile.objectName,
-                7 * 24 * 60 * 60,
-                'video/mp4'
-              )
-            }
-          } catch (err) {
-            console.error('Ошибка поиска видео в списке файлов:', err)
-          }
-        }
-        
-        if (videoUrl) {
-          sidebarVideoUrl.value = videoUrl
-        } else {
-          console.warn('Видео video_2025-11-09_17-39-52.mp4 не найдено в MinIO')
-        }
+
+        sidebarVideoUrl.value = await minioService.getPresignedDownloadUrl(
+          promo.objectKey,
+          7 * 24 * 60 * 60, // 7 дней
+          'video/mp4'
+        )
       } catch (error) {
         console.error('Ошибка загрузки видео для бокового меню:', error)
       } finally {
@@ -637,45 +615,105 @@ export default {
       const key = `${lessonIndex}-${topicIndex}`
       
       try {
-        // Ищем материалы в JSON конфигурации
-        const lessonData = courseMaterials.lessons.find(l => 
-          l.lessonTitle === lesson.title || 
-          l.lessonTitle.replace(':', '.') === lesson.title.replace(':', '.')
-        )
-        
-        if (!lessonData) {
-          console.warn(`Не найдены материалы для урока: ${lesson.title}`)
+        // 1) Prefer DB-backed topic files (course_program_topic_files)
+        const dbFiles = Array.isArray(topic?.files) ? topic.files : []
+        if (dbFiles.length > 0) {
+          const mainPdfs = []
+          const additionals = []
+
+          for (const f of dbFiles) {
+            try {
+              const contentType =
+                f.fileType === 'pdf'
+                  ? 'application/pdf'
+                  : f.fileType === 'video'
+                    ? 'video/mp4'
+                    : f.mimeType || 'application/octet-stream'
+
+              const fileUrl = await minioService.getPresignedDownloadUrl(
+                f.objectKey,
+                7 * 24 * 60 * 60,
+                contentType
+              )
+
+              const fileObject = {
+                id: f.id,
+                objectName: f.objectKey,
+                fileName: f.originalName,
+                original_name: f.originalName,
+                originalName: f.originalName,
+                file_size: f.fileSize,
+                sizeFormatted: f.fileSize ? minioService.formatFileSize?.(f.fileSize) : undefined,
+                url: fileUrl,
+                file_url: fileUrl,
+                type: contentType,
+                is_main_file: !!(f.isMain && f.fileType === 'pdf'),
+              }
+
+              if (fileObject.is_main_file) {
+                mainPdfs.push(fileObject)
+              } else {
+                additionals.push(fileObject)
+              }
+            } catch (e) {
+              console.error('[StationCourses] Failed to presign topic file:', f, e)
+            }
+          }
+
           topicMaterials.value[key] = {
-            mainPdf: null,
-            additionals: []
+            mainPdf: mainPdfs.length === 1 ? mainPdfs[0] : null,
+            mainPdfs,
+            additionals,
           }
           return
         }
 
-        // Ищем материалы для темы
-        const topicData = lessonData.topics.find(t => {
-          // Сравнение кода темы (гибкое, игнорирует точки в конце)
-          const topicCodeNormalized = (t.topicCode || '').replace(/\.$/, '').trim()
-          const topicCodeFromData = (topic.code || '').replace(/\.$/, '').trim()
-          const topicCodeMatch = topicCodeNormalized === topicCodeFromData
+        // Prefer stable key lookup (topic.topicKey from DB + topicKey in courseMaterials.json)
+        let topicData = null
+        const stableKey = topic?.topicKey || topic?.topic_key
+        if (stableKey && materialsByTopicKey.value.has(stableKey)) {
+          topicData = materialsByTopicKey.value.get(stableKey)
+        } else {
+          // Fallback: legacy lookup by lesson title + topic code/title
+          const lessonData = courseMaterials.lessons.find(l => 
+            l.lessonTitle === lesson.title || 
+            l.lessonTitle.replace(':', '.') === lesson.title.replace(':', '.')
+          )
           
-          // Сравнение названия темы (гибкое, учитывает CBM/СВМ)
-          const titleNormalized = (t.topicTitle || '').toLowerCase().trim()
-          const titleFromData = (topic.title || '').toLowerCase().trim()
-          
-          // Нормализуем CBM/СВМ для сравнения
-          const titleNormalizedFixed = titleNormalized.replace(/свм/g, 'cbm').replace(/cbm/g, 'cbm')
-          const titleFromDataFixed = titleFromData.replace(/свм/g, 'cbm').replace(/cbm/g, 'cbm')
-          
-          const topicTitleMatch = titleNormalizedFixed === titleFromDataFixed || 
-                                  titleNormalized === titleFromData ||
-                                  (titleNormalized.includes('система') && titleFromData.includes('система') && 
-                                   titleNormalized.includes('cbm') && titleFromData.includes('cbm'))
-          
-          console.log(`Поиск темы: код "${topic.code}" vs "${t.topicCode}" = ${topicCodeMatch}, название "${topic.title}" vs "${t.topicTitle}" = ${topicTitleMatch}`)
-          
-          return topicCodeMatch && topicTitleMatch
-        })
+          if (!lessonData) {
+            console.warn(`Не найдены материалы для урока: ${lesson.title}`)
+            topicMaterials.value[key] = {
+              mainPdf: null,
+              additionals: []
+            }
+            return
+          }
+
+          // Ищем материалы для темы
+          topicData = lessonData.topics.find(t => {
+            // Сравнение кода темы (гибкое, игнорирует точки в конце)
+            const topicCodeNormalized = (t.topicCode || '').replace(/\.$/, '').trim()
+            const topicCodeFromData = (topic.code || '').replace(/\.$/, '').trim()
+            const topicCodeMatch = topicCodeNormalized === topicCodeFromData
+            
+            // Сравнение названия темы (гибкое, учитывает CBM/СВМ)
+            const titleNormalized = (t.topicTitle || '').toLowerCase().trim()
+            const titleFromData = (topic.title || '').toLowerCase().trim()
+            
+            // Нормализуем CBM/СВМ для сравнения
+            const titleNormalizedFixed = titleNormalized.replace(/свм/g, 'cbm').replace(/cbm/g, 'cbm')
+            const titleFromDataFixed = titleFromData.replace(/свм/g, 'cbm').replace(/cbm/g, 'cbm')
+            
+            const topicTitleMatch = titleNormalizedFixed === titleFromDataFixed || 
+                                    titleNormalized === titleFromData ||
+                                    (titleNormalized.includes('система') && titleFromData.includes('система') && 
+                                     titleNormalized.includes('cbm') && titleFromData.includes('cbm'))
+            
+            console.log(`Поиск темы: код "${topic.code}" vs "${t.topicCode}" = ${topicCodeMatch}, название "${topic.title}" vs "${t.topicTitle}" = ${topicTitleMatch}`)
+            
+            return topicCodeMatch && topicTitleMatch
+          })
+        }
 
         if (!topicData || !topicData.files || topicData.files.length === 0) {
           console.warn(`Не найдены материалы для темы: ${topic.code} - ${topic.title}`)
@@ -1163,7 +1201,21 @@ export default {
     // Начать обучение
     const startLearning = () => {
       if (!isAuthenticated.value) {
-        ElMessage.warning('Для доступа к урокам необходимо войти в систему')
+        notify.warning({
+          title: 'Доступ ограничен',
+          message: 'Для доступа к урокам необходимо войти в систему',
+          duration: 6000,
+          actions: [
+            {
+              label: 'Войти',
+              onClick: () => router.push('/login')
+            },
+            {
+              label: 'Отмена',
+              variant: 'outline'
+            }
+          ]
+        })
         return
       }
       // Переходим к первому уроку и первой теме
@@ -1177,8 +1229,26 @@ export default {
       })
     }
 
+    const loadStationAndProgram = async () => {
+      try {
+        const stationResp = await stationService.getStation(stationId.value)
+        station.value = stationResp?.station || null
+      } catch (e) {
+        console.error('[StationCourses] Failed to load station:', e)
+        station.value = null
+      }
+
+      try {
+        courseProgramData.value = await stationService.getStationCourseProgram(stationId.value)
+      } catch (e) {
+        console.error('[StationCourses] Failed to load course program:', e)
+        courseProgramData.value = null
+      }
+    }
+
     onMounted(async () => {
-      loadStationImage()
+      await loadStationAndProgram()
+      await loadStationImage()
       // Проверяем авторизацию при монтировании
       await authService.checkAuth()
       loadAllMaterials()
@@ -1276,9 +1346,6 @@ export default {
   scroll-behavior: smooth;
 }
 
-.pdf-viewer-container .pdf-page {
-  /* Убираем transition для transform, чтобы избежать проблем с ориентацией */
-}
 
 .pdf-viewer-container img,
 .pdf-viewer-container canvas {
@@ -1286,7 +1353,6 @@ export default {
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
-  user-drag: none;
   display: block;
   width: 100%;
   height: auto;

@@ -1,0 +1,271 @@
+openapi: 3.0.3
+info:
+  title: ATG Education API
+  version: 0.1.0
+servers:
+  - url: /
+paths:
+  /health:
+    get:
+      summary: Healthcheck
+      responses:
+        "200":
+          description: OK
+  /auth/login:
+    post:
+      summary: Login (JWT)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        "200":
+          description: Tokens
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: New access token
+  /auth/logout:
+    post:
+      summary: Logout (revoke refresh)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: OK
+  /auth/me:
+    get:
+      summary: Current user (from access token)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+
+  /users/me:
+    get:
+      summary: Get my profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: OK }
+    put:
+      summary: Update my profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200": { description: OK }
+  /users/me/stats:
+    get:
+      summary: Get my stats + certificates
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: OK }
+
+  /stations:
+    get:
+      summary: List stations
+      responses:
+        "200": { description: OK }
+  /stations/{id}:
+    get:
+      summary: Station details (+ equipment/specs/safety)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+  /stations/{id}/equipment:
+    get:
+      summary: Station equipment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+  /stations/{id}/specs:
+    get:
+      summary: Station specifications
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+  /stations/{id}/safety:
+    get:
+      summary: Station safety systems
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /courses/stations/{stationId}:
+    get:
+      summary: List courses by station
+      parameters:
+        - in: path
+          name: stationId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+  /courses/{courseId}:
+    get:
+      summary: Course detail + programs for station
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: OK }
+  /courses/{courseId}/programs:
+    get:
+      summary: Programs for course station
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: OK }
+  /courses/{courseId}/enroll:
+    post:
+      summary: Enroll current user in course
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: OK }
+  /courses/me/enrollments:
+    get:
+      summary: My enrollments
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: OK }
+
+  /files/presign:
+    get:
+      summary: Presign download URL for MinIO object
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: key
+          required: true
+          schema: { type: string }
+        - in: query
+          name: contentType
+          required: false
+          schema: { type: string }
+        - in: query
+          name: expiresIn
+          required: false
+          schema: { type: integer, default: 604800 }
+      responses:
+        "200": { description: OK }
+  /files/presign-upload:
+    post:
+      summary: Presign upload URL for MinIO object (admin/instructor)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key]
+              properties:
+                key: { type: string }
+                contentType: { type: string }
+                expiresIn: { type: integer, default: 900 }
+      responses:
+        "200": { description: OK }
+  /files/folder-contents:
+    get:
+      summary: List folder contents in MinIO (folders + files)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: prefix
+          required: false
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /files/stream/{key}:
+    get:
+      summary: Proxy streaming with Range support
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+        "206": { description: Partial Content }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+
+
+
+
+
+
+
+
+

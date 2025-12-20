@@ -1,175 +1,220 @@
-import { createClient } from '@supabase/supabase-js'
+// User Profile Service for Django API
 
-const supabaseUrl = 'https://fusartgifhigtysskgfg.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1c2FydGdpZmhpZ3R5c3NrZ2ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjQ1NzgsImV4cCI6MjA3NjgwMDU3OH0.l_xGpHpf4FuRmgG_Cz84lub8CLQCm-nMKGPn76CrddE'
+// API base URL - use proxy in dev, explicit URL in prod
+const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development' || !import.meta.env.PROD
+const API_BASE_URL = isDev 
+  ? '/api'  
+  : (import.meta.env.VITE_API_TARGET || import.meta.env.VITE_API_BASE_URL || '/api')
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+/**
+ * Get authentication token from localStorage
+ */
+function getAuthToken() {
+  const token = localStorage.getItem('auth_token')
+  if (token) {
+    return `Bearer ${token.trim()}`
+  }
+  return null
+}
+
+/**
+ * Make API request with authentication
+ */
+async function apiRequest(url, options = {}) {
+  const token = getAuthToken()
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  }
+  
+  if (token) {
+    headers['Authorization'] = token
+  }
+
+  const fullUrl = `${API_BASE_URL}${url}`
+  console.log('[userProfileService] Request:', options.method || 'GET', fullUrl)
+
+  const response = await fetch(fullUrl, {
+    ...options,
+    headers,
+  })
+
+  if (!response.ok) {
+    let errorData
+    try {
+      errorData = await response.json()
+    } catch {
+      errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
+    }
+    console.error('[userProfileService] Error response:', response.status, errorData)
+    const errorMessage = errorData.error || errorData.message || errorData.detail || `HTTP ${response.status}`
+    throw new Error(errorMessage)
+  }
+
+  const contentType = response.headers.get('content-type')
+  if (contentType && contentType.includes('application/json')) {
+    return response.json()
+  }
+  return response.text()
+}
 
 class UserProfileService {
   // Получение профиля пользователя
   async getProfile(userId) {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-        throw error
+      const data = await apiRequest('/users/me')
+      
+      if (data.data) {
+        // Маппинг данных из Django API
+        return {
+          success: true,
+          data: {
+            id: data.data.id,
+            username: data.data.username,
+            role: data.data.role,
+            full_name: data.data.full_name,
+            email: data.data.email,
+            avatar_url: data.data.avatar_url,
+            company: data.data.company, // Station name
+            position: data.data.position,
+            phone: data.data.phone,
+            bio: data.data.bio,
+            language: data.data.language || 'ru',
+            email_notifications: data.data.email_notifications !== false,
+            push_notifications: data.data.push_notifications !== false,
+            weekly_report: data.data.weekly_report || false,
+            // Для совместимости с фронтендом
+            station: data.data.company, // Маппинг company -> station
+            avatar: data.data.avatar_url,
+            name: data.data.full_name
+          }
+        }
       }
-
-      return { success: true, data: data || {} }
+      
+      return { success: false, error: 'Profile data not found' }
     } catch (error) {
       console.error('Error getting profile:', error)
       return { success: false, error: error.message }
     }
   }
 
-  // Создание или обновление профиля
+  // Сохранение профиля
   async saveProfile(userId, profileData) {
     try {
-      const profile = {
-        id: userId,
-        ...profileData,
-        updated_at: new Date().toISOString()
+      // Маппинг данных для Django API
+      const updateData = {
+        full_name: profileData.full_name || profileData.name,
+        email: profileData.email,
+        company: profileData.company || profileData.station, // Маппинг station -> company
+        position: profileData.position,
+        phone: profileData.phone,
+        bio: profileData.bio,
+        language: profileData.language,
+        email_notifications: profileData.email_notifications,
+        push_notifications: profileData.push_notifications,
+        weekly_report: profileData.weekly_report
       }
-
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .upsert(profile)
-        .select()
-        .single()
-
-      if (error) throw error
-      return { success: true, data }
+      
+      // Удаляем undefined значения
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key]
+        }
+      })
+      
+      const data = await apiRequest('/users/me', {
+        method: 'PUT',
+        body: JSON.stringify(updateData)
+      })
+      
+      if (data.success) {
+        return { success: true, data: updateData }
+      }
+      
+      return { success: false, error: 'Failed to save profile' }
     } catch (error) {
       console.error('Error saving profile:', error)
       return { success: false, error: error.message }
     }
   }
 
-  // Загрузка аватара
+  // Загрузка аватара (пока не реализовано на бэкенде)
   async uploadAvatar(userId, file) {
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${userId}-${Date.now()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
-
-      // Загружаем файл в storage (нужно создать bucket 'avatars' в Supabase)
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
-
-      if (uploadError) {
-        // Если bucket не существует, сохраняем как base64
-        return this.saveAvatarAsBase64(userId, file)
-      }
-
-      // Получаем публичный URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
-
-      // Обновляем профиль
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', userId)
-
-      if (updateError) throw updateError
-
-      return { success: true, url: publicUrl }
+      // TODO: Реализовать загрузку аватара через Django API
+      // Пока возвращаем ошибку
+      return { success: false, error: 'Avatar upload not yet implemented' }
     } catch (error) {
       console.error('Error uploading avatar:', error)
-      // Fallback: сохраняем как base64
-      return this.saveAvatarAsBase64(userId, file)
+      return { success: false, error: error.message }
     }
   }
 
-  // Сохранение аватара как base64 (если storage не настроен)
+  // Сохранение аватара как base64 (пока не реализовано)
   async saveAvatarAsBase64(userId, file) {
     return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const base64 = reader.result
-        const result = await this.saveProfile(userId, { avatar_url: base64 })
-        resolve(result)
-      }
-      reader.readAsDataURL(file)
+      resolve({ success: false, error: 'Avatar upload not yet implemented' })
     })
   }
 
   // Получение курсов пользователя
   async getUserCourses(userId) {
     try {
-      const { data, error } = await supabase
-        .from('user_courses')
-        .select(`
-          *,
-          course:courses(*)
-        `)
-        .eq('user_id', userId)
-        .order('last_activity', { ascending: false })
-
-      if (error) throw error
-      return { success: true, data: data || [] }
+      const data = await apiRequest('/courses/me/enrollments')
+      
+      if (data.data) {
+        // Маппинг данных для совместимости с фронтендом
+        return {
+          success: true,
+          data: data.data.map(course => ({
+            id: course.course_id,
+            course_id: course.course_id,
+            title: course.title,
+            description: course.description,
+            progress_percent: course.progress_percent || 0,
+            status: course.progress_percent === 100 ? 'completed' : 
+                   course.progress_percent > 0 ? 'in_progress' : 'not_started',
+            station_id: course.station_id,
+            course: {
+              id: course.course_id,
+              title: course.title,
+              description: course.description,
+              icon: 'Monitor' // По умолчанию
+            }
+          }))
+        }
+      }
+      
+      return { success: true, data: [] }
     } catch (error) {
       console.error('Error getting user courses:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error.message, data: [] }
     }
   }
 
   // Добавление курса пользователю
   async enrollInCourse(userId, courseId) {
     try {
-      const { data, error } = await supabase
-        .from('user_courses')
-        .insert({
-          user_id: userId,
-          course_id: courseId,
-          status: 'in_progress',
-          progress_percent: 0
-        })
-        .select()
-        .single()
-
-      if (error) throw error
+      const data = await apiRequest(`/courses/${courseId}/enroll`, {
+        method: 'POST'
+      })
       
-      // Обновляем статистику
-      await this.updateUserStats(userId)
+      if (data.success) {
+        return { success: true }
+      }
       
-      return { success: true, data }
+      return { success: false, error: 'Failed to enroll in course' }
     } catch (error) {
       console.error('Error enrolling in course:', error)
       return { success: false, error: error.message }
     }
   }
 
-  // Обновление прогресса курса
+  // Обновление прогресса курса (пока не реализовано на бэкенде)
   async updateCourseProgress(userId, courseId, progress) {
     try {
-      const { data, error } = await supabase
-        .from('user_courses')
-        .update({
-          progress_percent: progress,
-          last_activity: new Date().toISOString(),
-          ...(progress === 100 ? { 
-            status: 'completed',
-            completed_at: new Date().toISOString()
-          } : {})
-        })
-        .eq('user_id', userId)
-        .eq('course_id', courseId)
-        .select()
-        .single()
-
-      if (error) throw error
-      
-      // Обновляем статистику
-      await this.updateUserStats(userId)
-      
-      return { success: true, data }
+      // TODO: Реализовать обновление прогресса через Django API
+      return { success: false, error: 'Progress update not yet implemented' }
     } catch (error) {
       console.error('Error updating course progress:', error)
       return { success: false, error: error.message }
@@ -179,91 +224,56 @@ class UserProfileService {
   // Получение статистики пользователя
   async getUserStats(userId) {
     try {
-      // Получаем или создаем статистику
-      let { data: stats } = await supabase
-        .from('user_stats')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-
-      if (!stats) {
-        await this.updateUserStats(userId)
-        stats = await supabase
-          .from('user_stats')
-          .select('*')
-          .eq('user_id', userId)
-          .single()
-        stats = stats.data
+      const data = await apiRequest('/users/me/stats')
+      
+      if (data.stats) {
+        return {
+          success: true,
+          data: {
+            completed_courses: data.stats.completed_courses || 0,
+            active_courses: data.stats.active_courses || 0,
+            total_progress: data.stats.total_progress || 0,
+            total_hours_studied: 0, // Пока не реализовано на бэкенде
+            certificates: data.certificates || []
+          }
+        }
       }
-
-      return { success: true, data: stats || {} }
+      
+      return { success: true, data: {} }
     } catch (error) {
       console.error('Error getting user stats:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error.message, data: {} }
     }
   }
 
-  // Обновление статистики пользователя
+  // Обновление статистики пользователя (не требуется, статистика вычисляется автоматически)
   async updateUserStats(userId) {
-    try {
-      // Подсчитываем статистику
-      const { data: userCourses } = await supabase
-        .from('user_courses')
-        .select('*')
-        .eq('user_id', userId)
-
-      const courses = userCourses || []
-      const activeCourses = courses.filter(c => c.status === 'in_progress').length
-      const completedCourses = courses.filter(c => c.status === 'completed').length
-      const totalHours = courses.reduce((sum, c) => sum + (c.hours_studied || 0), 0)
-
-      const { data: certificates } = await supabase
-        .from('certificates')
-        .select('id')
-        .eq('user_id', userId)
-
-      const stats = {
-        user_id: userId,
-        active_courses: activeCourses,
-        completed_courses: completedCourses,
-        total_hours_studied: totalHours,
-        certificates_count: certificates?.length || 0,
-        last_updated: new Date().toISOString()
-      }
-
-      const { error } = await supabase
-        .from('user_stats')
-        .upsert(stats)
-
-      if (error) throw error
-      return { success: true }
-    } catch (error) {
-      console.error('Error updating user stats:', error)
-      return { success: false, error: error.message }
-    }
+    return { success: true }
   }
 
   // Получение сертификатов
   async getCertificates(userId) {
     try {
-      const { data, error } = await supabase
-        .from('certificates')
-        .select(`
-          *,
-          course:courses(*)
-        `)
-        .eq('user_id', userId)
-        .order('issued_at', { ascending: false })
-
-      if (error) throw error
-      return { success: true, data: data || [] }
+      const data = await apiRequest('/users/me/stats')
+      
+      if (data.certificates) {
+        return {
+          success: true,
+          data: data.certificates.map(cert => ({
+            id: cert.id,
+            title: cert.title,
+            issued_at: cert.issued_at
+          }))
+        }
+      }
+      
+      return { success: true, data: [] }
     } catch (error) {
       console.error('Error getting certificates:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error.message, data: [] }
     }
   }
 }
 
 const userProfileService = new UserProfileService()
 export default userProfileService
-

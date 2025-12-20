@@ -39,7 +39,7 @@ export default {
   },
   hero: {
     welcome: 'Welcome to',
-    platform: 'educational platform',
+    platform: 'learning portal',
     company: 'Asia Trans Gas',
     description: 'Reliable training for specialists in the gas transportation industry and industrial safety'
   },

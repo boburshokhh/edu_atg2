@@ -1,0 +1,30 @@
+﻿# edu_atg Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-12-15
+
+## Active Technologies
+
+- Python 3.12 + Django, Django REST Framework, PyJWT (или SimpleJWT), boto3 (S3/MinIO), django-redis, django-cors-headers (main)
+
+## Project Structure
+
+```text
+backend/
+frontend/
+tests/
+```
+
+## Commands
+
+cd src; pytest; ruff check .
+
+## Code Style
+
+Python 3.12: Follow standard conventions
+
+## Recent Changes
+
+- main: Added Python 3.12 + Django, Django REST Framework, PyJWT (или SimpleJWT), boto3 (S3/MinIO), django-redis, django-cors-headers
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

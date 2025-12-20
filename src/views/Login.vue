@@ -58,6 +58,13 @@
             <p class="text-gray-500 text-sm sm:text-base">
               {{ $t('login.subtitle') }}
             </p>
+            <!-- LDAP Indicator -->
+            <div v-if="isLdapEnabled" class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg animate-fade-in">
+              <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span class="text-xs font-medium text-blue-700">Аутентификация через Active Directory (LDAP)</span>
+            </div>
           </div>
         </div>
 
@@ -74,14 +81,18 @@
             <el-form-item prop="username" class="mb-5">
               <el-input
                 v-model="form.username"
-                :placeholder="$t('login.username')"
+                :placeholder="isLdapEnabled ? 'LDAP Username (sAMAccountName)' : $t('login.username')"
                 size="large"
                 class="login-input"
+                @keyup.enter="handleLogin"
               >
                 <template #prefix>
                   <el-icon class="input-icon"><User /></el-icon>
                 </template>
               </el-input>
+              <div v-if="isLdapEnabled" class="mt-1 text-xs text-gray-500">
+                Используйте ваше имя пользователя Active Directory
+              </div>
             </el-form-item>
 
             <!-- Password -->
@@ -93,6 +104,7 @@
                 size="large"
                 show-password
                 class="login-input"
+                @keyup.enter="handleLogin"
               >
                 <template #prefix>
                   <el-icon class="input-icon"><Lock /></el-icon>
@@ -162,6 +174,12 @@ export default {
     const loginForm = ref(null)
     const loading = ref(false)
     
+    // Проверка включен ли LDAP
+    const isLdapEnabled = computed(() => {
+      return import.meta.env.VITE_LDAP_ENABLED === 'true' || 
+             import.meta.env.VITE_LDAP_ENABLED === true
+    })
+    
     const form = reactive({
       username: '',
       password: ''
@@ -179,32 +197,67 @@ export default {
     
     const handleLogin = async () => {
       if (!loginForm.value) return
+      if (loading.value) return
       
       try {
         await loginForm.value.validate()
         loading.value = true
         
-        // Авторизация через Supabase
+        // Авторизация через LDAP или обычную аутентификацию
         const result = await authService.login(form.username, form.password)
         
         if (result.success) {
-          ElMessage.success(t('login.messages.loginSuccess'))
+          // Проверяем, требуется ли регистрация профиля
+          if (result.requires_registration) {
+            // Перенаправляем на страницу регистрации
+            router.push('/register')
+            return
+          }
+          
+          // Успешная авторизация
+          const authMethod = isLdapEnabled.value ? 'LDAP' : 'Database'
+          ElMessage.success({
+            message: t('login.messages.loginSuccess'),
+            duration: 3000,
+            showClose: true
+          })
           
           // Перенаправляем в зависимости от роли пользователя
-          if (result.user.role === 'admin') {
-            router.push('/dashboard')
-          } else if (result.user.role === 'instructor') {
+          if (result.user.role === 'instructor') {
             router.push('/dashboard')
           } else {
-            router.push('/dashboard')
+            // Админы и обычные пользователи попадают сразу на первый урок первой станции
+            router.push('/station/1/lesson/0/0')
           }
         } else {
-          ElMessage.error(result.error || t('login.messages.loginError'))
+          // Обработка ошибок аутентификации
+          let errorMessage = result.error || t('login.messages.loginError')
+          
+          // Улучшенные сообщения об ошибках для LDAP
+          if (isLdapEnabled.value) {
+            if (errorMessage.toLowerCase().includes('invalid credentials') || 
+                errorMessage.toLowerCase().includes('неверные учетные данные')) {
+              errorMessage = 'Неверное имя пользователя или пароль. Проверьте учетные данные LDAP.'
+            } else if (errorMessage.toLowerCase().includes('connection') || 
+                       errorMessage.toLowerCase().includes('соединение')) {
+              errorMessage = 'Ошибка подключения к LDAP серверу. Обратитесь к администратору.'
+            }
+          }
+          
+          ElMessage.error({
+            message: errorMessage,
+            duration: 5000,
+            showClose: true
+          })
         }
         
       } catch (error) {
-        console.error('Validation failed:', error)
-        ElMessage.error(t('login.messages.validationError'))
+        console.error('Login error:', error)
+        ElMessage.error({
+          message: error.message || t('login.messages.validationError'),
+          duration: 5000,
+          showClose: true
+        })
       } finally {
         loading.value = false
       }
@@ -214,8 +267,14 @@ export default {
     onMounted(async () => {
       const authResult = await authService.checkAuth()
       if (authResult.isAuthenticated) {
-        // Пользователь уже авторизован, перенаправляем
-        router.push('/dashboard')
+        // Пользователь уже авторизован, перенаправляем в зависимости от роли
+        const user = authService.getCurrentUser()
+        if (user && user.role === 'instructor') {
+          router.push('/dashboard')
+        } else {
+          // Админы и обычные пользователи попадают сразу на первый урок первой станции
+          router.push('/station/1/lesson/0/0')
+        }
       }
     })
     
@@ -225,6 +284,7 @@ export default {
       rules,
       loading,
       handleLogin,
+      isLdapEnabled,
       User,
       Lock
     }

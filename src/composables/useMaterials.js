@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import minioService from '@/services/minioService.optimized'
+import minioService from '@/services/minioService'
 import courseMaterials from '@/data/courseMaterials.json'
 import { debounce } from '@/utils/performance'
 
@@ -58,28 +58,68 @@ export function useMaterials() {
   
   // Загрузка материалов для урока
   const loadTopicMaterials = async (lessonTitle, topicCode) => {
+    if (!lessonTitle || !topicCode) {
+      console.warn('loadTopicMaterials: missing lessonTitle or topicCode', { lessonTitle, topicCode })
+      return
+    }
+    
     isLoading.value = true
     error.value = null
     
     try {
-      const lessonData = courseMaterials.lessons.find(l => 
-        l.lessonTitle === lessonTitle ||
-        l.lessonTitle.replace(':', '.') === lessonTitle.replace(':', '.')
-      )
+      // Нормализация названия урока (убираем различия в форматировании)
+      const normalizeLessonTitle = (title) => {
+        if (!title) return ''
+        return title
+          .replace(/:/g, '.')
+          .replace(/\s+/g, ' ')
+          .trim()
+      }
+      
+      const normalizedLessonTitle = normalizeLessonTitle(lessonTitle)
+      
+      const lessonData = courseMaterials.lessons.find(l => {
+        const normalized = normalizeLessonTitle(l.lessonTitle)
+        return normalized === normalizedLessonTitle || 
+               l.lessonTitle === lessonTitle ||
+               l.lessonTitle.replace(':', '.') === lessonTitle.replace(':', '.')
+      })
 
       if (!lessonData) {
-        console.warn('Lesson data not found')
+        console.warn('Lesson data not found for:', { 
+          lessonTitle, 
+          normalizedLessonTitle,
+          availableLessons: courseMaterials.lessons.map(l => l.lessonTitle)
+        })
+        isLoading.value = false
         return
       }
 
+      // Нормализация кода темы
+      const normalizeTopicCode = (code) => {
+        if (!code) return ''
+        return code
+          .replace(/\.$/, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+      }
+      
+      const normalizedTopicCode = normalizeTopicCode(topicCode)
+      
       const topicData = lessonData.topics.find(t => {
-        const topicCodeNormalized = (t.topicCode || '').replace(/\.$/, '').trim()
-        const topicCodeFromData = (topicCode || '').replace(/\.$/, '').trim()
-        return topicCodeNormalized === topicCodeFromData
+        const normalized = normalizeTopicCode(t.topicCode)
+        return normalized === normalizedTopicCode ||
+               (t.topicCode || '').replace(/\.$/, '').trim() === (topicCode || '').replace(/\.$/, '').trim()
       })
 
       if (!topicData || !topicData.files) {
-        console.warn('Topic data not found')
+        console.warn('Topic data not found for:', {
+          topicCode,
+          normalizedTopicCode,
+          lessonTitle: lessonData.lessonTitle,
+          availableTopics: lessonData.topics.map(t => t.topicCode)
+        })
+        isLoading.value = false
         return
       }
 
@@ -161,9 +201,31 @@ export function useMaterials() {
       mainMaterials.value = mainFiles
       additionalMaterials.value = additionals
 
+      console.log('Materials loaded:', {
+        mainFiles: mainFiles.length,
+        additionalFiles: additionals.length,
+        totalFiles: mainFiles.length + additionals.length
+      })
+
       // Автоматически выбираем первый основной файл
       if (mainFiles.length > 0) {
         currentFile.value = mainFiles[0]
+        console.log('Current file set to:', {
+          fileName: mainFiles[0].original_name || mainFiles[0].fileName,
+          url: mainFiles[0].url ? 'present' : 'missing',
+          type: detectFileType(mainFiles[0])
+        })
+      } else if (additionals.length > 0) {
+        // Если нет основных файлов, выбираем первый дополнительный
+        currentFile.value = additionals[0]
+        console.log('Current file set to (additional):', {
+          fileName: additionals[0].original_name || additionals[0].fileName,
+          url: additionals[0].url ? 'present' : 'missing',
+          type: detectFileType(additionals[0])
+        })
+      } else {
+        console.warn('No files loaded for topic')
+        currentFile.value = null
       }
     } catch (err) {
       error.value = err.message

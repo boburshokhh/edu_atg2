@@ -1,5 +1,5 @@
 import { ref, computed, watch, onUnmounted, shallowRef } from 'vue'
-import pdfService from '@/services/pdfService.optimized'
+import pdfService from '@/services/pdfService'
 
 /**
  * Composable для работы с PDF документами

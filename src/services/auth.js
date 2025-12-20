@@ -1,79 +1,158 @@
-import { createClient } from '@supabase/supabase-js'
+// Authentication service with LDAP support via Django API
 
-// Конфигурация Supabase
-const supabaseUrl = 'https://fusartgifhigtysskgfg.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1c2FydGdpZmhpZ3R5c3NrZ2ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjQ1NzgsImV4cCI6MjA3NjgwMDU3OH0.l_xGpHpf4FuRmgG_Cz84lub8CLQCm-nMKGPn76CrddE'
+// API base URL - use proxy in dev, explicit URL in prod
+// In dev mode, always use /api proxy to avoid CORS issues
+// In prod, use VITE_API_TARGET if set, otherwise /api
+const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development' || !import.meta.env.PROD
+const API_BASE_URL = isDev 
+  ? '/api'  // Always use proxy in dev mode - Vite will proxy to http://localhost:8000
+  : (import.meta.env.VITE_API_TARGET || import.meta.env.VITE_API_BASE_URL || '/api')
 
-// Создание клиента Supabase
-const supabase = createClient(supabaseUrl, supabaseKey)
+const LOGIN_TIMEOUT_MS = Number(import.meta.env.VITE_LOGIN_TIMEOUT_MS || 8000)
+
+console.log('[Auth] Environment:', {
+  isDev,
+  MODE: import.meta.env.MODE,
+  DEV: import.meta.env.DEV,
+  PROD: import.meta.env.PROD,
+  API_BASE_URL,
+  VITE_API_TARGET: import.meta.env.VITE_API_TARGET,
+  LOGIN_TIMEOUT_MS,
+})
 
 class AuthService {
   constructor() {
     this.currentUser = null
     this.sessionToken = null
+    this.accessToken = null
+    this.refreshToken = null
   }
 
-  // Авторизация пользователя
+  // Авторизация пользователя через Django API (с поддержкой LDAP)
   async login(username, password) {
     try {
-      // Получаем пользователя по username
-      const { data: users, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .eq('is_active', true)
-
-      if (userError) {
-        throw new Error('Ошибка поиска пользователя')
+      const isLdapEnabled = import.meta.env.VITE_LDAP_ENABLED === 'true' || 
+                            import.meta.env.VITE_LDAP_ENABLED === true
+      
+      if (isLdapEnabled) {
+        console.log('[Auth] Attempting LDAP authentication for user:', username)
       }
 
-      if (!users || users.length === 0) {
-        throw new Error('Пользователь не найден')
+      const loginUrl = `${API_BASE_URL}/auth/login`
+      console.log('[Auth] Sending login request to:', loginUrl)
+      console.log('[Auth] API_BASE_URL:', API_BASE_URL)
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), LOGIN_TIMEOUT_MS)
+
+      const response = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
+      
+      console.log('[Auth] Response status:', response.status, response.statusText)
+
+      if (!response.ok) {
+        let errorMessage = 'Invalid credentials'
+        
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.detail || errorData.message || 'Invalid credentials'
+          
+          // Логируем ошибку для отладки
+          if (isLdapEnabled) {
+            console.error('[Auth] LDAP authentication failed:', errorMessage)
+          } else {
+            console.error('[Auth] Database authentication failed:', errorMessage)
+          }
+        } catch (parseError) {
+          // Если не удалось распарсить JSON, используем статус код
+          if (response.status === 401) {
+            errorMessage = isLdapEnabled 
+              ? 'Неверное имя пользователя или пароль LDAP'
+              : 'Неверное имя пользователя или пароль'
+          } else if (response.status === 500) {
+            errorMessage = isLdapEnabled
+              ? 'Ошибка подключения к LDAP серверу'
+              : 'Ошибка сервера при аутентификации'
+          } else {
+            errorMessage = `Ошибка аутентификации (${response.status})`
+          }
+        }
+        
+        return {
+          success: false,
+          error: errorMessage
+        }
       }
 
-      const user = users[0]
-
-      // Проверяем пароль
-      // Если пароль не хеширован, используем прямое сравнение
-      if (user.password_hash !== password && password !== 'password123') {
-        throw new Error('Неверный пароль')
+      const data = await response.json()
+      
+      if (isLdapEnabled) {
+        console.log('[Auth] LDAP authentication successful for user:', username)
       }
-
-      // Создаем сессию
-      const sessionToken = this.generateSessionToken()
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 часа
-
-      const { error: sessionError } = await supabase
-        .from('user_sessions')
-        .insert({
-          user_id: user.id,
-          session_token: sessionToken,
-          expires_at: expiresAt.toISOString(),
-          ip_address: await this.getClientIP(),
-          user_agent: navigator.userAgent
-        })
-
-      if (sessionError) {
-        throw new Error('Ошибка создания сессии')
+      
+      // Сохраняем токены
+      this.accessToken = data.token
+      this.refreshToken = data.refreshToken
+      this.sessionToken = data.refreshToken // Для совместимости
+      
+      // Формируем объект пользователя
+      const user = {
+        id: data.user.id,
+        username: data.user.username,
+        role: data.user.role,
+        full_name: data.user.full_name || data.user.username,
+        email: data.user.email || `${data.user.username}@example.com`,
+        is_active: true
       }
 
       // Сохраняем данные в localStorage
       this.currentUser = user
-      this.sessionToken = sessionToken
-      localStorage.setItem('auth_token', sessionToken)
+      localStorage.setItem('auth_token', this.accessToken)
+      localStorage.setItem('refresh_token', this.refreshToken)
       localStorage.setItem('user', JSON.stringify(user))
 
       return {
         success: true,
         user: user,
-        token: sessionToken
+        token: this.accessToken,
+        refreshToken: this.refreshToken,
+        requires_registration: data.requires_registration || false  // Флаг необходимости регистрации
       }
 
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('[Auth] Login error:', error)
+      
+      const isLdapEnabled = import.meta.env.VITE_LDAP_ENABLED === 'true' || 
+                            import.meta.env.VITE_LDAP_ENABLED === true
+      
+      let errorMessage = 'Connection error'
+
+      if (error && (error.name === 'AbortError' || String(error.message || '').toLowerCase().includes('aborted'))) {
+        errorMessage = isLdapEnabled
+          ? 'LDAP отвечает слишком долго. Попробуйте позже или обратитесь к администратору.'
+          : 'Сервер отвечает слишком долго. Попробуйте позже.'
+      } else
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = isLdapEnabled
+          ? 'Не удалось подключиться к серверу. Проверьте подключение к сети.'
+          : 'Не удалось подключиться к серверу'
+      } else {
+        errorMessage = error.message || 'Неизвестная ошибка при входе'
+      }
+      
       return {
         success: false,
-        error: error.message
+        error: errorMessage
       }
     }
   }
@@ -81,24 +160,32 @@ class AuthService {
   // Выход из системы
   async logout() {
     try {
-      const token = this.sessionToken || localStorage.getItem('auth_token')
+      const refreshToken = localStorage.getItem('refresh_token')
       
-      if (token) {
-        // Удаляем сессию из базы данных
-        const { error } = await supabase
-          .from('user_sessions')
-          .delete()
-          .eq('session_token', token)
-        
-        if (error) {
-          console.error('Error deleting session:', error)
+      // Отправляем запрос на сервер для удаления сессии
+      if (refreshToken) {
+        try {
+          await fetch(`${API_BASE_URL}/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              refreshToken: refreshToken
+            }),
+          })
+        } catch (error) {
+          console.warn('Logout request failed:', error)
         }
       }
 
       // Очищаем локальные данные
       this.currentUser = null
       this.sessionToken = null
+      this.accessToken = null
+      this.refreshToken = null
       localStorage.removeItem('auth_token')
+      localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
 
       return { success: true }
@@ -107,9 +194,12 @@ class AuthService {
       // В любом случае очищаем локальные данные
       this.currentUser = null
       this.sessionToken = null
+      this.accessToken = null
+      this.refreshToken = null
       localStorage.removeItem('auth_token')
+      localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
-      return { success: true } // Возвращаем success чтобы пользователь мог выйти
+      return { success: true }
     }
   }
 
@@ -121,42 +211,80 @@ class AuthService {
         return { isAuthenticated: false }
       }
 
-      // Проверяем сессию в базе данных
-      const { data: sessions, error: sessionError } = await supabase
-        .from('user_sessions')
-        .select(`
-          *,
-          users (*)
-        `)
-        .eq('session_token', token)
-        .gt('expires_at', new Date().toISOString())
+      // Проверяем токен на сервере
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
 
-      if (sessionError) {
-        console.error('Session check error:', sessionError)
+        if (!response.ok) {
+          // Токен недействителен, пытаемся обновить
+          const refreshed = await this.refreshAccessToken()
+          if (!refreshed) {
+            this.logout()
+            return { isAuthenticated: false }
+          }
+          // Повторяем запрос с новым токеном
+          const retryResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${this.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          })
+          if (!retryResponse.ok) {
+            this.logout()
+            return { isAuthenticated: false }
+          }
+        }
+
+        const data = await response.json()
+        const user = data.user
+
+        // Обновляем данные пользователя
+        this.currentUser = {
+          id: user.sub || user.id,
+          username: user.username,
+          role: user.role,
+          full_name: user.full_name || user.username,
+          email: user.email || `${user.username}@example.com`,
+          is_active: true
+        }
+        this.sessionToken = token
+        this.accessToken = token
+
+        // Сохраняем обновленные данные
+        localStorage.setItem('user', JSON.stringify(this.currentUser))
+        localStorage.setItem('auth_token', token)
+
+        return {
+          isAuthenticated: true,
+          user: this.currentUser
+        }
+      } catch (apiError) {
+        console.error('Auth check API error:', apiError)
+        // Fallback: проверяем localStorage
+        const userStr = localStorage.getItem('user')
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr)
+            this.currentUser = user
+            this.sessionToken = token
+            return {
+              isAuthenticated: true,
+              user: user
+            }
+          } catch (parseError) {
+            this.logout()
+            return { isAuthenticated: false }
+          }
+        }
         this.logout()
         return { isAuthenticated: false }
-      }
-
-      if (!sessions || sessions.length === 0) {
-        // Сессия недействительна, очищаем данные
-        this.logout()
-        return { isAuthenticated: false }
-      }
-
-      const session = sessions[0]
-
-      // Обновляем время последней активности
-      await supabase
-        .from('user_sessions')
-        .update({ last_activity: new Date().toISOString() })
-        .eq('session_token', token)
-
-      this.currentUser = session.users
-      this.sessionToken = token
-
-      return {
-        isAuthenticated: true,
-        user: session.users
       }
 
     } catch (error) {
@@ -165,9 +293,90 @@ class AuthService {
     }
   }
 
+  // Обновление access token
+  async refreshAccessToken() {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (!refreshToken) {
+        return false
+      }
+
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refreshToken: refreshToken
+        }),
+      })
+
+      if (!response.ok) {
+        return false
+      }
+
+      const data = await response.json()
+      this.accessToken = data.token
+      localStorage.setItem('auth_token', data.token)
+
+      return true
+    } catch (error) {
+      console.error('Token refresh error:', error)
+      return false
+    }
+  }
+
   // Получение текущего пользователя
   getCurrentUser() {
+    // Если currentUser не установлен, пытаемся загрузить из localStorage
+    if (!this.currentUser) {
+      try {
+        const userStr = localStorage.getItem('user')
+        if (userStr) {
+          this.currentUser = JSON.parse(userStr)
+        }
+      } catch (error) {
+        console.error('Error parsing user from localStorage:', error)
+      }
+    }
+    
+    // Синхронизируем с localStorage для актуальности данных
+    // (на случай если данные были обновлены в другом месте, например в Profile)
+    try {
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        const userFromStorage = JSON.parse(userStr)
+        // Если есть данные в localStorage и они отличаются, обновляем currentUser
+        if (userFromStorage && userFromStorage.id) {
+          // Сравниваем ключевые поля для определения изменений
+          if (!this.currentUser || 
+              this.currentUser.full_name !== userFromStorage.full_name ||
+              this.currentUser.avatar_url !== userFromStorage.avatar_url ||
+              this.currentUser.avatar !== userFromStorage.avatar ||
+              this.currentUser.station !== userFromStorage.station ||
+              this.currentUser.position !== userFromStorage.position) {
+            // Создаем новый объект для реактивности Vue
+            this.currentUser = { ...userFromStorage }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing user from localStorage:', error)
+    }
+    
     return this.currentUser
+  }
+  
+  // Метод для принудительного обновления пользователя из localStorage
+  refreshUser() {
+    try {
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        this.currentUser = JSON.parse(userStr)
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error)
+    }
   }
 
   // Проверка роли пользователя
@@ -204,27 +413,13 @@ class AuthService {
   // Обновление профиля пользователя
   async updateProfile(userId, updates) {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select()
-        .single()
-
-      if (error) {
-        throw new Error('Ошибка обновления профиля')
-      }
-
-      // Обновляем локальные данные
+      // Supabase removed - using localStorage only
       if (this.currentUser && this.currentUser.id === userId) {
-        this.currentUser = { ...this.currentUser, ...data }
+        this.currentUser = { ...this.currentUser, ...updates }
         localStorage.setItem('user', JSON.stringify(this.currentUser))
       }
 
-      return { success: true, user: data }
+      return { success: true, user: this.currentUser }
     } catch (error) {
       console.error('Update profile error:', error)
       return { success: false, error: error.message }

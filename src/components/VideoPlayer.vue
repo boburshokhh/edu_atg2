@@ -77,7 +77,6 @@
 <script>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
-import Hls from 'hls.js'
 
 export default {
   name: 'VideoPlayer',
@@ -123,7 +122,6 @@ export default {
     const loadingText = ref('Загрузка видео...')
     const currentTime = ref(0)
     const duration = ref(0)
-    let hls = null
 
     // Видимость модального окна
     watch(() => props.modelValue, (val) => {
@@ -155,80 +153,23 @@ export default {
         loading.value = true
         loadingText.value = 'Подключение к видео...'
 
-        // Уничтожаем предыдущий HLS инстанс, если есть
-        if (hls) {
-          hls.destroy()
-          hls = null
-        }
-
         const video = videoElement.value
 
-        // Если это HLS (.m3u8)
+        // Если это HLS (.m3u8) - используем нативную поддержку браузера
         if (url.includes('.m3u8') || url.includes('application/x-mpegURL')) {
           const isNativeHlsSupported = video.canPlayType('application/vnd.apple.mpegurl')
-
-          if (Hls.isSupported()) {
-            // Используем HLS.js для адаптивного стриминга
-            hls = new Hls({
-              enableWorker: true,
-              lowLatencyMode: false,
-              // Оптимизация для стриминга - небольшой буфер
-              maxBufferLength: 30, // максимум 30 секунд в буфере
-              maxMaxBufferLength: 60, // абсолютный максимум 60 секунд
-              maxBufferSize: 30 * 1000 * 1000, // 30MB максимум в памяти
-              maxBufferHole: 0.5, // разрешаем небольшие пропуски
-              // Защита от скачивания
-              xhrSetup: (xhr) => {
-                xhr.withCredentials = false
-              },
-              // Настройки для лучшего стриминга
-              startLevel: -1, // автоматический выбор качества
-              capLevelToPlayerSize: true, // адаптация к размеру плеера
-              abrEwmaFastLive: 3.0, // быстрая адаптация для live
-              abrEwmaSlowLive: 9.0,
-              abrEwmaFastVoD: 3.0,
-              abrEwmaSlowVoD: 9.0,
-              maxStarvationDelay: 4,
-              maxLoadingDelay: 4,
-              minAutoBitrate: 0
-            })
-
-            hls.loadSource(url)
-            hls.attachMedia(video)
-
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-              loading.value = false
-              loadingText.value = ''
-            })
-
-            hls.on(Hls.Events.ERROR, (event, data) => {
-              console.error('HLS error:', data)
-              if (data.fatal) {
-                switch (data.type) {
-                  case Hls.ErrorTypes.NETWORK_ERROR:
-                    console.error('Network error, trying to recover...')
-                    hls.startLoad()
-                    break
-                  case Hls.ErrorTypes.MEDIA_ERROR:
-                    console.error('Media error, trying to recover...')
-                    hls.recoverMediaError()
-                    break
-                  default:
-                    console.error('Fatal error, cannot recover')
-                    loading.value = false
-                    loadingText.value = 'Ошибка загрузки видео'
-                    hls.destroy()
-                    break
-                }
-              }
-            })
-          } else if (isNativeHlsSupported) {
-            // Используем нативную поддержку HLS (Safari)
+          
+          if (isNativeHlsSupported) {
+            // Используем нативную поддержку HLS (Safari, Chrome на Android)
             video.src = url
             loading.value = false
             loadingText.value = ''
           } else {
-            throw new Error('HLS не поддерживается в вашем браузере')
+            // Для браузеров без нативной поддержки HLS показываем ошибку
+            // В будущем можно использовать vue-plyr, который поддерживает HLS
+            loading.value = false
+            loadingText.value = 'HLS не поддерживается в вашем браузере. Используйте Safari или Chrome на Android.'
+            console.warn('HLS not supported in this browser')
           }
         } else {
           // Обычное MP4/WebM видео с HTTP Range requests (стриминг по частям)
@@ -346,15 +287,6 @@ export default {
 
     // Закрытие плеера
     const handleClose = () => {
-      if (hls) {
-        try {
-          hls.destroy()
-        } catch (e) {
-          console.warn('Error destroying HLS:', e)
-        }
-        hls = null
-      }
-
       if (videoElement.value) {
         try {
           videoElement.value.pause()
@@ -381,11 +313,8 @@ export default {
     })
 
     onBeforeUnmount(() => {
-      if (hls) {
-        hls.destroy()
-        hls = null
-      }
       if (videoElement.value) {
+        videoElement.value.pause()
         videoElement.value.src = ''
       }
     })

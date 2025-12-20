@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useVideo } from '@/composables/useVideo'
 
 const props = defineProps({

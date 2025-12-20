@@ -5,7 +5,7 @@
       <!-- Изображение станции -->
       <div class="absolute inset-0">
         <img 
-          :src="`/stations/${station?.image}`" 
+          :src="stationImageUrl || ''" 
           :alt="station?.name"
           class="w-full h-full object-cover"
         />
@@ -44,25 +44,10 @@
           </p>
 
           <!-- Краткие характеристики -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div class="text-gray-300 text-xs font-medium mb-1">Мощность</div>
-              <div class="text-white text-lg font-bold">{{ station?.power }}</div>
-            </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
               <div class="text-gray-300 text-xs font-medium mb-1">Ввод в эксплуатацию</div>
               <div class="text-white text-lg font-bold">{{ station?.commissionDate }}</div>
-            </div>
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div class="text-gray-300 text-xs font-medium mb-1">Статус</div>
-              <div class="flex items-center">
-                <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                <span class="text-white text-lg font-bold">Активна</span>
-              </div>
-            </div>
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div class="text-gray-300 text-xs font-medium mb-1">Тренингов</div>
-              <div class="text-white text-lg font-bold">{{ station?.coursesCount }}</div>
             </div>
           </div>
         </div>
@@ -130,10 +115,6 @@
                     <div class="flex border-b border-gray-200 pb-3">
                       <span class="font-semibold text-gray-700 min-w-[180px]">Дата ввода:</span>
                       <span class="text-gray-900">{{ station?.commissionDate }}</span>
-                    </div>
-                    <div class="flex border-b border-gray-200 pb-3">
-                      <span class="font-semibold text-gray-700 min-w-[180px]">Мощность:</span>
-                      <span class="text-gray-900 font-bold text-blue-600">{{ station?.power }}</span>
                     </div>
                     <div class="flex border-b border-gray-200 pb-3">
                       <span class="font-semibold text-gray-700 min-w-[180px]">Проектная мощность:</span>
@@ -558,7 +539,7 @@
         </div>
 
         <!-- Технологическая карта -->
-        <div class="max-w-7xl mx-auto mb-12" v-if="station?.techMapImage">
+        <div class="max-w-7xl mx-auto mb-12" v-if="techMapImageUrl">
           <div class="mb-8">
             <h2 class="text-3xl font-bold text-gray-900 mb-2">Технологическая карта</h2>
             <div class="h-1 w-24 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full"></div>
@@ -585,7 +566,7 @@
             <div class="p-6 bg-gray-50">
               <div class="relative group cursor-pointer" @click="openImageModal">
                 <img 
-                  :src="station?.techMapImage" 
+                  :src="techMapImageUrl" 
                   :alt="`Технологическая карта ${station?.shortName}`"
                   loading="lazy"
                   decoding="async"
@@ -683,11 +664,13 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import VueEasyLightbox from 'vue-easy-lightbox'
-import { stationsData } from '@/data/stationsData.js'
+import stationService from '@/services/stationService'
+import minioService from '@/services/minioService'
+import { resolveStationMedia } from '@/utils/stationsMedia'
 
 export default {
   name: 'StationDetail',
@@ -702,11 +685,14 @@ export default {
     const lightboxVisible = ref(false)
     const lightboxIndex = ref(0)
 
-    // Получаем данные станции из импортированного файла
-    const station = computed(() => stationsData[stationId.value] || stationsData[1])
+    const station = ref(null)
+    const stationImageUrl = ref('')
+    const techMapImageUrl = ref('')
+    const loading = ref(false)
+    const error = ref('')
 
     const lightboxImages = computed(() => {
-      return station.value?.techMapImage ? [station.value.techMapImage] : []
+      return techMapImageUrl.value ? [techMapImageUrl.value] : []
     })
 
     const openImageModal = () => {
@@ -719,8 +705,141 @@ export default {
       lightboxVisible.value = true
     }
 
+    const mapStationToView = (data) => {
+      const s = data?.station || data || {}
+      return {
+        id: s.id,
+        name: s.name || '',
+        shortName: s.short_name || s.shortName || '',
+        description: s.description || '',
+        image: s.image || '',
+        techMapImage: s.tech_map_image || s.techMapImage || '',
+        power: s.power || '',
+        commissionDate: s.commission_date || s.commissionDate || '',
+        coursesCount: s.courses_count ?? s.coursesCount ?? 0,
+        status: s.status || 'active',
+        location: s.location || '',
+        type: s.type || '',
+        designCapacity: s.design_capacity || s.designCapacity || '',
+        gasPressure: s.gas_pressure || s.gasPressure || '',
+        distanceFromBorder: s.distance_from_border || s.distanceFromBorder || '',
+        pipelineDiameter: s.pipeline_diameter || s.pipelineDiameter || '',
+        inputPressure: s.input_pressure || s.inputPressure || '',
+        outputPressure: s.output_pressure || s.outputPressure || '',
+        parallelLines: s.parallel_lines || s.parallelLines || '',
+        gasSupplySources: (data?.gas_sources || []).map(x => x.source_name || x.sourceName).filter(Boolean),
+        equipment: (data?.equipment || []).map(eq => ({
+          name: eq.name,
+          model: eq.model,
+          manufacturer: eq.manufacturer,
+          quantity: eq.quantity,
+          power: eq.power,
+          description: eq.description,
+        })),
+        specifications: (data?.specs || data?.specifications || []).map(sp => ({
+          category: sp.category,
+          value: sp.value,
+          unit: sp.unit,
+          description: sp.description,
+        })),
+        safetySystems: (data?.safety || []).map(ss => ({
+          name: ss.name,
+          manufacturer: ss.manufacturer,
+          description: ss.description,
+          features: ss.features || [],
+        })),
+      }
+    }
+
+    const loadMediaUrls = async (stationView, photos = []) => {
+      // Find photos by view type from StationPhoto
+      const stationImagePhoto = photos.find(p => p.view === 'station_image')
+      const techMapPhoto = photos.find(p => p.view === 'tech_map_image')
+
+      // Station image - use StationPhoto if available, fallback to Station.image
+      stationImageUrl.value = ''
+      const stationImagePath = stationImagePhoto?.image_url || stationView?.image || ''
+      
+      if (stationImagePath) {
+        const img = resolveStationMedia(stationImagePath, { defaultFolder: 'stations' })
+        if (img.kind === 'url' || img.kind === 'public') {
+          stationImageUrl.value = img.url
+        } else if (img.kind === 'minio') {
+          // Show a fast, non-signed URL immediately (dev proxy will rewrite it),
+          // then upgrade to a presigned URL when ready.
+          stationImageUrl.value = minioService.getFileUrl(img.objectKey)
+          try {
+            stationImageUrl.value = await minioService.getPresignedDownloadUrl(
+              img.objectKey,
+              7 * 24 * 60 * 60,
+              img.contentType
+            )
+          } catch (e) {
+            stationImageUrl.value = img.fallbackPublicPath || minioService.getFileUrl(img.objectKey)
+          }
+        }
+      }
+
+      // Tech map image - use StationPhoto if available, fallback to Station.tech_map_image
+      techMapImageUrl.value = ''
+      const techMapPath = techMapPhoto?.image_url || stationView?.techMapImage || ''
+      
+      if (techMapPath) {
+        const tech = resolveStationMedia(techMapPath, { defaultFolder: 'tex_kart' })
+        if (tech.kind === 'url' || tech.kind === 'public') {
+          techMapImageUrl.value = tech.url
+        } else if (tech.kind === 'minio') {
+          techMapImageUrl.value = minioService.getFileUrl(tech.objectKey)
+          try {
+            techMapImageUrl.value = await minioService.getPresignedDownloadUrl(
+              tech.objectKey,
+              7 * 24 * 60 * 60,
+              tech.contentType
+            )
+          } catch (e) {
+            techMapImageUrl.value = tech.fallbackPublicPath || minioService.getFileUrl(tech.objectKey)
+          }
+        }
+      }
+    }
+
+    const loadStation = async () => {
+      loading.value = true
+      error.value = ''
+      try {
+        const data = await stationService.getStation(stationId.value)
+        const view = mapStationToView(data)
+        station.value = view
+        
+        // Get photos from StationPhoto
+        const photos = data.photos || []
+        
+        // Load media URLs using photos from StationPhoto with fallback to old fields
+        await loadMediaUrls(view, photos)
+      } catch (e) {
+        error.value = e?.message || 'Не удалось загрузить станцию'
+        station.value = null
+        stationImageUrl.value = ''
+        techMapImageUrl.value = ''
+      } finally {
+        loading.value = false
+      }
+    }
+
+    watch(stationId, () => {
+      loadStation()
+    })
+
+    onMounted(() => {
+      loadStation()
+    })
+
     return {
       station,
+      stationImageUrl,
+      techMapImageUrl,
+      loading,
+      error,
       lightboxVisible,
       lightboxIndex,
       lightboxImages,

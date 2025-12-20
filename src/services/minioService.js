@@ -1,73 +1,284 @@
-// Сервис для работы с MinIO через AWS S3 SDK
-// MinIO совместим с AWS S3 API
+/**
+ * Оптимизированный MinIO сервис с кэшированием и мемоизацией
+ */
 
-import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { LRUCache } from '@/utils/performance'
 
-// Конфигурация MinIO
-// Поддержка переменных окружения для гибкости (продакшен/локально)
-// Убираем завершающий слеш, если он есть
-const MINIO_ENDPOINT_RAW = import.meta.env.VITE_MINIO_ENDPOINT || 'https://minio.dmed.gubkin.uz'
-const MINIO_ENDPOINT = MINIO_ENDPOINT_RAW.replace(/\/+$/, '') // Убираем завершающие слеши
-const MINIO_ACCESS_KEY = import.meta.env.VITE_MINIO_ACCESS_KEY || 'admin'
-const MINIO_SECRET_KEY = import.meta.env.VITE_MINIO_SECRET_KEY || '1234bobur$'
+// Конфигурация
+// IMPORTANT:
+// - We DO NOT upload directly from browser with S3 credentials (security + misconfig).
+// - We use Django backend endpoints to generate presigned URLs (/api/files/*).
+// - In dev we still SERVE through Vite proxy (/api/minio) via getFrontendUrl().
+const MINIO_ENDPOINT_RAW =
+  import.meta.env.VITE_MINIO_ENDPOINT ||
+  'http://192.168.32.100:9000'
+const MINIO_ENDPOINT = MINIO_ENDPOINT_RAW.replace(/\/+$/, '')
 const MINIO_BUCKET = import.meta.env.VITE_MINIO_BUCKET || 'atgedu'
-
-// Определяем, используется ли HTTPS
-const isHttps = MINIO_ENDPOINT.startsWith('https://')
-
-const MINIO_CONFIG = {
-  endpoint: MINIO_ENDPOINT,
-  region: 'us-east-1',
-  credentials: {
-    accessKeyId: MINIO_ACCESS_KEY,
-    secretAccessKey: MINIO_SECRET_KEY
-  },
-  forcePathStyle: true, // Важно для MinIO
-  tls: isHttps // Автоматически определяется по протоколу endpoint
-}
-
 const DEFAULT_BUCKET = MINIO_BUCKET
 
-// Создание S3 клиента для MinIO
-const s3Client = new S3Client(MINIO_CONFIG)
+// Unified API base (same pattern as stationService)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-// Форматирование размера файла
+const encodeKeyPath = (key) => {
+  const clean = (key || '').replace(/^\/+/, '')
+  return clean
+    .split('/')
+    .map(seg => encodeURIComponent(seg))
+    .join('/')
+}
+
+function getAuthToken() {
+  const token = localStorage.getItem('auth_token')
+  if (typeof token === 'string' && token.trim()) {
+    return `Bearer ${token.trim()}`
+  }
+  return null
+}
+
+async function apiRequest(url, options = {}) {
+  const token = getAuthToken()
+  const headers = {
+    ...(options.headers || {}),
+  }
+  if (token) {
+    headers.Authorization = token
+    console.log('[apiRequest] Using auth token:', token.substring(0, 20) + '...')
+  } else {
+    console.warn('[apiRequest] No auth token found')
+  }
+
+  const fullUrl = `${API_BASE_URL}${url}`
+  console.log('[apiRequest] Request:', options.method || 'GET', fullUrl)
+
+  const res = await fetch(fullUrl, {
+    ...options,
+    headers,
+  })
+
+  const contentType = res.headers.get('content-type') || ''
+  const isJson = contentType.includes('application/json')
+  const payload = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null)
+
+  if (!res.ok) {
+    console.error('[apiRequest] Error response:', res.status, res.statusText, payload)
+    const msg =
+      (payload && (payload.error || payload.message || payload.detail)) ||
+      `HTTP ${res.status}: ${res.statusText}`
+    throw new Error(msg)
+  }
+
+  return payload
+}
+
+// Кэши для разных типов данных
+const urlCache = new LRUCache(100) // Кэш для presigned URLs
+const metadataCache = new LRUCache(200) // Кэш для метаданных файлов
+const listCache = new LRUCache(50) // Кэш для списков файлов
+
+// TTL для кэшей (в миллисекундах)
+const URL_CACHE_TTL = 6 * 60 * 60 * 1000 // 6 часов (presigned URLs живут 7 дней)
+const METADATA_CACHE_TTL = 10 * 60 * 1000 // 10 минут
+const LIST_CACHE_TTL = 5 * 60 * 1000 // 5 минут
+
+// Форматирование размера файла (мемоизированная версия)
+const sizeCache = new Map()
 export const formatFileSize = (bytes) => {
+  if (sizeCache.has(bytes)) {
+    return sizeCache.get(bytes)
+  }
+  
   if (bytes === 0) return '0 Bytes'
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+  const result = Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+  
+  sizeCache.set(bytes, result)
+  return result
+}
+
+// Получение URL с кэшированием
+const getFrontendUrl = (url) => {
+  if (typeof window === 'undefined') return url
+  
+  const isDev = import.meta.env.DEV
+  if (isDev && url.includes(MINIO_ENDPOINT)) {
+    return url.replace(MINIO_ENDPOINT, '/api/minio')
+  }
+  
+  return url
+}
+
+// Проверка валидности кэшированных данных
+const isCacheValid = (cachedItem, ttl) => {
+  if (!cachedItem) return false
+  return Date.now() - cachedItem.timestamp < ttl
+}
+
+// ✅ Получение presigned URL с кэшированием и поддержкой Range requests
+export const getPresignedDownloadUrl = async (
+  objectName, 
+  expiresIn = 7 * 24 * 60 * 60, 
+  contentType = null,
+  range = null  // ✅ Новый параметр для Range requests
+) => {
+  // Normalize object key: remove leading slashes to avoid "//tex_kart/..."
+  const normalizedObjectName = (objectName || '').replace(/^\/+/, '')
+
+  const cacheKey = `${normalizedObjectName}:${contentType || 'default'}:${range || 'full'}`
+  const cached = urlCache.get(cacheKey)
+  
+  // Проверяем кэш (учитываем, что URL должен быть действителен еще минимум 1 час)
+  if (cached && isCacheValid(cached, URL_CACHE_TTL - 60 * 60 * 1000)) {
+    return cached.value
+  }
+  
+  try {
+    const q = new URLSearchParams()
+    q.set('key', normalizedObjectName)
+    q.set('expiresIn', String(expiresIn))
+    if (contentType) q.set('contentType', contentType)
+
+    const data = await apiRequest(`/files/presign?${q.toString()}`)
+    const url = data?.url
+    if (!url) throw new Error('Invalid presign response')
+
+    const frontendUrl = getFrontendUrl(url)
+    
+    // Сохраняем в кэш
+    urlCache.set(cacheKey, {
+      value: frontendUrl,
+      timestamp: Date.now()
+    })
+    
+    return frontendUrl
+  } catch (error) {
+    console.error('Ошибка создания presigned URL:', error)
+    throw error
+  }
+}
+
+// ✅ Новая функция для получения URL с Range (для явного указания диапазона байтов)
+export const getPresignedUrlWithRange = async (
+  objectName,
+  startByte = 0,
+  endByte = null,
+  contentType = null
+) => {
+  // Примечание: Range указывается в HTTP заголовке запроса, а не в presigned URL
+  // Но мы можем вернуть URL с информацией о Range для использования в fetch
+  const url = await getPresignedDownloadUrl(
+    objectName,
+    7 * 24 * 60 * 60,
+    contentType
+  )
+  
+  // Range будет добавлен в заголовки при запросе
+  return { url, range: endByte !== null ? `bytes=${startByte}-${endByte}` : `bytes=${startByte}-` }
+}
+
+// Получение метаданных файла с кэшированием
+export const getFileMetadata = async (objectName) => {
+  const cached = metadataCache.get(objectName)
+  
+  if (cached && isCacheValid(cached, METADATA_CACHE_TTL)) {
+    return cached.value
+  }
+  
+  try {
+    const key = (objectName || '').replace(/^\/+/, '')
+    const data = await apiRequest(`/files/exists?key=${encodeURIComponent(key)}`)
+    if (!data?.exists) throw new Error('Not found')
+
+    const metadata = {
+      size: data.size,
+      lastModified: data.lastModified,
+      contentType: data.contentType,
+      etag: data.etag
+    }
+    
+    // Сохраняем в кэш
+    metadataCache.set(objectName, {
+      value: metadata,
+      timestamp: Date.now()
+    })
+    
+    return metadata
+  } catch (error) {
+    console.error('Ошибка получения метаданных:', error)
+    throw error
+  }
+}
+
+// Определение ContentType по расширению
+const detectContentType = (fileName) => {
+  const name = fileName.toLowerCase()
+  
+  const typeMap = {
+    'mp4': 'video/mp4',
+    'webm': 'video/webm',
+    'ogg': 'video/ogg',
+    'ogv': 'video/ogg',
+    'mov': 'video/quicktime',
+    'pdf': 'application/pdf',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'svg': 'image/svg+xml'
+  }
+  
+  const ext = name.split('.').pop()
+  return typeMap[ext] || 'application/octet-stream'
 }
 
 // Загрузка файла
 export const uploadFile = async (file, folder = '') => {
   try {
-    // Генерируем уникальное имя файла
     const timestamp = Date.now()
     const originalName = file.name
     const fileName = `${timestamp}-${originalName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
     const objectName = folder ? `${folder}/${fileName}` : fileName
 
-    // Читаем файл как ArrayBuffer
-    const fileBuffer = await file.arrayBuffer()
-
-    // Параметры для загрузки
-    const uploadParams = {
-      Bucket: DEFAULT_BUCKET,
-      Key: objectName,
-      Body: new Uint8Array(fileBuffer),
-      ContentType: file.type || 'application/octet-stream',
-      ContentDisposition: `attachment; filename="${originalName}"`
+    console.log('[uploadFile] Requesting presigned PUT for:', objectName)
+    
+    // 1) Ask backend for presigned PUT
+    const presign = await apiRequest('/files/presign-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key: objectName,
+        contentType: file.type || 'application/octet-stream',
+        expiresIn: 900
+      }),
+    })
+    const putUrl = presign?.url
+    if (!putUrl) {
+      console.error('[uploadFile] Invalid presign response:', presign)
+      throw new Error('Invalid presign-upload response')
     }
 
-    // Загружаем файл
-    const command = new PutObjectCommand(uploadParams)
-    await s3Client.send(command)
+    console.log('[uploadFile] Got presigned URL, uploading...')
 
-    // Генерируем presigned URL для просмотра (действителен 7 дней)
-    const fileUrl = await getPresignedDownloadUrl(objectName, 7 * 24 * 60 * 60)
+    // 2) Upload to MinIO via Vite proxy (keeps same-origin and preserves signature via proxy host)
+    const uploadUrl = getFrontendUrl(putUrl)
+    console.log('[uploadFile] Upload URL:', uploadUrl)
+    
+    const putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file
+    })
+    
+    if (!putRes.ok) {
+      const errorText = await putRes.text().catch(() => '')
+      console.error('[uploadFile] Upload failed:', putRes.status, putRes.statusText, errorText)
+      throw new Error(`Upload failed: HTTP ${putRes.status} ${putRes.statusText}`)
+    }
+
+    console.log('[uploadFile] Upload successful, getting download URL...')
+    const fileUrl = await getPresignedDownloadUrl(objectName, 7 * 24 * 60 * 60, file.type || null)
 
     return {
       success: true,
@@ -80,229 +291,53 @@ export const uploadFile = async (file, folder = '') => {
       sizeFormatted: formatFileSize(file.size)
     }
   } catch (error) {
-    console.error('Ошибка загрузки файла:', error)
+    console.error('[uploadFile] Error:', error)
     throw new Error(`Не удалось загрузить файл: ${error.message}`)
   }
 }
 
-// Получение списка файлов
+// Получение списка файлов с кэшированием
 export const listFiles = async (folder = '') => {
-  try {
-    const params = {
-      Bucket: DEFAULT_BUCKET,
-      Prefix: folder ? `${folder}/` : ''
-    }
-
-    const command = new ListObjectsV2Command(params)
-    const response = await s3Client.send(command)
-
-    if (!response.Contents || response.Contents.length === 0) {
-      return []
-    }
-
-    // Преобразуем список файлов в нужный формат
-    const files = await Promise.all(
-      response.Contents.map(async (item) => {
-        // Генерируем presigned URL для просмотра (действителен 7 дней)
-        let fileUrl
-        try {
-          fileUrl = await getPresignedDownloadUrl(item.Key, 7 * 24 * 60 * 60)
-        } catch (urlError) {
-          console.warn('Не удалось сгенерировать presigned URL для', item.Key)
-          // Используем прямой URL и заменяем на прокси путь для фронтенда
-          const directUrl = `${MINIO_CONFIG.endpoint}/${DEFAULT_BUCKET}/${item.Key}`
-          fileUrl = getFrontendUrl(directUrl)
-        }
-        
-        // Пытаемся получить metadata
-        let contentType = 'application/octet-stream'
-        try {
-          const getCommand = new HeadObjectCommand({
-            Bucket: DEFAULT_BUCKET,
-            Key: item.Key
-          })
-          const metadata = await s3Client.send(getCommand)
-          contentType = metadata.ContentType || contentType
-        } catch (e) {
-          console.warn('Не удалось получить метаданные для', item.Key)
-        }
-
-        return {
-          objectName: item.Key,
-          fileName: item.Key.split('/').pop(),
-          originalName: item.Key.split('/').pop().replace(/^\d+-/, ''), // Убираем timestamp
-          size: item.Size,
-          sizeFormatted: formatFileSize(item.Size),
-          type: contentType,
-          url: fileUrl,
-          file_url: fileUrl,
-          file_size: item.Size,
-          original_name: item.Key.split('/').pop().replace(/^\d+-/, ''),
-          lastModified: item.LastModified,
-          uploaded_at: item.LastModified
-        }
-      })
-    )
-
-    return files
-  } catch (error) {
-    console.error('Ошибка получения списка файлов:', error)
-    throw new Error(`Не удалось получить список файлов: ${error.message}`)
-  }
+  const contents = await getFolderContents(folder)
+  return contents.files || []
 }
 
-// Получение структуры папок (дерево папок)
-export const getFolderStructure = async () => {
-  try {
-    const params = {
-      Bucket: DEFAULT_BUCKET,
-      Delimiter: '/' // Разделитель для папок
-    }
-
-    const command = new ListObjectsV2Command(params)
-    const response = await s3Client.send(command)
-
-    const structure = {
-      folders: [],
-      files: []
-    }
-
-    // Получаем папки (CommonPrefixes)
-    if (response.CommonPrefixes && response.CommonPrefixes.length > 0) {
-      structure.folders = response.CommonPrefixes.map(prefix => ({
-        name: prefix.Prefix.replace(/\/$/, ''), // Убираем завершающий слеш
-        path: prefix.Prefix,
-        isFolder: true
-      }))
-    }
-
-    // Получаем файлы в корне
-    if (response.Contents && response.Contents.length > 0) {
-      structure.files = response.Contents
-        .filter(item => !item.Key.includes('/')) // Только корневые файлы
-        .map(item => ({
-          objectName: item.Key,
-          fileName: item.Key,
-          originalName: item.Key.replace(/^\d+-/, ''),
-          size: item.Size,
-          sizeFormatted: formatFileSize(item.Size),
-          type: 'application/octet-stream',
-          lastModified: item.LastModified
-        }))
-    }
-
-    return structure
-  } catch (error) {
-    console.error('Ошибка получения структуры папок:', error)
-    throw new Error(`Не удалось получить структуру папок: ${error.message}`)
-  }
-}
-
-// Получение содержимого конкретной папки
+// Получение содержимого папки с кэшированием
 export const getFolderContents = async (folderPath = '') => {
+  let cleanPath = folderPath.replace(/\/$/, '').replace(/^\/+/, '')
+  if (!cleanPath || cleanPath === '/') cleanPath = ''
+  
+  const cacheKey = `folder:${cleanPath}`
+  const cached = listCache.get(cacheKey)
+  
+  if (cached && isCacheValid(cached, LIST_CACHE_TTL)) {
+    return cached.value
+  }
+  
   try {
-    // Убираем завершающие слеши и очищаем путь
-    let cleanPath = folderPath.replace(/\/$/, '').replace(/^\/+/, '')
-    
-    // Если путь пустой или содержит только слеши, сбрасываем в корень
-    if (!cleanPath || cleanPath === '/') {
-      cleanPath = ''
-    }
-    
-    const params = {
-      Bucket: DEFAULT_BUCKET,
-      Prefix: cleanPath ? `${cleanPath}/` : '',
-      Delimiter: '/'
-    }
-
-    const command = new ListObjectsV2Command(params)
-    const response = await s3Client.send(command)
+    const q = new URLSearchParams()
+    if (cleanPath) q.set('prefix', cleanPath)
+    const data = await apiRequest(`/files/folder-contents?${q.toString()}`)
 
     const contents = {
-      folders: [],
-      files: []
-    }
-
-    // Получаем подпапки
-    if (response.CommonPrefixes && response.CommonPrefixes.length > 0) {
-      contents.folders = response.CommonPrefixes.map(prefix => {
-        const folderName = prefix.Prefix.replace(cleanPath ? `${cleanPath}/` : '', '').replace(/\/$/, '')
+      folders: (data?.folders || []).map((f) => ({
+        ...f,
+      })),
+      files: (data?.files || []).map((file) => {
+        const url = file.url || file.file_url
         return {
-          name: folderName,
-          path: prefix.Prefix.replace(/\/$/, ''), // Убираем завершающий слеш
-          isFolder: true
+          ...file,
+          url: url ? getFrontendUrl(url) : url,
+          file_url: url ? getFrontendUrl(url) : url,
         }
-      })
+      }),
     }
-
-    // Получаем файлы в папке
-    if (response.Contents && response.Contents.length > 0) {
-      const files = await Promise.all(
-        response.Contents
-          .filter(item => item.Key !== `${cleanPath}/` && item.Key !== `${cleanPath}`)
-          .map(async (item) => {
-            let contentType = 'application/octet-stream'
-            
-            // Определяем ContentType по расширению файла, если не указан в метаданных
-            const fileName = item.Key.split('/').pop().toLowerCase()
-            if (fileName.endsWith('.mp4')) {
-              contentType = 'video/mp4'
-            } else if (fileName.endsWith('.webm')) {
-              contentType = 'video/webm'
-            } else if (fileName.endsWith('.ogg') || fileName.endsWith('.ogv')) {
-              contentType = 'video/ogg'
-            } else if (fileName.endsWith('.mov')) {
-              contentType = 'video/quicktime'
-            } else if (fileName.endsWith('.pdf')) {
-              contentType = 'application/pdf'
-            } else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
-              contentType = 'image/jpeg'
-            } else if (fileName.endsWith('.png')) {
-              contentType = 'image/png'
-            }
-            
-            // Пытаемся получить метаданные из MinIO
-            try {
-              const getCommand = new HeadObjectCommand({
-                Bucket: DEFAULT_BUCKET,
-                Key: item.Key
-              })
-              const metadata = await s3Client.send(getCommand)
-              contentType = metadata.ContentType || contentType
-            } catch (e) {
-              console.warn('Не удалось получить метаданные для', item.Key, 'используем определенный тип:', contentType)
-            }
-
-            let fileUrl
-            try {
-              // Используем правильный ContentType при генерации presigned URL
-              fileUrl = await getPresignedDownloadUrl(item.Key, 7 * 24 * 60 * 60, contentType)
-            } catch (urlError) {
-              console.warn('Ошибка генерации presigned URL, используем прямую ссылку:', urlError)
-              // Используем прямой URL и заменяем на прокси путь для фронтенда
-              const directUrl = `${MINIO_CONFIG.endpoint}/${DEFAULT_BUCKET}/${item.Key}`
-              fileUrl = getFrontendUrl(directUrl)
-            }
-
-            return {
-              objectName: item.Key,
-              fileName: item.Key.split('/').pop(),
-              originalName: item.Key.split('/').pop().replace(/^\d+-/, ''),
-              size: item.Size,
-              sizeFormatted: formatFileSize(item.Size),
-              type: contentType,
-              url: fileUrl,
-              file_url: fileUrl,
-              file_size: item.Size,
-              original_name: item.Key.split('/').pop().replace(/^\d+-/, ''),
-              lastModified: item.LastModified,
-              uploaded_at: item.LastModified
-            }
-          })
-      )
-      
-      contents.files = files
-    }
+    
+    // Сохраняем в кэш
+    listCache.set(cacheKey, {
+      value: contents,
+      timestamp: Date.now()
+    })
 
     return contents
   } catch (error) {
@@ -311,16 +346,18 @@ export const getFolderContents = async (folderPath = '') => {
   }
 }
 
-// Удаление файла
+// Удаление файла (инвалидация кэша)
 export const deleteFile = async (objectName) => {
   try {
-    const params = {
-      Bucket: DEFAULT_BUCKET,
-      Key: objectName
-    }
-
-    const command = new DeleteObjectCommand(params)
-    await s3Client.send(command)
+    const key = (objectName || '').replace(/^\/+/, '')
+    await apiRequest(`/files/object?key=${encodeURIComponent(key)}`, {
+      method: 'DELETE'
+    })
+    
+    // Очищаем связанные кэши
+    urlCache.clear()
+    metadataCache.delete(objectName)
+    listCache.clear()
 
     return { success: true }
   } catch (error) {
@@ -329,109 +366,53 @@ export const deleteFile = async (objectName) => {
   }
 }
 
-// Замена URL на фронтенде для использования прокси
-// В dev режиме используем относительные пути через Vite proxy
-// В production используем прямой endpoint
-const getFrontendUrl = (url) => {
-  if (typeof window === 'undefined') {
-    return url // На сервере оставляем как есть
-  }
-  
-  // Проверяем, находимся ли мы в dev режиме
-  const isDev = import.meta.env.DEV
-  
-  // Если это dev режим и URL содержит наш MinIO endpoint, заменяем на прокси
-  if (isDev && url.includes(MINIO_ENDPOINT)) {
-    // Заменяем https://minio.dmed.gubkin.uz/atgedu/... на /api/minio/atgedu/...
-    return url.replace(MINIO_ENDPOINT, '/api/minio')
-  }
-  
-  // В production или если URL не содержит endpoint, возвращаем как есть
-  return url
-}
-
-// Получение URL файла (синхронная версия - возвращает прямой URL)
+// Получение URL файла (синхронная версия)
 export const getFileUrl = (objectName) => {
-  // Формируем URL
-  const url = `${MINIO_CONFIG.endpoint}/${DEFAULT_BUCKET}/${objectName}`
-  // На фронтенде заменяем на прокси путь
+  const url = `${MINIO_ENDPOINT}/${DEFAULT_BUCKET}/${objectName}`
   return getFrontendUrl(url)
 }
 
-// Получение безопасного URL файла (асинхронная версия - возвращает presigned URL)
+// Получение безопасного URL
 export const getSecureFileUrl = async (objectName, expiresIn = 3600) => {
   try {
     return await getPresignedDownloadUrl(objectName, expiresIn)
   } catch (error) {
     console.error('Ошибка получения secure URL:', error)
-    return getFileUrl(objectName) // Fallback к прямому URL
+    return getFileUrl(objectName)
   }
 }
 
 // Проверка существования файла
 export const fileExists = async (objectName) => {
   try {
-    const params = {
-      Bucket: DEFAULT_BUCKET,
-      Key: objectName
-    }
-
-    const command = new HeadObjectCommand(params)
-    await s3Client.send(command)
+    await getFileMetadata(objectName)
     return true
   } catch (error) {
     return false
   }
 }
 
-// Получение метаданных файла
-export const getFileMetadata = async (objectName) => {
-  try {
-    const params = {
-      Bucket: DEFAULT_BUCKET,
-      Key: objectName
-    }
-
-    const command = new HeadObjectCommand(params)
-    const response = await s3Client.send(command)
-
-    return {
-      size: response.ContentLength,
-      lastModified: response.LastModified,
-      contentType: response.ContentType,
-      etag: response.ETag
-    }
-  } catch (error) {
-    console.error('Ошибка получения метаданных:', error)
-    throw error
-  }
+// Получение структуры папок
+export const getFolderStructure = async () => {
+  const contents = await getFolderContents('')
+  return { folders: contents.folders || [], files: contents.files || [] }
 }
 
-// Получение presigned URL для безопасного скачивания/стриминга
-export const getPresignedDownloadUrl = async (objectName, expiresIn = 3600, contentType = null) => {
-  try {
-    const commandParams = {
-      Bucket: DEFAULT_BUCKET,
-      Key: objectName
-    }
-    
-    // Для видео и аудио настраиваем правильные заголовки для стриминга
-    if (contentType && (contentType.startsWith('video/') || contentType.startsWith('audio/'))) {
-      commandParams.ResponseContentType = contentType
-      // inline = воспроизведение в браузере (не скачивание)
-      commandParams.ResponseContentDisposition = `inline; filename="${objectName.split('/').pop()}"`
-      // Важно: НЕ добавляем Range в presigned URL, так как Range устанавливается в заголовках запроса
-      // Браузер автоматически будет использовать Range requests для стриминга
-    }
+// Очистка кэша (полезно для отладки)
+export const clearCache = () => {
+  urlCache.clear()
+  metadataCache.clear()
+  listCache.clear()
+  sizeCache.clear()
+}
 
-    const command = new GetObjectCommand(commandParams)
-    const url = await getSignedUrl(s3Client, command, { expiresIn })
-    
-    // На фронтенде заменяем на прокси путь для избежания CORS
-    return getFrontendUrl(url)
-  } catch (error) {
-    console.error('Ошибка создания presigned URL:', error)
-    throw error
+// Получение статистики кэша
+export const getCacheStats = () => {
+  return {
+    urlCache: urlCache.size,
+    metadataCache: metadataCache.size,
+    listCache: listCache.size,
+    sizeCache: sizeCache.size
   }
 }
 
@@ -450,5 +431,9 @@ export default {
   getFileMetadata,
   getPresignedUrl,
   getPresignedDownloadUrl,
-  formatFileSize
+  getPresignedUrlWithRange,  // ✅ Новая функция для Range requests
+  formatFileSize,
+  clearCache,
+  getCacheStats
 }
+

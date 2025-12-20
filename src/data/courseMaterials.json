@@ -55,7 +55,8 @@
               "fileSize": 70053123,
               "sizeFormatted": "66.8 MB"
             }
-          ]
+          ],
+          "topicKey": "topic_04b996b5-3a01-4cdb-85a4-dff5c88015b7"
         },
         {
           "topicCode": "Тема 1.2",
@@ -109,7 +110,8 @@
               "fileSize": 757898,
               "sizeFormatted": "740 KB"
             }
-          ]
+          ],
+          "topicKey": "topic_060177a5-c6f3-4030-afcf-fd11038ae62d"
         },
         {
           "topicCode": "Тема 1.3",
@@ -131,7 +133,8 @@
               "fileSize": 3790390,
               "sizeFormatted": "3.6 MB"
             }
-          ]
+          ],
+          "topicKey": "topic_a112807c-8499-4dc9-82a9-31b287d02938"
         },
         {
           "topicCode": "Тема 1.4",
@@ -147,7 +150,7 @@
             },
             {
               "fileName": "Тема Система CBM Часть 2.pdf",
-              "objectName": "Урок № 1. Зона замера газа/Тема 1.4. Система СВМ/Тема Система CBM Часть 2.pdf",
+              "objectName": "Урок № 1. Зона замера газа/Тема 1.4. Система СВМ/Тема Система CBM Част 2.pdf",
               "is_main_file": true,
               "fileType": "pdf",
               "fileSize": 0,
@@ -161,9 +164,82 @@
               "fileSize": 0,
               "sizeFormatted": "Размер неизвестен"
             }
+          ],
+          "topicKey": "topic_fc5f4c42-d0d8-4505-a150-aa448222d215"
+        }
+      ],
+      "lessonKey": "lesson_2df75241-93e0-42d4-8b67-74231900c638"
+    },
+    {
+      "lessonTitle": "Урок № 2. Зона Компримирование (ГПА)",
+      "topics": [
+        {
+          "topicCode": "Тема 2.1",
+          "topicTitle": "Система управления ГПА",
+          "files": [
+            {
+              "fileName": "Система управления GE.pdf",
+              "objectName": "Зона компримирование/2,1 Система управления ГПА/Система управления GE.pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 4886109,
+              "sizeFormatted": "4.7 MB"
+            }
+          ],
+          "topicKey": "topic_ef6b180e-1c0e-4797-854c-ef47ec76c9c1"
+        },
+        {
+          "topicCode": "Тема 2.2",
+          "topicTitle": "Система смазки ГПА",
+          "files": [
+            {
+              "fileName": "Система_смазки_ГПА_GE_Принцип_работы_и_алгоритмы_работы_.pdf",
+              "objectName": "Зона компримирование/2.2 Система смазки ГПА/Система_смазки_ГПА_GE_Принцип_работы_и_алгоритмы_работы_.pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 29299398,
+              "sizeFormatted": "27.9 MB"
+            }
+          ],
+          "topicKey": "topic_bb253a37-a49a-4e3c-8ace-4964b63ce0dd"
+        }
+      ],
+      "lessonKey": "lesson_ed4a2675-efca-4dde-90cf-548936731853"
+    },
+    {
+      "lessonTitle": "Урок № 3. Вспомогательное оборудование WKC-1",
+      "topics": [
+        {
+          "topicCode": "Тема 3.1",
+          "topicTitle": "Зона очистки газа",
+          "files": [
+            {
+              "fileName": "Тренинг_на_тему_Система_очистки_газа_станции_КС_1.pdf",
+              "objectName": "Вспомогателное оборудование/3.1 Зона очистки газа/Тренинг_на_тему_Система_очистки_газа_станции_КС_1.pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 2834934,
+              "sizeFormatted": "2.7 MB"
+            }
+          ],
+          "topicKey": "topic_782d75d4-fe02-412a-b589-3355f36c8f14"
+        },
+        {
+          "topicCode": "Тема 3.2",
+          "topicTitle": "БПТГ",
+          "files": [
+            {
+              "fileName": "БПТГ KC1 Юсупов Р .pdf",
+              "objectName": "Вспомогателное оборудование/3.2 БПТГ/БПТГ KC1 Юсупов Р .pdf",
+              "is_main_file": true,
+              "fileType": "pdf",
+              "fileSize": 3935118,
+              "sizeFormatted": "3.8 MB"
+            }
           ]
         }
-      ]
+      ],
+      "lessonKey": "lesson_d9b00175-ef70-491e-b6f3-43915079038e"
     }
   ]
 }

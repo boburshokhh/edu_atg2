@@ -15,28 +15,19 @@
         :fadeEffect="{ crossFade: true }"
         class="w-full h-full"
       >
-        <swiper-slide v-for="(image, index) in backgroundImages" :key="index">
+        <swiper-slide v-for="(imageUrl, index) in stationImages" :key="index">
           <div class="w-full h-full relative">
             <img 
-              :src="image" 
-              :alt="`Slide ${index + 1}`"
+              :src="imageUrl || fallbackImageUrl" 
+              :alt="`Станция ${index + 1}`"
               class="w-full h-full object-cover"
+              @error="imageError"
             />
-            <!-- Dark Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-br from-gray-900/75 via-slate-900/80 to-gray-900/75"></div>
+            <!-- Градиентный оверлей как в StationDetail -->
+            <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-gray-900/90"></div>
           </div>
         </swiper-slide>
       </swiper>
-      
-      <!-- Additional Effects -->
-      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/40"></div>
-      
-      <!-- Animated Circles -->
-      <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-tamex-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-      <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      
-      <!-- Grid Pattern -->
-      <div class="absolute inset-0 opacity-[0.02]" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 50px 50px;"></div>
     </div>
 
     <!-- Content -->
@@ -107,11 +98,13 @@
 </template>
 
 <script>
+import { ref, onMounted } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, EffectFade } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/effect-fade'
 import 'swiper/css/autoplay'
+import minioService from '@/services/minioService'
 
 export default {
   name: 'HeroSection',
@@ -120,12 +113,67 @@ export default {
     SwiperSlide
   },
   setup() {
-    const backgroundImages = [
-      '/slider/photo_2025-10-16_14-31-39.jpg',
-      '/slider/photo_2025-10-16_14-32-18.jpg',
-      '/slider/photo_2025-10-16_14-32-35.jpg',
-      '/slider/photo_2025-10-16_14-35-01.jpg'
+    // Список изображений станций
+    const stationImageNames = [
+      'WKC1.jpg',
+      'WKC2.jpg',
+      'WKC3.jpg',
+      'UCS1.jpg',
+      'UCS3.jpg',
+      'GCS.jpg',
+      'MS.jpg',
+      'UKMS.jpg'
     ]
+    
+    const stationImages = ref([])
+    const fallbackImageUrl = ref('/slider/photo_2025-10-16_14-31-39.jpg') // Fallback изображение
+
+    // Загрузить все изображения станций из MinIO
+    const loadStationImages = async () => {
+      try {
+        const promises = stationImageNames.map(async (imageName) => {
+          const objectName = `stations/${imageName}`
+          try {
+            // Получаем presigned URL (действителен 7 дней)
+            const url = await minioService.getPresignedDownloadUrl(
+              objectName, 
+              7 * 24 * 60 * 60, // 7 дней в секундах
+              'image/jpeg'
+            )
+            return url
+          } catch (error) {
+            console.error(`Ошибка загрузки изображения ${imageName}:`, error)
+            // Fallback к прямому URL
+            try {
+              return minioService.getFileUrl(objectName)
+            } catch (fallbackError) {
+              console.error(`Ошибка получения fallback URL для ${imageName}:`, fallbackError)
+              return null
+            }
+          }
+        })
+        
+        const urls = await Promise.all(promises)
+        // Фильтруем null значения и добавляем fallback для пустых
+        stationImages.value = urls.map(url => url || fallbackImageUrl.value)
+        
+        // Если ни одно изображение не загрузилось, используем fallback
+        if (stationImages.value.length === 0 || stationImages.value.every(url => !url)) {
+          stationImages.value = [fallbackImageUrl.value]
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки изображений станций:', error)
+        // Используем fallback
+        stationImages.value = [fallbackImageUrl.value]
+      }
+    }
+
+    const imageError = (event) => {
+      // Если изображение не загрузилось, используем fallback
+      if (event.target.src !== fallbackImageUrl.value) {
+        event.target.src = fallbackImageUrl.value
+      }
+    }
 
     const scrollToAbout = () => {
       const aboutSection = document.getElementById('about')
@@ -134,10 +182,17 @@ export default {
       }
     }
 
+    // Загружаем изображения при монтировании компонента
+    onMounted(() => {
+      loadStationImages()
+    })
+
     return {
       modules: [Autoplay, EffectFade],
-      backgroundImages,
-      scrollToAbout
+      stationImages,
+      fallbackImageUrl,
+      scrollToAbout,
+      imageError
     }
   }
 }

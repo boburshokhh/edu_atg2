@@ -1,5 +1,5 @@
 <template>
-  <div class="course-materials-sidebar bg-white border-l border-gray-200 flex flex-col w-72 lg:w-80">
+  <div class="course-materials-sidebar bg-white border-l border-gray-200 flex flex-col">
     <!-- Compact Header -->
     <div class="p-4 border-b border-gray-200 relative">
       <div class="flex items-center justify-between mb-1">
@@ -233,51 +233,64 @@ const handleToggleSidebar = () => {
   flex-direction: column;
   background: #ffffff;
   border-left: 1px solid #e5e7eb;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Desktop styles */
 .materials-sidebar-desktop {
   position: sticky;
-  top: 64px; /* Высота LessonHeader */
-  height: calc(100vh - 64px);
-  max-height: calc(100vh - 64px);
+  top: clamp(3.5rem, 10vw, 4rem);
+  height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
+  max-height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
   overflow: hidden;
+  width: clamp(16rem, 25vw, 20rem);
+  min-width: clamp(16rem, 25vw, 20rem);
+  max-width: clamp(16rem, 25vw, 20rem);
 }
 
 /* Mobile styles */
 .materials-sidebar-mobile {
   position: fixed;
   right: 0;
-  top: 64px;
-  height: calc(100vh - 64px);
+  top: clamp(3.5rem, 10vw, 4rem);
+  height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
   z-index: 40;
   overflow: hidden;
+  width: clamp(16rem, 80vw, 20rem);
+  max-width: 85vw;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 .materials-list-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  min-height: 0; /* Важно для правильной работы flex с overflow */
+  min-height: 0;
+  width: 100%;
 }
 
 .materials-section {
   border-b: 1px solid #f3f4f6;
+  width: 100%;
 }
 
 .materials-items {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .sidebar-toggle-btn {
   flex-shrink: 0;
-  margin-left: 8px;
+  margin-left: clamp(0.25rem, 1vw, 0.5rem);
+  width: clamp(1.75rem, 4vw, 2rem);
+  height: clamp(1.75rem, 4vw, 2rem);
 }
 
 /* Кастомный скроллбар для сайдбара */
 .materials-list-container::-webkit-scrollbar {
-  width: 6px;
+  width: clamp(0.25rem, 0.75vw, 0.375rem);
 }
 
 .materials-list-container::-webkit-scrollbar-track {
@@ -286,10 +299,66 @@ const handleToggleSidebar = () => {
 
 .materials-list-container::-webkit-scrollbar-thumb {
   background: #c1c1c1;
-  border-radius: 3px;
+  border-radius: clamp(0.125rem, 0.375vw, 0.1875rem);
 }
 
 .materials-list-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Media Queries */
+/* Mobile phones (max-width: 480px) */
+@media (max-width: 480px) {
+  .materials-sidebar-mobile {
+    width: 85vw;
+    max-width: 85vw;
+  }
+
+  .materials-sidebar-desktop {
+    width: clamp(14rem, 30vw, 18rem);
+    min-width: clamp(14rem, 30vw, 18rem);
+    max-width: clamp(14rem, 30vw, 18rem);
+  }
+}
+
+/* Tablets (max-width: 768px) */
+@media (max-width: 768px) {
+  .materials-sidebar-mobile {
+    width: clamp(18rem, 75vw, 22rem);
+    max-width: 80vw;
+  }
+
+  .materials-sidebar-desktop {
+    width: clamp(16rem, 28vw, 20rem);
+    min-width: clamp(16rem, 28vw, 20rem);
+    max-width: clamp(16rem, 28vw, 20rem);
+  }
+}
+
+/* Small laptops (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .materials-sidebar-desktop {
+    width: clamp(16rem, 30vw, 20rem);
+    min-width: clamp(16rem, 30vw, 20rem);
+    max-width: clamp(16rem, 30vw, 20rem);
+  }
+}
+
+/* Desktop (min-width: 1025px) */
+@media (min-width: 1025px) {
+  .materials-sidebar-desktop {
+    width: clamp(18rem, 22vw, 20rem);
+    min-width: clamp(18rem, 22vw, 20rem);
+    max-width: clamp(18rem, 22vw, 20rem);
+  }
+}
+
+/* Wide monitors (min-width: 1440px) */
+@media (min-width: 1440px) {
+  .materials-sidebar-desktop {
+    width: 20rem;
+    min-width: 20rem;
+    max-width: 20rem;
+  }
 }
 </style>

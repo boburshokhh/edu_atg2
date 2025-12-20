@@ -39,7 +39,7 @@ export default {
   },
   hero: {
     welcome: 'Добро пожаловать на',
-    platform: 'образовательную платформу',
+    platform: 'обучающий портал',
     company: 'Asia Trans Gas',
     description: 'Надёжное обучение специалистов газотранспортной отрасли и промышленной безопасности'
   },
@@ -155,7 +155,7 @@ export default {
     },
     aboutCourse: 'О курсе',
     whatYouLearn: 'Что вы изучите:',
-    curriculum: 'Программа курса',
+    curriculum: 'Программа тренинга',
     studentReviews: 'Отзывы студентов',
     instructor: 'Преподаватель',
     sendMessage: 'Написать сообщение',

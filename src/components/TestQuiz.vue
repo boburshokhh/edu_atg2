@@ -43,57 +43,58 @@
     <!-- Test Progress -->
     <div v-if="testStarted && !testCompleted" class="test-content">
       <!-- Progress Bar -->
-      <div class="sticky top-0 z-10 bg-white border-b border-gray-200 p-4 shadow-sm">
+      <div class="sticky top-0 z-10 bg-white border-b border-gray-200 p-2 shadow-sm">
         <div class="max-w-4xl mx-auto">
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-4">
-              <span class="text-sm font-semibold text-gray-700">
-                Вопрос {{ currentQuestionIndex + 1 }} из {{ testData.questions.length }}
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-semibold text-gray-600">
+                Вопрос {{ currentQuestionIndex + 1 }} / {{ testData.questions.length }}
               </span>
-              <el-tag v-if="timeRemaining" :type="timeRemaining < 300 ? 'danger' : 'info'" size="small">
+              <el-tag v-if="timeRemaining" :type="timeRemaining < 300 ? 'danger' : 'info'" size="small" effect="plain" class="!border-none !bg-gray-100">
                 <el-icon class="mr-1"><Timer /></el-icon>
                 {{ formatTime(timeRemaining) }}
               </el-tag>
             </div>
-            <el-button text @click="confirmExit" size="small">
-              <el-icon><Close /></el-icon>
+            <el-button type="danger" text bg size="small" @click="confirmExit">
+              <el-icon class="mr-1"><Close /></el-icon>
               Выйти
             </el-button>
           </div>
           <el-progress 
             :percentage="progress" 
-            :stroke-width="8"
+            :stroke-width="4"
+            :show-text="false"
             :color="progressColor"
           />
         </div>
       </div>
 
       <!-- Question Card -->
-      <div class="max-w-4xl mx-auto p-4 md:p-6">
-        <el-card shadow="hover" class="question-card">
-          <div class="mb-6">
-            <div class="flex items-start gap-3 mb-4">
-              <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span class="text-blue-600 font-bold">{{ currentQuestionIndex + 1 }}</span>
+      <div class="max-w-3xl mx-auto p-3 md:p-4">
+        <el-card shadow="never" class="question-card border-none !shadow-none md:!border md:!shadow-sm md:rounded-xl">
+          <div class="mb-4">
+            <div class="flex items-start gap-3 mb-3">
+              <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0 border border-blue-100">
+                <span class="text-blue-600 font-bold text-sm">{{ currentQuestionIndex + 1 }}</span>
               </div>
               <div class="flex-1">
-                <h3 class="text-lg font-bold text-gray-900 mb-2">
+                <h3 class="text-base font-bold text-gray-900 mb-1 leading-tight">
                   {{ currentQuestion.question }}
                 </h3>
-                <el-tag v-if="currentQuestion.points" size="small" type="warning">
+                <el-tag v-if="currentQuestion.points" size="small" type="warning" effect="plain" class="!h-5 !px-1.5 !text-xs">
                   {{ currentQuestion.points }} {{ currentQuestion.points === 1 ? 'балл' : 'балла' }}
                 </el-tag>
               </div>
             </div>
 
             <!-- Image if exists -->
-            <div v-if="currentQuestion.image" class="mb-4">
-              <img :src="currentQuestion.image" :alt="currentQuestion.question" class="max-w-full rounded-lg" />
+            <div v-if="currentQuestion.image" class="mb-3">
+              <img :src="currentQuestion.image" :alt="currentQuestion.question" class="max-w-full rounded-lg border border-gray-100" />
             </div>
           </div>
 
           <!-- Answer Options -->
-          <div class="space-y-3">
+          <div class="space-y-2 mb-4">
             <div
               v-for="(option, index) in currentQuestion.options"
               :key="index"
@@ -106,16 +107,61 @@
               ]"
             >
               <div class="flex items-center gap-3">
-                <div class="option-indicator">
+                <div class="option-indicator text-xs">
                   <span>{{ String.fromCharCode(65 + index) }}</span>
                 </div>
-                <span class="flex-1">{{ option }}</span>
+                <span class="flex-1 text-sm text-gray-700 leading-snug">{{ option }}</span>
                 <el-icon v-if="showExplanation && index === currentQuestion.correctAnswer" class="text-green-600">
                   <Check />
                 </el-icon>
                 <el-icon v-if="showExplanation && selectedAnswers[currentQuestionIndex] === index && index !== currentQuestion.correctAnswer" class="text-red-600">
                   <Close />
                 </el-icon>
+              </div>
+            </div>
+          </div>
+
+          <!-- Navigation - перемещено внутрь карточки выше -->
+          <div class="border-t border-gray-100 pt-4 mt-4">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <el-button
+                @click="previousQuestion"
+                :disabled="currentQuestionIndex === 0"
+                :icon="ArrowLeft"
+                size="default"
+              >
+                Назад
+              </el-button>
+
+              <div class="flex flex-col items-end gap-1.5">
+                <div class="flex gap-2">
+                  <el-button
+                    v-if="currentQuestionIndex < testData.questions.length - 1"
+                    @click="nextQuestion"
+                    type="primary"
+                    :disabled="selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null"
+                    size="default"
+                  >
+                    Далее
+                    <el-icon class="ml-2"><ArrowRight /></el-icon>
+                  </el-button>
+                  <el-button
+                    v-else
+                    @click="submitTest"
+                    type="success"
+                    :disabled="selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null"
+                    size="default"
+                  >
+                    Завершить тест
+                    <el-icon class="ml-2"><Check /></el-icon>
+                  </el-button>
+                </div>
+                <p 
+                  v-if="selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null"
+                  class="text-xs text-gray-500 text-right"
+                >
+                  Выберите ответ, чтобы продолжить
+                </p>
               </div>
             </div>
           </div>
@@ -134,42 +180,10 @@
           </el-alert>
         </el-card>
 
-        <!-- Navigation -->
-        <div class="flex items-center justify-between mt-6">
-          <el-button
-            @click="previousQuestion"
-            :disabled="currentQuestionIndex === 0"
-            :icon="ArrowLeft"
-          >
-            Назад
-          </el-button>
-
-          <div class="flex gap-2">
-            <el-button
-              v-if="currentQuestionIndex < testData.questions.length - 1"
-              @click="nextQuestion"
-              type="primary"
-              :disabled="selectedAnswers[currentQuestionIndex] === undefined"
-            >
-              Далее
-              <el-icon class="ml-2"><ArrowRight /></el-icon>
-            </el-button>
-            <el-button
-              v-else
-              @click="submitTest"
-              type="success"
-              :disabled="!allQuestionsAnswered"
-            >
-              Завершить тест
-              <el-icon class="ml-2"><Check /></el-icon>
-            </el-button>
-          </div>
-        </div>
-
-        <!-- Question Navigator -->
-        <div class="mt-6">
+        <!-- Question Navigator - REMOVED as requested -->
+        <!-- <div class="mt-4">
           <el-card shadow="never" class="bg-gray-50">
-            <div class="text-sm font-semibold text-gray-700 mb-3">Навигация по вопросам:</div>
+            <div class="text-sm font-semibold text-gray-700 mb-2">Навигация по вопросам:</div>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="(q, index) in testData.questions"
@@ -185,7 +199,7 @@
               </button>
             </div>
           </el-card>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -351,6 +365,9 @@ const isPassed = computed(() => {
 // Methods
 const startTest = () => {
   testStarted.value = true
+  testCompleted.value = false
+  currentQuestionIndex.value = 0
+  selectedAnswers.value = {}
   showExplanation.value = false
   
   // Start timer if time limit exists
@@ -524,11 +541,11 @@ onUnmounted(() => {
 }
 
 .option-card {
-  padding: 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   background: white;
 }
 
@@ -554,16 +571,17 @@ onUnmounted(() => {
 }
 
 .option-indicator {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  font-weight: 600;
   color: #6b7280;
   flex-shrink: 0;
+  font-size: 12px;
 }
 
 .option-card.selected .option-indicator {

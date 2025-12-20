@@ -3,445 +3,739 @@
     <div class="section-padding bg-gray-50 min-h-screen">
       <div class="page-container">
         <!-- Header -->
-        <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900 mb-2">Профиль</h1>
-          <p class="text-gray-600">Управляйте информацией о вашем аккаунте</p>
+        <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Профиль сотрудника</h1>
+            <p class="text-gray-600">Персональная информация и настройки</p>
+          </div>
+          <el-button type="primary" @click="openEditModal" :icon="Edit" :disabled="loading">
+            Редактировать
+          </el-button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <!-- Profile Info -->
+        <!-- Loading State -->
+        <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div class="lg:col-span-1">
-            <div class="card p-6">
-              <div class="text-center">
-                <el-avatar :size="120" :src="user.avatar" class="mb-4">
-                  <el-icon :size="60"><User /></el-icon>
-                </el-avatar>
-                <el-upload
-                  action="#"
-                  :auto-upload="false"
-                  :on-change="handleAvatarChange"
-                  :show-file-list="false"
-                  class="mt-2"
-                >
-                  <el-button :loading="uploading" size="small" type="primary">Загрузить фото</el-button>
-                </el-upload>
-                <h2 class="text-xl font-semibold text-gray-900 mb-2">{{ user.name }}</h2>
-                <p class="text-gray-600 mb-4">{{ user.email }}</p>
-                <el-button @click="showEditProfile = true" type="primary" plain>
-                  Редактировать профиль
-                </el-button>
-              </div>
+            <el-skeleton animated>
+              <template #template>
+                <el-skeleton-item variant="image" style="width: 100%; height: 400px; border-radius: 16px;" />
+              </template>
+            </el-skeleton>
+          </div>
+          <div class="lg:col-span-2">
+            <el-skeleton animated :rows="10" />
+          </div>
+        </div>
 
-              <div class="mt-8 space-y-4">
-                <div class="flex items-center gap-3">
-                  <el-icon class="text-primary-600"><Calendar /></el-icon>
-                  <span class="text-gray-600">Дата регистрации:</span>
-                  <span class="font-medium">{{ user.joinDate }}</span>
+        <!-- Content -->
+        <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Карточка профиля (Левая колонка) -->
+          <div class="lg:col-span-1">
+            <div class="card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <!-- Верхняя часть с фоном -->
+              <div class="h-32 bg-gradient-to-r from-blue-600 to-blue-800 relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20 pattern-dots"></div>
+              </div>
+              
+              <!-- Аватар и основная инфо -->
+              <div class="px-6 pb-6 relative">
+                <div class="relative -mt-16 mb-4 flex justify-center">
+                  <div class="relative group">
+                    <el-avatar 
+                      :size="128" 
+                      :src="user.avatar" 
+                      class="border-4 border-white shadow-lg bg-white text-4xl font-bold text-gray-400 flex items-center justify-center"
+                    >
+                      <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" />
+                      <span v-else>{{ user.name ? user.name.charAt(0).toUpperCase() : 'U' }}</span>
+                    </el-avatar>
+                    
+                    <!-- Кнопка загрузки поверх аватара -->
+                    <div class="absolute inset-0 rounded-full overflow-hidden">
+                    <el-upload
+                        class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                      action="#"
+                      :auto-upload="false"
+                      :on-change="handleAvatarChange"
+                      :show-file-list="false"
+                        accept="image/jpeg,image/png,image/webp"
+                    >
+                        <div class="text-center">
+                          <el-icon class="text-white text-2xl mb-1"><Camera /></el-icon>
+                          <p class="text-white text-xs font-medium">Изменить</p>
+                        </div>
+                    </el-upload>
+                    </div>
+                    
+                    <!-- Индикатор загрузки -->
+                    <div v-if="uploading" class="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full z-10">
+                      <el-icon class="is-loading text-blue-600 text-2xl"><Loading /></el-icon>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex items-center gap-3">
-                  <el-icon class="text-primary-600"><Trophy /></el-icon>
-                  <span class="text-gray-600">Курсов завершено:</span>
-                  <span class="font-medium">{{ userStats.completedCourses }}</span>
+
+                <div class="text-center mb-6">
+                  <h2 class="text-2xl font-bold text-gray-900 mb-1 break-words">{{ user.name || 'Пользователь' }}</h2>
+                  <p class="text-blue-600 font-medium mb-1">{{ user.position || 'Должность не указана' }}</p>
+                  <p class="text-gray-500 text-sm">{{ user.station || 'Станция не выбрана' }}</p>
                 </div>
-                <div class="flex items-center gap-3">
-                  <el-icon class="text-primary-600"><Clock /></el-icon>
-                  <span class="text-gray-600">Часов изучено:</span>
-                  <span class="font-medium">{{ userStats.hoursStudied }}</span>
+
+                <el-divider class="!my-6" />
+
+                <!-- Детальная информация -->
+                <div class="space-y-5">
+                  <div class="flex items-center gap-4 group">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition-colors">
+                      <el-icon><Message /></el-icon>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Email</p>
+                      <p class="text-gray-900 font-medium truncate" :title="user.email">{{ user.email || 'Не указан' }}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-4 group">
+                    <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors">
+                      <el-icon><OfficeBuilding /></el-icon>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Станция</p>
+                      <p class="text-gray-900 font-medium truncate">{{ user.station || 'Не выбрана' }}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-4 group">
+                    <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-100 transition-colors">
+                      <el-icon><Suitcase /></el-icon>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Должность</p>
+                      <p class="text-gray-900 font-medium truncate">{{ user.position || 'Не указана' }}</p>
+                    </div>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Краткая статистика -->
+            <div class="grid grid-cols-2 gap-4 mt-6">
+              <div class="card bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+                <p class="text-3xl font-bold text-blue-600 mb-1">{{ userStats.completedCourses }}</p>
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Курсов пройдено</p>
+              </div>
+              <div class="card bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+                <p class="text-3xl font-bold text-orange-600 mb-1">{{ userStats.hoursStudied }}</p>
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Часов обучения</p>
               </div>
             </div>
           </div>
 
-          <!-- Main Content -->
+          <!-- Контент (Правая колонка) -->
           <div class="lg:col-span-2">
-            <!-- Tabs -->
-            <el-tabs v-model="activeTab" class="mb-8">
-              <el-tab-pane label="Мои курсы" name="courses">
-                <div class="space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[600px] flex flex-col overflow-hidden">
+              <el-tabs v-model="activeTab" class="profile-tabs flex-1">
+                <el-tab-pane label="Мои курсы" name="courses">
+                  <div class="p-6">
+                    <div v-if="userCourses.length" class="space-y-4">
                   <div 
                     v-for="course in userCourses" 
                     :key="course.id"
-                    class="card p-6"
+                        class="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all cursor-pointer"
+                        @click="$router.push(`/course/${course.course_id || course.id}`)"
                   >
-                    <div class="flex items-center gap-4">
-                      <div class="w-20 h-16 bg-gradient-to-br from-primary-100 to-orange-100 rounded-lg flex items-center justify-center">
-                        <el-icon :size="32" class="text-primary-600">
-                          <component :is="course.icon" />
-                        </el-icon>
-                      </div>
-                      
-                      <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ course.title }}</h3>
-                        <p class="text-gray-600 mb-3">{{ course.description }}</p>
-                        
-                        <div class="flex items-center gap-6 mb-3">
-                          <div class="flex items-center gap-2">
-                            <el-icon class="text-gray-500"><Clock /></el-icon>
-                            <span class="text-sm text-gray-600">{{ course.duration }}</span>
+                        <div class="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform">
+                          <el-icon size="28"><component :is="course.course?.icon || 'Monitor'" /></el-icon>
+                        </div>
+                        <div class="flex-1 min-w-0 w-full">
+                          <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
+                            <h3 class="font-bold text-gray-900 text-lg leading-tight group-hover:text-blue-600 transition-colors">{{ course.course?.title || course.title }}</h3>
+                            <span 
+                              class="px-2.5 py-1 rounded-full text-xs font-medium shrink-0"
+                              :class="getStatusClass(course.status)"
+                            >
+                              {{ getStatusLabel(course.status) }}
+                            </span>
                           </div>
-                          <div class="flex items-center gap-2">
-                            <el-icon class="text-gray-500"><Calendar /></el-icon>
-                            <span class="text-sm text-gray-600">Начат {{ course.startDate }}</span>
-                          </div>
-                          <div class="flex items-center gap-2">
-                            <el-icon class="text-gray-500"><Trophy /></el-icon>
-                            <span class="text-sm text-gray-600">{{ course.progress }}% завершено</span>
+                          
+                          <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mt-3">
+                            <div class="flex-1 w-full">
+                              <div class="flex justify-between text-xs text-gray-500 mb-1.5">
+                                <span>Прогресс</span>
+                                <span class="font-medium text-gray-700">{{ course.progress_percent || 0 }}%</span>
+                              </div>
+                              <el-progress 
+                                :percentage="course.progress_percent || 0" 
+                                :stroke-width="8" 
+                                :show-text="false"
+                                :color="customColors"
+                              />
+                            </div>
+                            <div class="text-xs text-gray-400 shrink-0 flex items-center gap-1">
+                              <el-icon><Clock /></el-icon>
+                              <span>Обновлено: {{ formatDate(course.last_activity) }}</span>
+                            </div>
                           </div>
                         </div>
-                        
-                        <el-progress 
-                          :percentage="course.progress" 
-                          :show-text="false"
-                          :stroke-width="8"
-                        />
-                      </div>
-                      
-                      <div class="text-right">
-                        <el-button 
-                          @click="$router.push(`/course/${course.id}`)"
-                          type="primary"
-                        >
-                          {{ course.progress === 100 ? 'Повторить' : 'Продолжить' }}
-                        </el-button>
-                        <div v-if="course.certificate" class="mt-2">
-                          <el-button size="small" type="success" plain>
-                            <el-icon><Medal /></el-icon>
-                            Сертификат
-                          </el-button>
+                        <div class="hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 text-gray-400 group-hover:border-blue-200 group-hover:text-blue-600 group-hover:bg-white transition-all shrink-0">
+                          <el-icon><ArrowRight /></el-icon>
                         </div>
                       </div>
                     </div>
+                    
+                    <div v-else class="flex flex-col items-center justify-center py-12 text-center">
+                      <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                        <el-icon class="text-gray-300 text-4xl"><Collection /></el-icon>
+                      </div>
+                      <h3 class="text-lg font-medium text-gray-900 mb-2">Нет активных курсов</h3>
+                      <p class="text-gray-500 max-w-xs mx-auto mb-6">Вы пока не записаны ни на один курс. Перейдите в каталог, чтобы начать обучение.</p>
+                      <el-button type="primary" @click="$router.push('/stations')">
+                        Перейти к курсам
+                      </el-button>
+                    </div>
                   </div>
-                </div>
               </el-tab-pane>
 
-              <el-tab-pane label="Сертификаты" name="certificates">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div 
-                    v-for="certificate in certificates" 
-                    :key="certificate.id"
-                    class="card p-6 text-center"
-                  >
-                    <div class="w-20 h-20 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <el-icon :size="40" class="text-orange-600"><Medal /></el-icon>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ certificate.title }}</h3>
-                    <p class="text-gray-600 mb-4">{{ certificate.course }}</p>
-                    <p class="text-sm text-gray-500 mb-4">Выдан {{ certificate.date }}</p>
-                    <el-button type="primary" plain>Скачать PDF</el-button>
-                  </div>
+              <!-- Вкладка Статистики -->
+                <el-tab-pane label="Детальная статистика" name="stats">
+                  <div class="p-6">
+                    <UserStatistics :detailed="true" />
                 </div>
               </el-tab-pane>
 
               <el-tab-pane label="Настройки" name="settings">
-                <div class="card p-6">
-                  <h3 class="text-lg font-semibold text-gray-900 mb-6">Настройки аккаунта</h3>
-                  
-                  <el-form :model="settingsForm" label-width="150px" class="max-w-2xl">
-                    <el-form-item label="Email уведомления">
+                  <div class="p-6 max-w-2xl">
+                    <div class="space-y-8">
+                      <!-- Уведомления -->
+                      <div>
+                        <div class="flex items-center gap-3 mb-6">
+                          <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                            <el-icon size="20"><Bell /></el-icon>
+                          </div>
+                          <div>
+                            <h3 class="font-bold text-gray-900">Уведомления</h3>
+                            <p class="text-sm text-gray-500">Управление оповещениями</p>
+                          </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-xl p-4 space-y-4 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                            <div>
+                              <p class="font-medium text-gray-900">Email рассылка</p>
+                              <p class="text-xs text-gray-500">Получать новости и отчеты на почту</p>
+                            </div>
                       <el-switch v-model="settingsForm.emailNotifications" />
-                    </el-form-item>
-                    
-                    <el-form-item label="Push уведомления">
+                    </div>
+                          <el-divider class="!my-2" />
+                    <div class="flex items-center justify-between">
+                            <div>
+                              <p class="font-medium text-gray-900">Push уведомления</p>
+                              <p class="text-xs text-gray-500">Уведомления в браузере</p>
+                            </div>
                       <el-switch v-model="settingsForm.pushNotifications" />
-                    </el-form-item>
-                    
-                    <el-form-item label="Еженедельный отчет">
-                      <el-switch v-model="settingsForm.weeklyReport" />
-                    </el-form-item>
-                    
-                    <el-form-item label="Язык интерфейса">
-                      <el-select v-model="settingsForm.language" class="w-48">
-                        <el-option label="Русский" value="ru" />
-                        <el-option label="English" value="en" />
-                        <el-option label="Узбекский" value="uz" />
-                      </el-select>
-                    </el-form-item>
-                    
-                    <el-form-item>
-                      <el-button type="primary" @click="saveSettings">Сохранить настройки</el-button>
-                    </el-form-item>
-                  </el-form>
+                          </div>
+                    </div>
+                  </div>
+                  
+                      <!-- Интерфейс -->
+                      <div>
+                        <div class="flex items-center gap-3 mb-6">
+                          <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                            <el-icon size="20"><Monitor /></el-icon>
+                          </div>
+                          <div>
+                            <h3 class="font-bold text-gray-900">Интерфейс</h3>
+                            <p class="text-sm text-gray-500">Настройки отображения</p>
+                          </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <div class="flex items-center justify-between">
+                            <div>
+                              <p class="font-medium text-gray-900">Язык системы</p>
+                              <p class="text-xs text-gray-500">Выберите предпочтительный язык</p>
+                            </div>
+                            <el-select v-model="settingsForm.language" size="large" class="w-40">
+                              <el-option label="Русский" value="ru">
+                                <span class="flex items-center gap-2">🇷🇺 Русский</span>
+                              </el-option>
+                              <el-option label="English" value="en">
+                                <span class="flex items-center gap-2">🇺🇸 English</span>
+                              </el-option>
+                    </el-select>
+                          </div>
+                        </div>
+                  </div>
+                  
+                      <div class="pt-4">
+                        <el-button type="primary" size="large" @click="saveSettings" class="w-full sm:w-auto px-8">
+                          Сохранить настройки
+                        </el-button>
+                      </div>
+                  </div>
                 </div>
               </el-tab-pane>
             </el-tabs>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Edit Profile Dialog -->
-    <el-dialog v-model="showEditProfile" title="Редактировать профиль" width="500px">
-      <el-form :model="editForm" label-width="100px">
-        <el-form-item label="Имя">
-          <el-input v-model="editForm.name" />
+    <!-- Модальное окно редактирования -->
+    <el-dialog 
+      v-model="showEditProfile" 
+      title="Редактирование профиля" 
+      width="90%" 
+      class="max-w-lg rounded-2xl"
+      align-center
+      destroy-on-close
+    >
+      <el-form :model="editForm" label-position="top" size="large" class="mt-2">
+        <el-form-item label="ФИО Сотрудника">
+          <el-input v-model="editForm.name" placeholder="Введите ваше полное имя" :prefix-icon="User" />
         </el-form-item>
-        <el-form-item label="Email">
-          <el-input v-model="editForm.email" type="email" />
+        
+        <el-form-item label="Корпоративный Email">
+          <el-input v-model="editForm.email" disabled>
+            <template #prefix>
+              <el-icon><Message /></el-icon>
+            </template>
+            <template #append>
+              <el-tooltip content="Email нельзя изменить самостоятельно. Обратитесь к администратору." placement="top">
+              <el-icon><Lock /></el-icon>
+              </el-tooltip>
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="О себе">
-          <el-input v-model="editForm.bio" type="textarea" :rows="3" />
-        </el-form-item>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <el-form-item label="Станция">
+            <el-select 
+              v-model="editForm.station" 
+              placeholder="Выберите станцию" 
+              class="w-full"
+              :loading="loadingStations"
+              filterable
+            >
+              <el-option
+                v-for="station in stations"
+                :key="station.id"
+                :label="station.name"
+                :value="station.name"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item label="Должность">
+            <el-input v-model="editForm.position" placeholder="Например, Инженер" :prefix-icon="Suitcase" />
+          </el-form-item>
+        </div>
       </el-form>
       
       <template #footer>
-        <el-button @click="showEditProfile = false">Отмена</el-button>
-        <el-button type="primary" @click="saveProfile">Сохранить</el-button>
+        <div class="flex justify-end gap-3 pt-2">
+          <el-button @click="showEditProfile = false">Отмена</el-button>
+          <el-button type="primary" :loading="saving" @click="saveProfile">Сохранить изменения</el-button>
+        </div>
       </template>
     </el-dialog>
   </AppLayout>
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
-import { ElMessage, ElUpload } from 'element-plus'
+import UserStatistics from '@/components/UserStatistics.vue'
+import { ElMessage } from 'element-plus'
 import authService from '@/services/auth'
 import userProfileService from '@/services/userProfile'
-import { Upload, User, Calendar, Trophy, Clock, Medal } from '@element-plus/icons-vue'
+import stationService from '@/services/stationService'
+import { 
+  Edit, Camera, Message, OfficeBuilding, Suitcase, ArrowRight, Lock,
+  Monitor, Bell, Clock, Collection, Loading, User
+} from '@element-plus/icons-vue'
 
 export default {
   name: 'Profile',
   components: {
     AppLayout,
-    Upload
+    UserStatistics,
+    Edit, Camera, Message, OfficeBuilding, Suitcase, ArrowRight, Lock,
+    Monitor, Bell, Clock, Collection, Loading, User
   },
   setup() {
     const activeTab = ref('courses')
     const showEditProfile = ref(false)
     const uploading = ref(false)
-    const loading = ref(false)
+    const saving = ref(false)
+    const loading = ref(true)
+    const loadingStations = ref(false)
+    const stations = ref([])
     
     const currentUser = authService.getCurrentUser()
     
     const user = ref({
       id: currentUser?.id,
-      name: currentUser?.full_name || '',
-      email: currentUser?.email || '',
+      name: '',
+      email: '',
       avatar: '',
-      joinDate: new Date().toLocaleDateString('ru-RU')
+      station: '',
+      position: ''
     })
     
     const userStats = ref({
-      completedCourses: 5,
-      hoursStudied: 120
+      completedCourses: 0,
+      hoursStudied: 0
     })
     
-    const userCourses = ref([
-      {
-        id: 1,
-        title: 'Основы программирования на Python',
-        description: 'Изучите основы программирования с помощью языка Python',
-        icon: 'Code',
-        duration: '40 часов',
-        startDate: '15 января 2024',
-        progress: 100,
-        certificate: true
-      },
-      {
-        id: 2,
-        title: 'Веб-дизайн с Figma',
-        description: 'Создавайте красивые и функциональные интерфейсы',
-        icon: 'Monitor',
-        duration: '30 часов',
-        startDate: '1 февраля 2024',
-        progress: 65,
-        certificate: false
-      },
-      {
-        id: 3,
-        title: 'SMM и контент-маркетинг',
-        description: 'Эффективное продвижение в социальных сетях',
-        icon: 'Share',
-        duration: '25 часов',
-        startDate: '10 марта 2024',
-        progress: 30,
-        certificate: false
-      }
-    ])
-    
-    const certificates = ref([
-      {
-        id: 1,
-        title: 'Сертификат Python',
-        course: 'Основы программирования на Python',
-        date: '20 февраля 2024'
-      },
-      {
-        id: 2,
-        title: 'Сертификат веб-дизайна',
-        course: 'Веб-дизайн с Figma',
-        date: '15 марта 2024'
-      }
-    ])
+    const userCourses = ref([])
     
     const settingsForm = reactive({
       emailNotifications: true,
       pushNotifications: false,
-      weeklyReport: true,
       language: 'ru'
     })
     
     const editForm = reactive({
-      name: user.value.name,
-      email: user.value.email,
-      bio: 'Люблю изучать новые технологии и делиться знаниями с другими.'
+      name: '',
+      email: '',
+      station: '',
+      position: ''
     })
     
-    const handleAvatarChange = async (file) => {
-      if (!currentUser?.id) {
-        ElMessage.error('Необходимо войти в систему')
-        return
+    const customColors = [
+      { color: '#f56c6c', percentage: 20 },
+      { color: '#e6a23c', percentage: 40 },
+      { color: '#5cb87a', percentage: 80 },
+      { color: '#1989fa', percentage: 100 },
+    ]
+
+    const openEditModal = () => {
+      editForm.name = user.value.name
+      editForm.email = user.value.email
+      editForm.station = user.value.station
+      editForm.position = user.value.position
+      showEditProfile.value = true
+    }
+
+    // Обновление глобального состояния пользователя (для Header/LessonHeader)
+    const updateGlobalUserState = (updates) => {
+      const current = authService.getCurrentUser()
+      if (current) {
+        const updatedUser = { ...current, ...updates }
+        localStorage.setItem('user', JSON.stringify(updatedUser))
+        authService.currentUser = { ...updatedUser }
+        authService.refreshUser()
+        
+        // Обновляем локальный ref, если он не был обновлен
+        user.value = { ...user.value, ...updates }
       }
+    }
+    
+    const handleAvatarChange = async (file) => {
+      if (!currentUser?.id) return
 
       uploading.value = true
       try {
         const result = await userProfileService.uploadAvatar(currentUser.id, file.raw)
+        
         if (result.success) {
-          user.value.avatar = result.url
-          ElMessage.success('Фото загружено!')
+          const newAvatarUrl = result.url
+          ElMessage.success('Фото профиля обновлено')
+          
+          // Обновляем везде
+          user.value.avatar = newAvatarUrl
+          updateGlobalUserState({ avatar_url: newAvatarUrl, avatar: newAvatarUrl })
+          
+          // Отправляем событие для обновления Header
+          await nextTick()
+          window.dispatchEvent(new CustomEvent('user-profile-updated'))
         } else {
-          ElMessage.error(result.error || 'Ошибка загрузки фото')
+          ElMessage.error(result.error || 'Ошибка загрузки')
         }
       } catch (error) {
         console.error('Upload error:', error)
-        ElMessage.error('Ошибка загрузки фото')
+        ElMessage.error('Не удалось загрузить фото')
       } finally {
         uploading.value = false
-      }
-    }
-
-    const saveSettings = async () => {
-      if (!currentUser?.id) return
-
-      try {
-        const settingsData = {
-          email_notifications: settingsForm.emailNotifications,
-          push_notifications: settingsForm.pushNotifications,
-          weekly_report: settingsForm.weeklyReport,
-          language: settingsForm.language
-        }
-
-        const result = await userProfileService.saveProfile(currentUser.id, settingsData)
-        if (result.success) {
-          ElMessage.success('Настройки сохранены!')
-        } else {
-          ElMessage.error('Ошибка сохранения настроек')
-        }
-      } catch (error) {
-        console.error('Error saving settings:', error)
-        ElMessage.error('Ошибка сохранения настроек')
       }
     }
     
     const saveProfile = async () => {
       if (!currentUser?.id) return
-
+      
+      saving.value = true
       try {
+        // Защита от undefined при trim()
+        const fullName = editForm.name ? String(editForm.name).trim() : ''
+        const position = editForm.position ? String(editForm.position).trim() : null
+        const station = editForm.station || null
+
+        if (!fullName) {
+          ElMessage.warning('Пожалуйста, укажите ФИО')
+          saving.value = false
+          return
+        }
+
         const profileData = {
-          full_name: editForm.name,
-          email: editForm.email,
-          bio: editForm.bio
+          full_name: fullName,
+          company: station, // Используем company для Django API (маппинг station -> company)
+          position: position
         }
 
         const result = await userProfileService.saveProfile(currentUser.id, profileData)
+        
         if (result.success) {
-          user.value.name = editForm.name
-          user.value.email = editForm.email
-          showEditProfile.value = false
-          ElMessage.success('Профиль обновлен!')
+          ElMessage.success('Профиль успешно обновлен')
           
-          // Обновляем текущего пользователя
-          const updatedUser = authService.getCurrentUser()
-          if (updatedUser) {
-            updatedUser.full_name = editForm.name
-            updatedUser.email = editForm.email
-            localStorage.setItem('user', JSON.stringify(updatedUser))
+          // Обновляем локальный стейт
+          user.value = {
+            ...user.value,
+            name: fullName,
+            station: station, // Используем выбранное значение станции
+            position: position
           }
+          
+          // Обновляем глобальное состояние (сохраняем station для совместимости)
+          updateGlobalUserState({
+            full_name: fullName,
+            station: station, // Используем выбранное значение станции
+            company: station, // Также сохраняем как company для БД
+            position: position
+          })
+          
+          await nextTick()
+          window.dispatchEvent(new CustomEvent('user-profile-updated'))
+          
+          showEditProfile.value = false
         } else {
-          ElMessage.error('Ошибка обновления профиля')
+          ElMessage.error(result.error || 'Ошибка сохранения профиля')
         }
       } catch (error) {
-        console.error('Error saving profile:', error)
-        ElMessage.error('Ошибка обновления профиля')
+        console.error('Save error:', error)
+        ElMessage.error(error.message || 'Ошибка сохранения профиля')
+      } finally {
+        saving.value = false
       }
     }
 
+    const saveSettings = () => {
+      // В будущем здесь можно сохранить настройки в БД
+      ElMessage.success('Настройки сохранены')
+    }
+    
     const loadUserData = async () => {
-      if (!currentUser?.id) return
-
       loading.value = true
+      
+      if (!currentUser?.id) {
+        // Fallback для демо режима (без авторизации)
+        user.value = {
+          name: 'Демо Пользователь',
+          email: 'demo@tamex.uz',
+          avatar: '',
+          station: 'WKC1',
+          position: 'Гость'
+        }
+        loading.value = false
+        return
+      }
+      
       try {
-        // Загружаем профиль
-        const profileResult = await userProfileService.getProfile(currentUser.id)
+        // 1. Загружаем профиль
+        const profilePromise = userProfileService.getProfile(currentUser.id)
+        
+        // 2. Загружаем статистику
+        const statsPromise = userProfileService.getUserStats(currentUser.id)
+        
+        // 3. Загружаем курсы
+        const coursesPromise = userProfileService.getUserCourses(currentUser.id)
+        
+        // Ждем все запросы
+        const [profileResult, statsResult, coursesResult] = await Promise.all([
+          profilePromise,
+          statsPromise,
+          coursesPromise
+        ])
+        
+        // Обрабатываем профиль
         if (profileResult.success && profileResult.data) {
+          const data = profileResult.data
           user.value = {
-            ...user.value,
-            avatar: profileResult.data.avatar_url || '',
-            email: profileResult.data.email || user.value.email
+            id: data.id,
+            name: data.full_name || data.name || currentUser.username || 'Пользователь',
+            email: data.email || currentUser.email || '',
+            avatar: data.avatar_url || data.avatar || null,
+            station: data.station || data.company || null, // Маппинг company -> station
+            position: data.position || null
           }
           
-          if (profileResult.data.full_name) {
-            user.value.name = profileResult.data.full_name
-          }
+          // Синхронизируем с глобальным стейтом
+          updateGlobalUserState({
+            full_name: data.full_name || data.name,
+            station: data.station || data.company, // Маппинг company -> station
+            position: data.position,
+            avatar_url: data.avatar_url || data.avatar,
+            email: data.email
+          })
+        } else {
+            // Если профиль не найден, используем данные из auth
+            user.value = {
+              id: currentUser.id,
+              name: currentUser.full_name || currentUser.username,
+              email: currentUser.email,
+              avatar: currentUser.avatar_url || currentUser.avatar,
+              station: currentUser.station || currentUser.company,
+              position: currentUser.position
+            }
         }
-
-        // Загружаем курсы
-        const coursesResult = await userProfileService.getUserCourses(currentUser.id)
-        if (coursesResult.success) {
-          userCourses.value = coursesResult.data.map(course => ({
-            id: course.course.id,
-            title: course.course.title,
-            description: course.course.description,
-            icon: course.course.icon || 'Setting',
-            duration: `${course.course.duration_hours} часов`,
-            startDate: new Date(course.started_at).toLocaleDateString('ru-RU'),
-            progress: course.progress_percent,
-            certificate: course.status === 'completed'
-          }))
-        }
-
-        // Загружаем статистику
-        const statsResult = await userProfileService.getUserStats(currentUser.id)
+        
+        // Обрабатываем статистику
         if (statsResult.success && statsResult.data) {
           userStats.value = {
-            completedCourses: statsResult.data.completed_courses,
-            hoursStudied: statsResult.data.total_hours_studied
+            completedCourses: statsResult.data.completed_courses || 0,
+            hoursStudied: Math.round(statsResult.data.total_hours_studied || 0)
           }
         }
+        
+        // Обрабатываем курсы
+        if (coursesResult.success && coursesResult.data) {
+          userCourses.value = coursesResult.data
+        }
+        
       } catch (error) {
-        console.error('Error loading user data:', error)
+        console.error('Error loading profile data:', error)
+        ElMessage.error('Ошибка загрузки данных профиля')
       } finally {
         loading.value = false
       }
     }
+    
+    const formatDate = (dateString) => {
+      if (!dateString) return 'Недавно'
+      const date = new Date(dateString)
+      return new Intl.DateTimeFormat('ru-RU', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(date)
+    }
+    
+    const getStatusLabel = (status) => {
+      const map = {
+        'in_progress': 'В процессе',
+        'completed': 'Завершен',
+        'not_started': 'Не начат'
+      }
+      return map[status] || status
+    }
+    
+    const getStatusClass = (status) => {
+      const map = {
+        'in_progress': 'bg-blue-100 text-blue-700',
+        'completed': 'bg-green-100 text-green-700',
+        'not_started': 'bg-gray-100 text-gray-700'
+      }
+      return map[status] || 'bg-gray-100 text-gray-700'
+    }
 
+    // Загрузка списка станций
+    const loadStations = async () => {
+      loadingStations.value = true
+      try {
+        const data = await stationService.getStations()
+        stations.value = data || []
+      } catch (error) {
+        console.error('Error loading stations:', error)
+        ElMessage.error({
+          message: 'Не удалось загрузить список станций',
+          duration: 3000
+        })
+      } finally {
+        loadingStations.value = false
+      }
+    }
+    
     onMounted(() => {
       loadUserData()
+      loadStations()
     })
     
     return {
-      uploading,
-      loading,
       activeTab,
       showEditProfile,
+      uploading,
+      saving,
+      loading,
+      loadingStations,
+      stations,
       user,
       userStats,
       userCourses,
-      certificates,
       settingsForm,
       editForm,
-      saveSettings,
-      saveProfile,
+      customColors,
+      Edit, Camera, Message, OfficeBuilding, Suitcase, ArrowRight, Lock, Monitor, Bell, User,
+      openEditModal,
       handleAvatarChange,
-      loadUserData,
-      User,
-      Calendar,
-      Trophy,
-      Clock,
-      Medal,
-      Upload
+      saveProfile,
+      saveSettings,
+      formatDate,
+      getStatusLabel,
+      getStatusClass
     }
   }
 }
 </script>
+
+<style scoped>
+.card {
+  transition: all 0.3s ease;
+}
+
+.pattern-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+  background-color: #f3f4f6;
+}
+
+:deep(.el-tabs__item) {
+  font-size: 16px;
+  height: 50px;
+  line-height: 50px;
+  color: #6b7280;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+:deep(.el-tabs__active-bar) {
+  background-color: #2563eb;
+  height: 3px;
+  border-radius: 3px;
+}
+
+:deep(.el-dialog__body) {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+@media (max-width: 640px) {
+  .profile-tabs :deep(.el-tabs__nav) {
+    width: 100%;
+    display: flex;
+  }
+  
+  .profile-tabs :deep(.el-tabs__item) {
+    flex: 1;
+    text-align: center;
+    padding: 0 10px;
+    font-size: 14px;
+  }
+}
+</style>

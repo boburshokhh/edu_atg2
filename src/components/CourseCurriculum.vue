@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between p-6 border-b border-gray-100">
       <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
         <BookOpenIcon class="w-6 h-6 text-blue-600" />
-        Программа курса
+        Программа тренинга
       </h2>
       <div class="text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">
         <span class="font-semibold text-gray-900">{{ courseStats.lessons }}</span> уроков
@@ -36,7 +36,7 @@
                   {{ lessonIndex + 1 }}
                 </div>
                 <div class="flex-1">
-                  <h3 class="font-bold text-gray-900 text-base mb-0.5">{{ lesson.title }}</h3>
+                  <h3 class="font-bold text-gray-900 text-base mb-0.5">{{ getLessonTitle(lesson.title) }}</h3>
                   <div class="flex items-center gap-3 text-xs text-gray-500">
                     <span class="flex items-center gap-1">
                       <BookOpenIcon class="w-4 h-4 text-blue-600" />
@@ -199,11 +199,22 @@ export default {
       }
     }
 
+    // Функция для удаления префикса "Урок N" из названия
+    const getLessonTitle = (title) => {
+      if (!title) return ''
+      // Убираем паттерны: "Урок N:", "Урок № N:", "Урок N " и т.д.
+      return title
+        .replace(/^Урок\s*№?\s*\d+\s*:?\s*/i, '') // Убираем "Урок N:" или "Урок № N:"
+        .replace(/^Урок\s*№?\s*\d+\s*/i, '') // Убираем "Урок N " или "Урок № N "
+        .trim()
+    }
+
     return {
       expandedLessons,
       curriculum,
       courseStats,
-      toggleLesson
+      toggleLesson,
+      getLessonTitle
     }
   }
 }

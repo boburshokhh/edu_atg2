@@ -9,11 +9,6 @@
               <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{{ $t('dashboard.title') }}</h1>
               <p class="text-sm sm:text-base text-gray-600">{{ $t('dashboard.welcome') }}</p>
             </div>
-            <div v-if="isAdmin">
-              <el-button type="primary" @click="$router.push('/admin')" :icon="Setting">
-                Админ-панель
-              </el-button>
-            </div>
           </div>
         </div>
 
@@ -255,7 +250,7 @@ export default {
 
       loading.value = true
       try {
-        // Здесь будет загрузка данных из Supabase через userProfileService
+        // Data loading disabled - Supabase removed
         // Пока используем mock данные
         stats.value = {
           activeCourses: 3,

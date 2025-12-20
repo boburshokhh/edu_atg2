@@ -151,11 +151,14 @@
                     class="w-full h-full object-cover transition-transform duration-300"
                     :class="hoveringAvatar ? 'scale-110' : ''"
                   />
-                  <div v-else class="w-full h-full flex items-center justify-center text-white text-sm font-semibold">
+                  <div v-else-if="userName" class="w-full h-full flex items-center justify-center text-white text-sm font-semibold">
                     {{ userName.charAt(0).toUpperCase() }}
                   </div>
+                  <div v-else class="w-full h-full flex items-center justify-center text-white text-sm font-semibold">
+                    ?
+                  </div>
                 </div>
-                <div class="flex flex-col items-start">
+                <div class="flex flex-col items-start" v-if="userName">
                   <span class="text-sm font-medium">{{ userName }}</span>
                   <span class="text-xs opacity-70">{{ userRole }}</span>
                 </div>
@@ -303,7 +306,7 @@
             </template>
 
             <!-- Mobile User Menu -->
-            <template v-else>
+            <template v-else-if="isAuthenticated && userName">
               <div class="pt-4 space-y-1" :class="isLightTheme ? 'border-t border-gray-100' : 'border-t border-white/10'">
                 <div 
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg"
@@ -315,6 +318,9 @@
                   <div>
                     <p class="text-sm font-medium" :class="isLightTheme ? 'text-gray-900' : 'text-white'">
                       {{ userName }}
+                    </p>
+                    <p class="text-xs opacity-70" :class="isLightTheme ? 'text-gray-600' : 'text-white/70'">
+                      {{ userRole }}
                     </p>
                   </div>
                 </div>
@@ -344,7 +350,7 @@
     <Teleport to="body">
       <Transition name="fade">
         <div 
-          v-if="showAvatarPreview"
+          v-if="showAvatarPreview && isAuthenticated && userName"
           class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center"
           @click="showAvatarPreview = false; resetZoom()"
         >
@@ -364,18 +370,21 @@
               <img 
                 v-if="userAvatar"
                 :src="userAvatar"
-                :alt="userName"
+                :alt="userName || 'Пользователь'"
                 class="rounded-full shadow-2xl transition-transform duration-300"
                 :style="{ transform: `scale(${avatarScale})` }"
                 style="max-width: 500px; max-height: 500px; object-fit: cover;"
               />
-              <div v-else class="w-64 h-64 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-6xl font-bold">
+              <div v-else-if="userName" class="w-64 h-64 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-6xl font-bold">
                 {{ userName.charAt(0).toUpperCase() }}
+              </div>
+              <div v-else class="w-64 h-64 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-6xl font-bold">
+                ?
               </div>
             </div>
 
             <!-- User Info -->
-            <div class="mt-6 text-center text-white">
+            <div v-if="userName" class="mt-6 text-center text-white">
               <h3 class="text-2xl font-bold mb-2">{{ userName }}</h3>
               <p class="text-blue-300 mb-4">{{ userRole }}</p>
             </div>
@@ -425,6 +434,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import authService from '@/services/auth'
+import userProfileService from '@/services/userProfile'
 
 export default {
   name: 'Header',
@@ -442,30 +452,96 @@ export default {
     const avatarScale = ref(1)
     
     const currentLocale = computed(() => locale.value)
-    
+
     const isAuthenticated = computed(() => {
       return authService.getCurrentUser() !== null
     })
     
+    // Ref для принудительного обновления computed свойств
+    const userDataVersion = ref(0)
+    
+    // Функция для обновления данных пользователя
+    const refreshUserData = async () => {
+      try {
+        // Сначала обновляем базовые данные через authService
+        await authService.checkAuth()
+        const currentUser = authService.getCurrentUser()
+        
+        // Если пользователь авторизован, загружаем расширенные данные профиля из БД
+        if (currentUser?.id) {
+          try {
+            const profileResult = await userProfileService.getProfile(currentUser.id)
+            if (profileResult.success && profileResult.data) {
+              const profileData = profileResult.data
+              
+              // Обновляем данные в authService
+              if (authService.currentUser) {
+                // Создаем обновленный объект пользователя, объединяя данные из auth и профиля
+                const updatedUser = {
+                  ...authService.currentUser,
+                  full_name: profileData.full_name || authService.currentUser.full_name,
+                  role: profileData.role || authService.currentUser.role,
+                  avatar_url: profileData.avatar_url || profileData.avatar || authService.currentUser.avatar_url || null,
+                  position: profileData.position || authService.currentUser.position || null,
+                  station: profileData.station || profileData.company || authService.currentUser.station || null, // Маппинг company -> station
+                  email: profileData.email || authService.currentUser.email || null
+                }
+                
+                authService.currentUser = updatedUser
+                
+                // Сохраняем обновленные данные в localStorage, чтобы при перезагрузке они были доступны сразу
+                localStorage.setItem('user', JSON.stringify(updatedUser))
+              }
+            }
+          } catch (error) {
+            console.error('Error loading user profile:', error)
+            // Не прерываем выполнение, используем данные из authService
+          }
+        }
+      } catch (error) {
+        console.error('Error refreshing user data:', error)
+      }
+      
+      userDataVersion.value++ // Принудительно обновляем computed свойства
+    }
+    
     const userName = computed(() => {
+      userDataVersion.value // Зависимость для обновления
       const user = authService.getCurrentUser()
-      return user ? (user.full_name || user.username) : 'Пользователь'
+      
+      if (user) {
+        // Приоритет: полное имя > имя пользователя > 'Пользователь'
+        return user.full_name || user.username || 'Пользователь'
+      }
+      
+      return null // Не показываем данные для неавторизованных пользователей
     })
 
     const userAvatar = computed(() => {
+      userDataVersion.value // Зависимость для обновления
       const user = authService.getCurrentUser()
-      return user?.avatar_url || user?.avatar || ''
+      
+      if (user) {
+        return user.avatar_url || user.avatar || null
+      }
+      
+      return null // Не показываем аватар для неавторизованных пользователей
     })
 
     const userRole = computed(() => {
+      userDataVersion.value // Зависимость для обновления
       const user = authService.getCurrentUser()
-      if (!user) return ''
+      
+      if (!user) {
+        return null // Не показываем роль для неавторизованных пользователей
+      }
+      
       const roles = {
         admin: 'Администратор',
         instructor: 'Инструктор',
-        user: 'Пользователь'
+        user: 'Студент'
       }
-      return roles[user.role] || 'Пользователь'
+      return roles[user.role] || 'Студент'
     })
     
     const isAdminUser = computed(() => {
@@ -558,14 +634,24 @@ export default {
       }
     }
     
-    onMounted(() => {
+    // Обработчик обновления профиля
+    const handleProfileUpdate = () => {
+      refreshUserData()
+    }
+    
+    onMounted(async () => {
       window.addEventListener('scroll', handleScroll)
       document.addEventListener('click', handleClickOutside)
+      // Слушаем обновления профиля
+      window.addEventListener('user-profile-updated', handleProfileUpdate)
+      // Загружаем данные пользователя при монтировании
+      await refreshUserData()
     })
     
     onUnmounted(() => {
       window.removeEventListener('scroll', handleScroll)
       document.removeEventListener('click', handleClickOutside)
+      window.removeEventListener('user-profile-updated', handleProfileUpdate)
     })
     
     return {

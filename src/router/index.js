@@ -10,6 +10,8 @@ import LessonViewer from '@/views/LessonViewer.vue'
 import Profile from '@/views/Profile.vue'
 import Login from '@/views/Login.vue'
 import Dashboard from '@/views/Dashboard.vue'
+import StationList from '@/views/admin/StationList.vue'
+import StationEditor from '@/views/admin/StationEditor.vue'
 import authService from '@/services/auth'
 
 const routes = [
@@ -71,11 +73,31 @@ const routes = [
     component: Login
   },
   {
-    path: '/admin',
-    name: 'AdminPanel',
-    component: () => import('@/views/AdminPanel.vue'),
+    path: '/register',
+    name: 'RegisterProfile',
+    component: () => import('@/views/RegisterProfile.vue'),
+    meta: { requiresAuth: true }
+  },
+  // Admin Routes
+  {
+    path: '/admin/stations',
+    name: 'AdminStations',
+    component: StationList,
     meta: { requiresAuth: true, requiresAdmin: true }
-  }
+  },
+  {
+    path: '/admin/stations/new',
+    name: 'AdminStationCreate',
+    component: StationEditor,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/stations/:id',
+    name: 'AdminStationEdit',
+    component: StationEditor,
+    props: true,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
 ]
 
 const router = createRouter({
@@ -92,19 +114,24 @@ const router = createRouter({
 
 // Навигационные хуки для проверки авторизации
 router.beforeEach(async (to, from, next) => {
-  // Проверяем авторизацию через Supabase
+  // Проверяем авторизацию
   const authResult = await authService.checkAuth()
   
   if (to.meta.requiresAuth && !authResult.isAuthenticated) {
     // Пользователь не авторизован, перенаправляем на страницу входа
     next('/login')
   } else if (to.meta.requiresAdmin && !authService.isAdmin()) {
-    // Требуется доступ администратора
-    ElMessage.error('У вас нет доступа к этой странице')
+    // Требуются права администратора, но их нет
+    ElMessage.error('Доступ запрещен. Требуются права администратора.')
     next('/dashboard')
   } else if (to.path === '/login' && authResult.isAuthenticated) {
-    // Пользователь уже авторизован, перенаправляем на дашборд
-    next('/dashboard')
+    // Пользователь уже авторизован, перенаправляем в зависимости от роли
+    if (authService.isInstructor()) {
+      next('/dashboard')
+    } else {
+      // Обычные пользователи попадают сразу на первый урок первой станции
+      next('/station/1/lesson/0/0')
+    }
   } else {
     next()
   }

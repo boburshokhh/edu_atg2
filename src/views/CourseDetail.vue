@@ -369,7 +369,7 @@ export default {
             ...lesson,
             sectionIndex,
             sectionTitle: section.title,
-            completed: false // Здесь можно загрузить прогресс из Supabase
+            completed: false
           })
         })
       })
@@ -388,7 +388,7 @@ export default {
       // Загружаем материалы для урока из MinIO
       await loadLessonMaterials(currentLesson.value.title)
       
-      // Загружаем прогресс из Supabase
+      // Загружаем прогресс
       const currentUser = authService.getCurrentUser()
       if (currentUser && currentLesson.value.id) {
         const progressResult = await videoService.getLessonProgress(
@@ -451,7 +451,7 @@ export default {
       if (allLessons.value[currentLessonIndex.value]) {
         allLessons.value[currentLessonIndex.value].completed = true
         
-        // Сохраняем прогресс в Supabase
+        // Сохраняем прогресс
         const currentUser = authService.getCurrentUser()
         if (currentUser && currentLesson.value.id) {
           await videoService.completeLesson(currentUser.id, currentLesson.value.id)
