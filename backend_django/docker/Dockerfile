@@ -9,18 +9,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend_django/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY backend_django /app/backend_django
-WORKDIR /app/backend_django
+COPY . /app
+WORKDIR /app
 
-COPY backend_django/docker/entrypoint.sh /entrypoint.sh
+COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
+
 
 
 
