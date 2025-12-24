@@ -1,7 +1,10 @@
 <template>
   <div class="container mx-auto px-4 py-8">
     <div class="flex items-center mb-6">
-      <el-button @click="$router.push('/admin/stations')" class="mr-4">
+      <el-button
+        class="mr-4"
+        @click="$router.push('/admin/stations')"
+      >
         <el-icon><ArrowLeft /></el-icon>
       </el-button>
       <h1 class="text-2xl font-bold text-gray-800">
@@ -9,25 +12,46 @@
       </h1>
     </div>
 
-    <el-tabs v-model="activeTab" class="bg-white p-6 rounded-lg shadow" v-loading="loading">
+    <el-tabs
+      v-model="activeTab"
+      v-loading="loading"
+      class="bg-white p-6 rounded-lg shadow"
+    >
       <!-- General Info -->
-      <el-tab-pane label="Общая информация" name="general">
-        <el-form :model="station" label-width="200px" class="max-w-4xl">
+      <el-tab-pane
+        label="Общая информация"
+        name="general"
+      >
+        <el-form
+          :model="station"
+          label-width="200px"
+          class="max-w-4xl"
+        >
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="Название" required>
+              <el-form-item
+                label="Название"
+                required
+              >
                 <el-input v-model="station.name" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="Короткое название" required>
+              <el-form-item
+                label="Короткое название"
+                required
+              >
                 <el-input v-model="station.short_name" />
               </el-form-item>
             </el-col>
           </el-row>
           
           <el-form-item label="Описание">
-            <el-input v-model="station.description" type="textarea" rows="4" />
+            <el-input
+              v-model="station.description"
+              type="textarea"
+              rows="4"
+            />
           </el-form-item>
           
           <el-row :gutter="20">
@@ -38,27 +62,46 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="Статус">
-                <el-select v-model="station.status" style="width: 100%">
-                  <el-option label="Активен" value="active" />
-                  <el-option label="На обслуживании" value="maintenance" />
+                <el-select
+                  v-model="station.status"
+                  style="width: 100%"
+                >
+                  <el-option
+                    label="Активен"
+                    value="active"
+                  />
+                  <el-option
+                    label="На обслуживании"
+                    value="maintenance"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
           </el-row>
           
           <el-form-item label="Местоположение">
-            <el-input v-model="station.location" type="textarea" rows="2" />
+            <el-input
+              v-model="station.location"
+              type="textarea"
+              rows="2"
+            />
           </el-form-item>
           
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Мощность">
-                <el-input v-model="station.power" placeholder="например: 30 МВт" />
+                <el-input
+                  v-model="station.power"
+                  placeholder="например: 30 МВт"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Дата ввода в эксплуатацию">
-                <el-input v-model="station.commission_date" placeholder="например: 2009" />
+                <el-input
+                  v-model="station.commission_date"
+                  placeholder="например: 2009"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -66,29 +109,45 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Проектная мощность">
-                <el-input v-model="station.design_capacity" placeholder="например: 30 млрд м³/год" />
+                <el-input
+                  v-model="station.design_capacity"
+                  placeholder="например: 30 млрд м³/год"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Количество курсов">
-                <el-input-number v-model="station.courses_count" :min="0" style="width: 100%" />
+                <el-input-number
+                  v-model="station.courses_count"
+                  :min="0"
+                  style="width: 100%"
+                />
               </el-form-item>
             </el-col>
           </el-row>
           
           <el-form-item label="Давление газа">
-            <el-input v-model="station.gas_pressure" placeholder="например: 7.0 МПа (вход) / 9.81 МПа (выход)" />
+            <el-input
+              v-model="station.gas_pressure"
+              placeholder="например: 7.0 МПа (вход) / 9.81 МПа (выход)"
+            />
           </el-form-item>
           
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Давление входное">
-                <el-input v-model="station.input_pressure" placeholder="например: 7.0 МПа" />
+                <el-input
+                  v-model="station.input_pressure"
+                  placeholder="например: 7.0 МПа"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Давление выходное">
-                <el-input v-model="station.output_pressure" placeholder="например: 9.81 МПа" />
+                <el-input
+                  v-model="station.output_pressure"
+                  placeholder="например: 9.81 МПа"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -96,71 +155,138 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Диаметр трубопровода">
-                <el-input v-model="station.pipeline_diameter" placeholder="например: 1067 мм" />
+                <el-input
+                  v-model="station.pipeline_diameter"
+                  placeholder="например: 1067 мм"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Параллельные линии">
-                <el-input v-model="station.parallel_lines" placeholder="например: Две нитки (А, В)" />
+                <el-input
+                  v-model="station.parallel_lines"
+                  placeholder="например: Две нитки (А, В)"
+                />
               </el-form-item>
             </el-col>
           </el-row>
           
           <el-form-item label="Расстояние от границы">
-            <el-input v-model="station.distance_from_border" placeholder="например: 10.6 км от границы с Туркменистаном" />
+            <el-input
+              v-model="station.distance_from_border"
+              placeholder="например: 10.6 км от границы с Туркменистаном"
+            />
           </el-form-item>
           
           <el-form-item label="Основное изображение">
-            <el-input v-model="station.image" placeholder="Путь к изображению или Minio key" />
+            <el-input
+              v-model="station.image"
+              placeholder="Путь к изображению или Minio key"
+            />
             <div class="mt-2">
-              <input type="file" ref="mainImageInput" class="hidden" accept="image/*" @change="handleMainImageUpload" />
-              <el-button size="small" @click="$refs.mainImageInput.click()">Загрузить изображение</el-button>
+              <input
+                ref="mainImageInput"
+                type="file"
+                class="hidden"
+                accept="image/*"
+                @change="handleMainImageUpload"
+              >
+              <el-button
+                size="small"
+                @click="$refs.mainImageInput.click()"
+              >
+                Загрузить изображение
+              </el-button>
             </div>
           </el-form-item>
           
           <el-form-item label="Техническая карта">
-            <el-input v-model="station.tech_map_image" placeholder="Путь к технической карте или Minio key" />
+            <el-input
+              v-model="station.tech_map_image"
+              placeholder="Путь к технической карте или Minio key"
+            />
             <div class="mt-2">
-              <input type="file" ref="techMapInput" class="hidden" accept="image/*" @change="handleTechMapUpload" />
-              <el-button size="small" @click="$refs.techMapInput.click()">Загрузить техническую карту</el-button>
+              <input
+                ref="techMapInput"
+                type="file"
+                class="hidden"
+                accept="image/*"
+                @change="handleTechMapUpload"
+              >
+              <el-button
+                size="small"
+                @click="$refs.techMapInput.click()"
+              >
+                Загрузить техническую карту
+              </el-button>
             </div>
           </el-form-item>
           
           <el-form-item>
-            <el-button type="primary" @click="saveGeneral" :loading="saving">Сохранить</el-button>
+            <el-button
+              type="primary"
+              :loading="saving"
+              @click="saveGeneral"
+            >
+              Сохранить
+            </el-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
 
       <!-- Course Program -->
-      <el-tab-pane label="Программа обучения" name="program" :disabled="!isEditing">
+      <el-tab-pane
+        label="Программа обучения"
+        name="program"
+        :disabled="!isEditing"
+      >
         <div class="max-w-5xl">
           <div class="flex items-center justify-between mb-4">
             <div class="text-xs text-gray-500">
               <span v-if="courseProgram.id">Program ID: {{ courseProgram.id }}</span>
               <span v-else>Программа еще не создана</span>
             </div>
-            <el-button type="primary" @click="saveCourseProgram" :loading="savingCourseProgram">
+            <el-button
+              type="primary"
+              :loading="savingCourseProgram"
+              @click="saveCourseProgram"
+            >
               Сохранить программу
             </el-button>
           </div>
 
-          <el-form :model="courseProgram" label-width="200px">
-            <el-form-item label="Название" required>
+          <el-form
+            :model="courseProgram"
+            label-width="200px"
+          >
+            <el-form-item
+              label="Название"
+              required
+            >
               <el-input v-model="courseProgram.title" />
             </el-form-item>
             <el-form-item label="Описание">
-              <el-input v-model="courseProgram.description" type="textarea" rows="4" />
+              <el-input
+                v-model="courseProgram.description"
+                type="textarea"
+                rows="4"
+              />
             </el-form-item>
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item label="Длительность">
-                  <el-input v-model="courseProgram.duration" placeholder="например: 10 академических часов" />
+                  <el-input
+                    v-model="courseProgram.duration"
+                    placeholder="например: 10 академических часов"
+                  />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="Формат">
-                  <el-input v-model="courseProgram.format" placeholder="Онлайн" />
+                  <el-input
+                    v-model="courseProgram.format"
+                    placeholder="Онлайн"
+                  />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -174,27 +300,48 @@
           <!-- Promo video -->
           <div class="mb-6">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-lg font-bold text-gray-800">Короткое видео о станции</h3>
+              <h3 class="text-lg font-bold text-gray-800">
+                Короткое видео о станции
+              </h3>
               <div class="flex gap-2">
                 <input
-                  type="file"
                   ref="promoVideoInput"
+                  type="file"
                   class="hidden"
                   accept="video/*"
                   @change="handlePromoVideoUpload"
-                />
-                <el-button type="primary" size="small" :loading="uploadingPromoVideo" @click="$refs.promoVideoInput.click()">
-                  <el-icon class="mr-2"><Upload /></el-icon> Загрузить видео
+                >
+                <el-button
+                  type="primary"
+                  size="small"
+                  :loading="uploadingPromoVideo"
+                  @click="$refs.promoVideoInput.click()"
+                >
+                  <el-icon class="mr-2">
+                    <Upload />
+                  </el-icon> Загрузить видео
                 </el-button>
-                <el-popconfirm title="Удалить видео?" @confirm="deletePromoVideo({ deleteObject: false })">
+                <el-popconfirm
+                  title="Удалить видео?"
+                  @confirm="deletePromoVideo({ deleteObject: false })"
+                >
                   <template #reference>
-                    <el-button size="small" type="danger" :disabled="!promoVideo">Удалить</el-button>
+                    <el-button
+                      size="small"
+                      type="danger"
+                      :disabled="!promoVideo"
+                    >
+                      Удалить
+                    </el-button>
                   </template>
                 </el-popconfirm>
               </div>
             </div>
 
-            <div v-if="promoVideoUrl" class="bg-gray-50 border border-gray-200 rounded-xl p-3">
+            <div
+              v-if="promoVideoUrl"
+              class="bg-gray-50 border border-gray-200 rounded-xl p-3"
+            >
               <div class="text-sm text-gray-600 mb-2">
                 <span class="font-semibold">Файл:</span> {{ promoVideo?.title || promoVideo?.objectKey }}
               </div>
@@ -211,7 +358,10 @@
                 Видео проигрывается через presigned URL (Range requests), поэтому работает и на телефонах.
               </div>
             </div>
-            <div v-else class="text-sm text-gray-500">
+            <div
+              v-else
+              class="text-sm text-gray-500"
+            >
               Видео не загружено.
             </div>
           </div>
@@ -219,41 +369,100 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Learning outcomes -->
             <div>
-              <h3 class="font-bold text-gray-800 mb-2">Что вы изучите</h3>
-              <div v-for="(item, idx) in courseProgram.learningOutcomes" :key="`lo-${idx}`" class="flex gap-2 mb-2">
+              <h3 class="font-bold text-gray-800 mb-2">
+                Что вы изучите
+              </h3>
+              <div
+                v-for="(item, idx) in courseProgram.learningOutcomes"
+                :key="`lo-${idx}`"
+                class="flex gap-2 mb-2"
+              >
                 <el-input v-model="courseProgram.learningOutcomes[idx]" />
-                <el-button type="danger" link @click="courseProgram.learningOutcomes.splice(idx, 1)">Удалить</el-button>
+                <el-button
+                  type="danger"
+                  link
+                  @click="courseProgram.learningOutcomes.splice(idx, 1)"
+                >
+                  Удалить
+                </el-button>
               </div>
-              <el-button size="small" @click="courseProgram.learningOutcomes.push('')">+ Добавить</el-button>
+              <el-button
+                size="small"
+                @click="courseProgram.learningOutcomes.push('')"
+              >
+                + Добавить
+              </el-button>
             </div>
 
             <!-- Requirements -->
             <div>
-              <h3 class="font-bold text-gray-800 mb-2">Требования</h3>
-              <div v-for="(item, idx) in courseProgram.requirements" :key="`req-${idx}`" class="flex gap-2 mb-2">
+              <h3 class="font-bold text-gray-800 mb-2">
+                Требования
+              </h3>
+              <div
+                v-for="(item, idx) in courseProgram.requirements"
+                :key="`req-${idx}`"
+                class="flex gap-2 mb-2"
+              >
                 <el-input v-model="courseProgram.requirements[idx]" />
-                <el-button type="danger" link @click="courseProgram.requirements.splice(idx, 1)">Удалить</el-button>
+                <el-button
+                  type="danger"
+                  link
+                  @click="courseProgram.requirements.splice(idx, 1)"
+                >
+                  Удалить
+                </el-button>
               </div>
-              <el-button size="small" @click="courseProgram.requirements.push('')">+ Добавить</el-button>
+              <el-button
+                size="small"
+                @click="courseProgram.requirements.push('')"
+              >
+                + Добавить
+              </el-button>
             </div>
 
             <!-- Target audience -->
             <div>
-              <h3 class="font-bold text-gray-800 mb-2">Целевая аудитория</h3>
-              <div v-for="(item, idx) in courseProgram.targetAudience" :key="`aud-${idx}`" class="flex gap-2 mb-2">
+              <h3 class="font-bold text-gray-800 mb-2">
+                Целевая аудитория
+              </h3>
+              <div
+                v-for="(item, idx) in courseProgram.targetAudience"
+                :key="`aud-${idx}`"
+                class="flex gap-2 mb-2"
+              >
                 <el-input v-model="courseProgram.targetAudience[idx]" />
-                <el-button type="danger" link @click="courseProgram.targetAudience.splice(idx, 1)">Удалить</el-button>
+                <el-button
+                  type="danger"
+                  link
+                  @click="courseProgram.targetAudience.splice(idx, 1)"
+                >
+                  Удалить
+                </el-button>
               </div>
-              <el-button size="small" @click="courseProgram.targetAudience.push('')">+ Добавить</el-button>
+              <el-button
+                size="small"
+                @click="courseProgram.targetAudience.push('')"
+              >
+                + Добавить
+              </el-button>
             </div>
           </div>
 
           <el-divider />
 
           <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-bold text-gray-800">Уроки и темы</h3>
-            <el-button type="primary" size="small" @click="addLesson">
-              <el-icon class="mr-2"><Plus /></el-icon> Добавить урок
+            <h3 class="text-lg font-bold text-gray-800">
+              Уроки и темы
+            </h3>
+            <el-button
+              type="primary"
+              size="small"
+              @click="addLesson"
+            >
+              <el-icon class="mr-2">
+                <Plus />
+              </el-icon> Добавить урок
             </el-button>
           </div>
 
@@ -267,7 +476,10 @@
                 <div class="flex items-center gap-3">
                   <span class="font-semibold">{{ lessonIdx + 1 }}.</span>
                   <span class="font-semibold">{{ lesson.title || 'Новый урок' }}</span>
-                  <span class="text-xs text-gray-500" v-if="lesson.lessonKey">key: {{ lesson.lessonKey }}</span>
+                  <span
+                    v-if="lesson.lessonKey"
+                    class="text-xs text-gray-500"
+                  >key: {{ lesson.lessonKey }}</span>
                 </div>
               </template>
 
@@ -279,67 +491,128 @@
                   <el-row :gutter="20">
                     <el-col :span="12">
                       <el-form-item label="Длительность">
-                        <el-input v-model="lesson.duration" placeholder="например: 2.5 часа" />
+                        <el-input
+                          v-model="lesson.duration"
+                          placeholder="например: 2.5 часа"
+                        />
                       </el-form-item>
                     </el-col>
                     <el-col :span="12">
                       <el-form-item label="Порядок">
-                        <el-input-number v-model="lesson.orderIndex" :min="0" style="width: 100%" />
+                        <el-input-number
+                          v-model="lesson.orderIndex"
+                          :min="0"
+                          style="width: 100%"
+                        />
                       </el-form-item>
                     </el-col>
                   </el-row>
                 </el-form>
 
                 <div class="flex items-center justify-between mb-2">
-                  <h4 class="font-semibold text-gray-700">Темы</h4>
+                  <h4 class="font-semibold text-gray-700">
+                    Темы
+                  </h4>
                   <div class="flex gap-2">
-                    <el-button size="small" @click="addTopic(lesson)">
-                      <el-icon class="mr-1"><Plus /></el-icon> Добавить тему
+                    <el-button
+                      size="small"
+                      @click="addTopic(lesson)"
+                    >
+                      <el-icon class="mr-1">
+                        <Plus />
+                      </el-icon> Добавить тему
                     </el-button>
-                    <el-popconfirm title="Удалить урок?" @confirm="removeLesson(lessonIdx)">
+                    <el-popconfirm
+                      title="Удалить урок?"
+                      @confirm="removeLesson(lessonIdx)"
+                    >
                       <template #reference>
-                        <el-button size="small" type="danger">Удалить урок</el-button>
+                        <el-button
+                          size="small"
+                          type="danger"
+                        >
+                          Удалить урок
+                        </el-button>
                       </template>
                     </el-popconfirm>
                   </div>
                 </div>
 
-                <el-table :data="lesson.topics || []" stripe border>
-                  <el-table-column label="Key" min-width="220">
+                <el-table
+                  :data="lesson.topics || []"
+                  stripe
+                  border
+                >
+                  <el-table-column
+                    label="Key"
+                    min-width="220"
+                  >
                     <template #default="{ row }">
                       <span class="text-xs text-gray-500">{{ row.topicKey }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="Код" width="140">
+                  <el-table-column
+                    label="Код"
+                    width="140"
+                  >
                     <template #default="{ row }">
                       <el-input v-model="row.code" />
                     </template>
                   </el-table-column>
-                  <el-table-column label="Название" min-width="240">
+                  <el-table-column
+                    label="Название"
+                    min-width="240"
+                  >
                     <template #default="{ row }">
                       <el-input v-model="row.title" />
                     </template>
                   </el-table-column>
-                  <el-table-column label="Длительность" width="140">
+                  <el-table-column
+                    label="Длительность"
+                    width="140"
+                  >
                     <template #default="{ row }">
                       <el-input v-model="row.duration" />
                     </template>
                   </el-table-column>
-                  <el-table-column label="Порядок" width="120">
+                  <el-table-column
+                    label="Порядок"
+                    width="120"
+                  >
                     <template #default="{ row }">
-                      <el-input-number v-model="row.orderIndex" :min="0" style="width: 100%" />
+                      <el-input-number
+                        v-model="row.orderIndex"
+                        :min="0"
+                        style="width: 100%"
+                      />
                     </template>
                   </el-table-column>
-                  <el-table-column label="Файлы" width="140">
+                  <el-table-column
+                    label="Файлы"
+                    width="140"
+                  >
                     <template #default="{ row }">
-                      <el-button size="small" @click="openTopicFiles(row)">
+                      <el-button
+                        size="small"
+                        @click="openTopicFiles(row)"
+                      >
                         Файлы ({{ (row.files || []).length }})
                       </el-button>
                     </template>
                   </el-table-column>
-                  <el-table-column label="Действия" width="120" fixed="right">
+                  <el-table-column
+                    label="Действия"
+                    width="120"
+                    fixed="right"
+                  >
                     <template #default="{ $index }">
-                      <el-button type="danger" link @click="lesson.topics.splice($index, 1)">Удалить</el-button>
+                      <el-button
+                        type="danger"
+                        link
+                        @click="lesson.topics.splice($index, 1)"
+                      >
+                        Удалить
+                      </el-button>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -350,26 +623,82 @@
       </el-tab-pane>
 
       <!-- Equipment -->
-      <el-tab-pane label="Оборудование" name="equipment" :disabled="!isEditing">
+      <el-tab-pane
+        label="Оборудование"
+        name="equipment"
+        :disabled="!isEditing"
+      >
         <div class="mb-4">
-          <el-button type="primary" @click="showEquipmentDialog = true">
-            <el-icon class="mr-2"><Plus /></el-icon> Добавить оборудование
+          <el-button
+            type="primary"
+            @click="showEquipmentDialog = true"
+          >
+            <el-icon class="mr-2">
+              <Plus />
+            </el-icon> Добавить оборудование
           </el-button>
         </div>
         
-        <el-table :data="equipment" stripe border>
-          <el-table-column prop="name" label="Название" min-width="200" />
-          <el-table-column prop="model" label="Модель" width="150" />
-          <el-table-column prop="manufacturer" label="Производитель" width="180" />
-          <el-table-column prop="quantity" label="Количество" width="100" align="center" />
-          <el-table-column prop="power" label="Мощность" width="150" />
-          <el-table-column prop="description" label="Описание" min-width="200" show-overflow-tooltip />
-          <el-table-column label="Действия" width="150" fixed="right">
+        <el-table
+          :data="equipment"
+          stripe
+          border
+        >
+          <el-table-column
+            prop="name"
+            label="Название"
+            min-width="200"
+          />
+          <el-table-column
+            prop="model"
+            label="Модель"
+            width="150"
+          />
+          <el-table-column
+            prop="manufacturer"
+            label="Производитель"
+            width="180"
+          />
+          <el-table-column
+            prop="quantity"
+            label="Количество"
+            width="100"
+            align="center"
+          />
+          <el-table-column
+            prop="power"
+            label="Мощность"
+            width="150"
+          />
+          <el-table-column
+            prop="description"
+            label="Описание"
+            min-width="200"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            label="Действия"
+            width="150"
+            fixed="right"
+          >
             <template #default="{ row }">
-              <el-button size="small" @click="editEquipment(row)">Редактировать</el-button>
-              <el-popconfirm title="Удалить оборудование?" @confirm="deleteEquipment(row)">
+              <el-button
+                size="small"
+                @click="editEquipment(row)"
+              >
+                Редактировать
+              </el-button>
+              <el-popconfirm
+                title="Удалить оборудование?"
+                @confirm="deleteEquipment(row)"
+              >
                 <template #reference>
-                  <el-button size="small" type="danger">Удалить</el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                  >
+                    Удалить
+                  </el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -378,24 +707,71 @@
       </el-tab-pane>
 
       <!-- Specifications -->
-      <el-tab-pane label="Технические характеристики" name="specs" :disabled="!isEditing">
+      <el-tab-pane
+        label="Технические характеристики"
+        name="specs"
+        :disabled="!isEditing"
+      >
         <div class="mb-4">
-          <el-button type="primary" @click="showSpecDialog = true">
-            <el-icon class="mr-2"><Plus /></el-icon> Добавить характеристику
+          <el-button
+            type="primary"
+            @click="showSpecDialog = true"
+          >
+            <el-icon class="mr-2">
+              <Plus />
+            </el-icon> Добавить характеристику
           </el-button>
         </div>
         
-        <el-table :data="specs" stripe border>
-          <el-table-column prop="category" label="Категория" min-width="200" />
-          <el-table-column prop="value" label="Значение" width="120" />
-          <el-table-column prop="unit" label="Единица" width="100" />
-          <el-table-column prop="description" label="Описание" min-width="250" show-overflow-tooltip />
-          <el-table-column label="Действия" width="150" fixed="right">
+        <el-table
+          :data="specs"
+          stripe
+          border
+        >
+          <el-table-column
+            prop="category"
+            label="Категория"
+            min-width="200"
+          />
+          <el-table-column
+            prop="value"
+            label="Значение"
+            width="120"
+          />
+          <el-table-column
+            prop="unit"
+            label="Единица"
+            width="100"
+          />
+          <el-table-column
+            prop="description"
+            label="Описание"
+            min-width="250"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            label="Действия"
+            width="150"
+            fixed="right"
+          >
             <template #default="{ row }">
-              <el-button size="small" @click="editSpec(row)">Редактировать</el-button>
-              <el-popconfirm title="Удалить характеристику?" @confirm="deleteSpec(row)">
+              <el-button
+                size="small"
+                @click="editSpec(row)"
+              >
+                Редактировать
+              </el-button>
+              <el-popconfirm
+                title="Удалить характеристику?"
+                @confirm="deleteSpec(row)"
+              >
                 <template #reference>
-                  <el-button size="small" type="danger">Удалить</el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                  >
+                    Удалить
+                  </el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -404,30 +780,81 @@
       </el-tab-pane>
 
       <!-- Safety Systems -->
-      <el-tab-pane label="Системы безопасности" name="safety" :disabled="!isEditing">
+      <el-tab-pane
+        label="Системы безопасности"
+        name="safety"
+        :disabled="!isEditing"
+      >
         <div class="mb-4">
-          <el-button type="primary" @click="showSafetyDialog = true">
-            <el-icon class="mr-2"><Plus /></el-icon> Добавить систему безопасности
+          <el-button
+            type="primary"
+            @click="showSafetyDialog = true"
+          >
+            <el-icon class="mr-2">
+              <Plus />
+            </el-icon> Добавить систему безопасности
           </el-button>
         </div>
         
-        <el-table :data="safetySystems" stripe border>
-          <el-table-column prop="name" label="Название" min-width="200" />
-          <el-table-column prop="description" label="Описание" min-width="250" show-overflow-tooltip />
-          <el-table-column prop="manufacturer" label="Производитель" width="150" />
-          <el-table-column label="Особенности" min-width="200">
+        <el-table
+          :data="safetySystems"
+          stripe
+          border
+        >
+          <el-table-column
+            prop="name"
+            label="Название"
+            min-width="200"
+          />
+          <el-table-column
+            prop="description"
+            label="Описание"
+            min-width="250"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="manufacturer"
+            label="Производитель"
+            width="150"
+          />
+          <el-table-column
+            label="Особенности"
+            min-width="200"
+          >
             <template #default="{ row }">
-              <el-tag v-for="(feature, idx) in (row.feature_names || row.features || [])" :key="idx" class="mr-1 mb-1" size="small">
+              <el-tag
+                v-for="(feature, idx) in (row.feature_names || row.features || [])"
+                :key="idx"
+                class="mr-1 mb-1"
+                size="small"
+              >
                 {{ typeof feature === 'string' ? feature : feature.feature_name }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="Действия" width="150" fixed="right">
+          <el-table-column
+            label="Действия"
+            width="150"
+            fixed="right"
+          >
             <template #default="{ row }">
-              <el-button size="small" @click="editSafetySystem(row)">Редактировать</el-button>
-              <el-popconfirm title="Удалить систему?" @confirm="deleteSafetySystem(row)">
+              <el-button
+                size="small"
+                @click="editSafetySystem(row)"
+              >
+                Редактировать
+              </el-button>
+              <el-popconfirm
+                title="Удалить систему?"
+                @confirm="deleteSafetySystem(row)"
+              >
                 <template #reference>
-                  <el-button size="small" type="danger">Удалить</el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                  >
+                    Удалить
+                  </el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -436,21 +863,55 @@
       </el-tab-pane>
 
       <!-- Gas Supply Sources -->
-      <el-tab-pane label="Источники подачи газа" name="gasSources" :disabled="!isEditing">
+      <el-tab-pane
+        label="Источники подачи газа"
+        name="gasSources"
+        :disabled="!isEditing"
+      >
         <div class="mb-4">
-          <el-button type="primary" @click="showGasSourceDialog = true">
-            <el-icon class="mr-2"><Plus /></el-icon> Добавить источник
+          <el-button
+            type="primary"
+            @click="showGasSourceDialog = true"
+          >
+            <el-icon class="mr-2">
+              <Plus />
+            </el-icon> Добавить источник
           </el-button>
         </div>
         
-        <el-table :data="gasSources" stripe border>
-          <el-table-column prop="source_name" label="Название источника" min-width="300" />
-          <el-table-column label="Действия" width="150" fixed="right">
+        <el-table
+          :data="gasSources"
+          stripe
+          border
+        >
+          <el-table-column
+            prop="source_name"
+            label="Название источника"
+            min-width="300"
+          />
+          <el-table-column
+            label="Действия"
+            width="150"
+            fixed="right"
+          >
             <template #default="{ row }">
-              <el-button size="small" @click="editGasSource(row)">Редактировать</el-button>
-              <el-popconfirm title="Удалить источник?" @confirm="deleteGasSource(row)">
+              <el-button
+                size="small"
+                @click="editGasSource(row)"
+              >
+                Редактировать
+              </el-button>
+              <el-popconfirm
+                title="Удалить источник?"
+                @confirm="deleteGasSource(row)"
+              >
                 <template #reference>
-                  <el-button size="small" type="danger">Удалить</el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                  >
+                    Удалить
+                  </el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -459,32 +920,88 @@
       </el-tab-pane>
 
       <!-- Photos -->
-      <el-tab-pane label="Фотографии" name="photos" :disabled="!isEditing">
+      <el-tab-pane
+        label="Фотографии"
+        name="photos"
+        :disabled="!isEditing"
+      >
         <div class="mb-4">
-          <input type="file" ref="photoInput" class="hidden" accept="image/*" @change="handlePhotoUpload" />
-          <el-button type="primary" @click="$refs.photoInput.click()" :loading="uploadingPhoto">
-            <el-icon class="mr-2"><Upload /></el-icon> Загрузить фото
+          <input
+            ref="photoInput"
+            type="file"
+            class="hidden"
+            accept="image/*"
+            @change="handlePhotoUpload"
+          >
+          <el-button
+            type="primary"
+            :loading="uploadingPhoto"
+            @click="$refs.photoInput.click()"
+          >
+            <el-icon class="mr-2">
+              <Upload />
+            </el-icon> Загрузить фото
           </el-button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <el-card v-for="photo in photos" :key="photo.id" :body-style="{ padding: '0px' }">
-            <img :src="photo.displayUrl || photo.image_url" class="w-full h-48 object-cover" />
+          <el-card
+            v-for="photo in photos"
+            :key="photo.id"
+            :body-style="{ padding: '0px' }"
+          >
+            <img
+              :src="photo.displayUrl || photo.image_url"
+              class="w-full h-48 object-cover"
+            >
             <div class="p-4">
               <div class="mb-2">
-                <el-input v-model="photo.title" placeholder="Название" size="small" @change="updatePhoto(photo)" />
+                <el-input
+                  v-model="photo.title"
+                  placeholder="Название"
+                  size="small"
+                  @change="updatePhoto(photo)"
+                />
               </div>
               <div class="mb-2">
-                <el-select v-model="photo.view" placeholder="Вид" size="small" @change="updatePhoto(photo)" style="width: 100%">
-                  <el-option label="Общий вид" value="general" />
-                  <el-option label="Машинный зал" value="machine-hall" />
-                  <el-option label="Компрессоры" value="compressors" />
-                  <el-option label="Охлаждение" value="cooling" />
-                  <el-option label="Другое" value="other" />
+                <el-select
+                  v-model="photo.view"
+                  placeholder="Вид"
+                  size="small"
+                  style="width: 100%"
+                  @change="updatePhoto(photo)"
+                >
+                  <el-option
+                    label="Общий вид"
+                    value="general"
+                  />
+                  <el-option
+                    label="Машинный зал"
+                    value="machine-hall"
+                  />
+                  <el-option
+                    label="Компрессоры"
+                    value="compressors"
+                  />
+                  <el-option
+                    label="Охлаждение"
+                    value="cooling"
+                  />
+                  <el-option
+                    label="Другое"
+                    value="other"
+                  />
                 </el-select>
               </div>
               <div class="flex justify-between items-center mt-2">
-                <el-button type="danger" link size="small" @click="deletePhoto(photo)">Удалить</el-button>
+                <el-button
+                  type="danger"
+                  link
+                  size="small"
+                  @click="deletePhoto(photo)"
+                >
+                  Удалить
+                </el-button>
               </div>
             </div>
           </el-card>
@@ -492,25 +1009,63 @@
       </el-tab-pane>
 
       <!-- Normative Docs -->
-      <el-tab-pane label="Документы" name="docs" :disabled="!isEditing">
+      <el-tab-pane
+        label="Документы"
+        name="docs"
+        :disabled="!isEditing"
+      >
         <div class="mb-4">
-          <input type="file" ref="docInput" class="hidden" @change="handleDocUpload" />
-          <el-button type="primary" @click="$refs.docInput.click()" :loading="uploadingDoc">
-            <el-icon class="mr-2"><DocumentAdd /></el-icon> Загрузить документ
+          <input
+            ref="docInput"
+            type="file"
+            class="hidden"
+            @change="handleDocUpload"
+          >
+          <el-button
+            type="primary"
+            :loading="uploadingDoc"
+            @click="$refs.docInput.click()"
+          >
+            <el-icon class="mr-2">
+              <DocumentAdd />
+            </el-icon> Загрузить документ
           </el-button>
         </div>
-        <el-table :data="docs" stripe border>
-          <el-table-column prop="title" label="Название" min-width="200" />
+        <el-table
+          :data="docs"
+          stripe
+          border
+        >
+          <el-table-column
+            prop="title"
+            label="Название"
+            min-width="200"
+          />
           <el-table-column label="Файл">
             <template #default="{ row }">
-              <a :href="row.downloadUrl || row.file_url" target="_blank" class="text-blue-600 hover:underline">Скачать</a>
+              <a
+                :href="row.downloadUrl || row.file_url"
+                target="_blank"
+                class="text-blue-600 hover:underline"
+              >Скачать</a>
             </template>
           </el-table-column>
-          <el-table-column label="Действия" width="120">
+          <el-table-column
+            label="Действия"
+            width="120"
+          >
             <template #default="{ row }">
-              <el-popconfirm title="Удалить документ?" @confirm="deleteDoc(row)">
+              <el-popconfirm
+                title="Удалить документ?"
+                @confirm="deleteDoc(row)"
+              >
                 <template #reference>
-                  <el-button type="danger" size="small">Удалить</el-button>
+                  <el-button
+                    type="danger"
+                    size="small"
+                  >
+                    Удалить
+                  </el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -520,9 +1075,19 @@
     </el-tabs>
 
     <!-- Equipment Dialog -->
-    <el-dialog v-model="showEquipmentDialog" :title="editingEquipment ? 'Редактировать оборудование' : 'Добавить оборудование'" width="600px">
-      <el-form :model="equipmentForm" label-width="150px">
-        <el-form-item label="Название" required>
+    <el-dialog
+      v-model="showEquipmentDialog"
+      :title="editingEquipment ? 'Редактировать оборудование' : 'Добавить оборудование'"
+      width="600px"
+    >
+      <el-form
+        :model="equipmentForm"
+        label-width="150px"
+      >
+        <el-form-item
+          label="Название"
+          required
+        >
           <el-input v-model="equipmentForm.name" />
         </el-form-item>
         <el-form-item label="Модель">
@@ -532,25 +1097,50 @@
           <el-input v-model="equipmentForm.manufacturer" />
         </el-form-item>
         <el-form-item label="Количество">
-          <el-input-number v-model="equipmentForm.quantity" :min="1" style="width: 100%" />
+          <el-input-number
+            v-model="equipmentForm.quantity"
+            :min="1"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="Мощность">
           <el-input v-model="equipmentForm.power" />
         </el-form-item>
         <el-form-item label="Описание">
-          <el-input v-model="equipmentForm.description" type="textarea" rows="3" />
+          <el-input
+            v-model="equipmentForm.description"
+            type="textarea"
+            rows="3"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showEquipmentDialog = false">Отмена</el-button>
-        <el-button type="primary" @click="saveEquipment">Сохранить</el-button>
+        <el-button @click="showEquipmentDialog = false">
+          Отмена
+        </el-button>
+        <el-button
+          type="primary"
+          @click="saveEquipment"
+        >
+          Сохранить
+        </el-button>
       </template>
     </el-dialog>
 
     <!-- Specification Dialog -->
-    <el-dialog v-model="showSpecDialog" :title="editingSpec ? 'Редактировать характеристику' : 'Добавить характеристику'" width="600px">
-      <el-form :model="specForm" label-width="150px">
-        <el-form-item label="Категория" required>
+    <el-dialog
+      v-model="showSpecDialog"
+      :title="editingSpec ? 'Редактировать характеристику' : 'Добавить характеристику'"
+      width="600px"
+    >
+      <el-form
+        :model="specForm"
+        label-width="150px"
+      >
+        <el-form-item
+          label="Категория"
+          required
+        >
           <el-input v-model="specForm.category" />
         </el-form-item>
         <el-form-item label="Значение">
@@ -560,87 +1150,196 @@
           <el-input v-model="specForm.unit" />
         </el-form-item>
         <el-form-item label="Описание">
-          <el-input v-model="specForm.description" type="textarea" rows="3" />
+          <el-input
+            v-model="specForm.description"
+            type="textarea"
+            rows="3"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showSpecDialog = false">Отмена</el-button>
-        <el-button type="primary" @click="saveSpec">Сохранить</el-button>
+        <el-button @click="showSpecDialog = false">
+          Отмена
+        </el-button>
+        <el-button
+          type="primary"
+          @click="saveSpec"
+        >
+          Сохранить
+        </el-button>
       </template>
     </el-dialog>
 
     <!-- Safety System Dialog -->
-    <el-dialog v-model="showSafetyDialog" :title="editingSafetySystem ? 'Редактировать систему безопасности' : 'Добавить систему безопасности'" width="700px">
-      <el-form :model="safetyForm" label-width="150px">
-        <el-form-item label="Название" required>
+    <el-dialog
+      v-model="showSafetyDialog"
+      :title="editingSafetySystem ? 'Редактировать систему безопасности' : 'Добавить систему безопасности'"
+      width="700px"
+    >
+      <el-form
+        :model="safetyForm"
+        label-width="150px"
+      >
+        <el-form-item
+          label="Название"
+          required
+        >
           <el-input v-model="safetyForm.name" />
         </el-form-item>
         <el-form-item label="Описание">
-          <el-input v-model="safetyForm.description" type="textarea" rows="3" />
+          <el-input
+            v-model="safetyForm.description"
+            type="textarea"
+            rows="3"
+          />
         </el-form-item>
         <el-form-item label="Производитель">
           <el-input v-model="safetyForm.manufacturer" />
         </el-form-item>
         <el-form-item label="Особенности">
-          <div v-for="(feature, idx) in safetyForm.features" :key="idx" class="mb-2 flex items-center">
-            <el-input v-model="safetyForm.features[idx]" class="flex-1 mr-2" />
-            <el-button type="danger" link @click="safetyForm.features.splice(idx, 1)">Удалить</el-button>
+          <div
+            v-for="(feature, idx) in safetyForm.features"
+            :key="idx"
+            class="mb-2 flex items-center"
+          >
+            <el-input
+              v-model="safetyForm.features[idx]"
+              class="flex-1 mr-2"
+            />
+            <el-button
+              type="danger"
+              link
+              @click="safetyForm.features.splice(idx, 1)"
+            >
+              Удалить
+            </el-button>
           </div>
-          <el-button size="small" @click="safetyForm.features.push('')">+ Добавить особенность</el-button>
+          <el-button
+            size="small"
+            @click="safetyForm.features.push('')"
+          >
+            + Добавить особенность
+          </el-button>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showSafetyDialog = false">Отмена</el-button>
-        <el-button type="primary" @click="saveSafetySystem">Сохранить</el-button>
+        <el-button @click="showSafetyDialog = false">
+          Отмена
+        </el-button>
+        <el-button
+          type="primary"
+          @click="saveSafetySystem"
+        >
+          Сохранить
+        </el-button>
       </template>
     </el-dialog>
 
     <!-- Gas Source Dialog -->
-    <el-dialog v-model="showGasSourceDialog" :title="editingGasSource ? 'Редактировать источник' : 'Добавить источник'" width="500px">
-      <el-form :model="gasSourceForm" label-width="150px">
-        <el-form-item label="Название источника" required>
+    <el-dialog
+      v-model="showGasSourceDialog"
+      :title="editingGasSource ? 'Редактировать источник' : 'Добавить источник'"
+      width="500px"
+    >
+      <el-form
+        :model="gasSourceForm"
+        label-width="150px"
+      >
+        <el-form-item
+          label="Название источника"
+          required
+        >
           <el-input v-model="gasSourceForm.source_name" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showGasSourceDialog = false">Отмена</el-button>
-        <el-button type="primary" @click="saveGasSource">Сохранить</el-button>
+        <el-button @click="showGasSourceDialog = false">
+          Отмена
+        </el-button>
+        <el-button
+          type="primary"
+          @click="saveGasSource"
+        >
+          Сохранить
+        </el-button>
       </template>
     </el-dialog>
 
     <!-- Topic Files Dialog -->
-    <el-dialog v-model="showTopicFilesDialog" title="Файлы темы" width="900px">
+    <el-dialog
+      v-model="showTopicFilesDialog"
+      title="Файлы темы"
+      width="900px"
+    >
       <div v-if="activeTopic">
         <div class="mb-3 text-sm text-gray-600">
           <div><span class="font-semibold">Тема:</span> {{ activeTopic.code }} — {{ activeTopic.title }}</div>
-          <div class="text-xs text-gray-500">topic_id: {{ activeTopic.id }} | topicKey: {{ activeTopic.topicKey }}</div>
+          <div class="text-xs text-gray-500">
+            topic_id: {{ activeTopic.id }} | topicKey: {{ activeTopic.topicKey }}
+          </div>
         </div>
 
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-3">
-            <el-select v-model="newTopicFileType" placeholder="Тип" style="width: 180px">
-              <el-option label="PDF" value="pdf" />
-              <el-option label="Видео" value="video" />
-              <el-option label="Документ" value="document" />
+            <el-select
+              v-model="newTopicFileType"
+              placeholder="Тип"
+              style="width: 180px"
+            >
+              <el-option
+                label="PDF"
+                value="pdf"
+              />
+              <el-option
+                label="Видео"
+                value="video"
+              />
+              <el-option
+                label="Документ"
+                value="document"
+              />
             </el-select>
-            <el-checkbox v-model="newTopicFileIsMain" :disabled="newTopicFileType !== 'pdf'">Главный PDF</el-checkbox>
+            <el-checkbox
+              v-model="newTopicFileIsMain"
+              :disabled="newTopicFileType !== 'pdf'"
+            >
+              Главный PDF
+            </el-checkbox>
           </div>
           <div class="flex gap-2">
             <input
-              type="file"
               ref="topicFileInput"
+              type="file"
               class="hidden"
               @change="handleTopicFileUpload"
-            />
-            <el-button type="primary" :loading="uploadingTopicFile" @click="$refs.topicFileInput.click()">
-              <el-icon class="mr-2"><Upload /></el-icon> Загрузить файл
+            >
+            <el-button
+              type="primary"
+              :loading="uploadingTopicFile"
+              @click="$refs.topicFileInput.click()"
+            >
+              <el-icon class="mr-2">
+                <Upload />
+              </el-icon> Загрузить файл
             </el-button>
           </div>
         </div>
 
-        <el-table :data="topicFiles" stripe border>
-          <el-table-column prop="fileType" label="Тип" width="110" />
-          <el-table-column prop="isMain" label="Main" width="90">
+        <el-table
+          :data="topicFiles"
+          stripe
+          border
+        >
+          <el-table-column
+            prop="fileType"
+            label="Тип"
+            width="110"
+          />
+          <el-table-column
+            prop="isMain"
+            label="Main"
+            width="90"
+          >
             <template #default="{ row }">
               <el-switch
                 v-model="row.isMain"
@@ -649,12 +1348,21 @@
               />
             </template>
           </el-table-column>
-          <el-table-column label="Название" min-width="240">
+          <el-table-column
+            label="Название"
+            min-width="240"
+          >
             <template #default="{ row }">
-              <el-input v-model="row.title" @change="() => updateTopicFile(row, { title: row.title })" />
+              <el-input
+                v-model="row.title"
+                @change="() => updateTopicFile(row, { title: row.title })"
+              />
             </template>
           </el-table-column>
-          <el-table-column label="Order" width="120">
+          <el-table-column
+            label="Order"
+            width="120"
+          >
             <template #default="{ row }">
               <el-input-number
                 v-model="row.orderIndex"
@@ -664,16 +1372,36 @@
               />
             </template>
           </el-table-column>
-          <el-table-column label="Preview" width="140">
+          <el-table-column
+            label="Preview"
+            width="140"
+          >
             <template #default="{ row }">
-              <el-button size="small" @click="previewTopicFile(row)">Открыть</el-button>
+              <el-button
+                size="small"
+                @click="previewTopicFile(row)"
+              >
+                Открыть
+              </el-button>
             </template>
           </el-table-column>
-          <el-table-column label="Действия" width="140" fixed="right">
+          <el-table-column
+            label="Действия"
+            width="140"
+            fixed="right"
+          >
             <template #default="{ row }">
-              <el-popconfirm title="Удалить файл?" @confirm="deleteTopicFile(row)">
+              <el-popconfirm
+                title="Удалить файл?"
+                @confirm="deleteTopicFile(row)"
+              >
                 <template #reference>
-                  <el-button size="small" type="danger">Удалить</el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                  >
+                    Удалить
+                  </el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -681,7 +1409,9 @@
         </el-table>
       </div>
       <template #footer>
-        <el-button @click="showTopicFilesDialog = false">Закрыть</el-button>
+        <el-button @click="showTopicFilesDialog = false">
+          Закрыть
+        </el-button>
       </template>
     </el-dialog>
   </div>

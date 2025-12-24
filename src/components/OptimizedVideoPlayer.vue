@@ -9,14 +9,11 @@
       transformOrigin: 'center center'
     }"
   >
-    <vue-plyr
-      ref="videoPlayerRef"
-      :class="isFullscreen ? 'w-full h-full' : 'w-full max-w-full'"
-      :key="videoKey"
-      :options="plyrOptions"
-      @ready="onPlayerReady"
-    >
+    <div :class="isFullscreen ? 'w-full h-full' : 'w-full max-w-full'">
       <video
+        ref="videoEl"
+        :key="videoKey"
+        class="w-full h-full"
         :src="videoSource"
         preload="metadata"
         playsinline
@@ -24,13 +21,15 @@
       >
         Ваш браузер не поддерживает воспроизведение видео.
       </video>
-    </vue-plyr>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useVideo } from '@/composables/useVideo'
+import Plyr from 'plyr'
+import 'plyr/dist/plyr.css'
 
 const props = defineProps({
   source: {
@@ -49,6 +48,7 @@ const props = defineProps({
 
 const emit = defineEmits(['fullscreen-change'])
 
+const videoEl = ref(null)
 const videoPlayerRef = ref(null)
 const videoKey = ref(0)
 
@@ -96,30 +96,38 @@ const videoSource = computed(() => {
   return props.source?.url || props.source?.file_url || ''
 })
 
-const onPlayerReady = () => {
-  if (videoPlayerRef.value) {
-    initPlayer(videoPlayerRef.value)
-    
-    // Подписываемся на события fullscreen
-    const player = videoPlayerRef.value.player
-    
-    if (player) {
-      player.on('enterfullscreen', () => {
-        emit('fullscreen-change', true)
-      })
-      
-      player.on('exitfullscreen', () => {
-        emit('fullscreen-change', false)
-      })
+const createPlayer = () => {
+  if (!videoEl.value) return
+
+  // destroy old if any
+  if (videoPlayerRef.value?.player) {
+    try {
+      videoPlayerRef.value.player.destroy()
+    } catch {
+      // ignore
     }
   }
+
+  const player = new Plyr(videoEl.value, plyrOptions)
+  videoPlayerRef.value = { player }
+
+  initPlayer(videoPlayerRef.value)
+
+  player.on('enterfullscreen', () => emit('fullscreen-change', true))
+  player.on('exitfullscreen', () => emit('fullscreen-change', false))
 }
+
+onMounted(() => {
+  createPlayer()
+})
 
 // Следим за изменением источника
 watch(() => props.source, (newSource, oldSource) => {
   if (newSource && newSource !== oldSource) {
     // Форсируем перерендер компонента при смене источника
     videoKey.value++
+    // Пересоздаём плеер после смены DOM (next tick не обязателен, но безопаснее)
+    setTimeout(() => createPlayer(), 0)
   }
 })
 

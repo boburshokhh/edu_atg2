@@ -3,7 +3,10 @@
     <div class="lesson-header-content">
       <div class="lesson-header-left">
         <!-- Breadcrumb -->
-        <el-breadcrumb separator="/" class="lesson-breadcrumb">
+        <el-breadcrumb
+          separator="/"
+          class="lesson-breadcrumb"
+        >
           <el-breadcrumb-item :to="{ path: '/stations' }">
             <span>Станции</span>
           </el-breadcrumb-item>
@@ -46,10 +49,16 @@
                 <span class="avatar-text">{{ userName.charAt(0).toUpperCase() }}</span>
               </el-avatar>
               <div class="user-info">
-                <div class="user-name">{{ userName }}</div>
-                <div class="user-role">{{ userRole }}</div>
+                <div class="user-name">
+                  {{ userName }}
+                </div>
+                <div class="user-role">
+                  {{ userRole }}
+                </div>
               </div>
-              <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
+              <el-icon class="dropdown-icon">
+                <ArrowDown />
+              </el-icon>
             </div>
             <template #dropdown>
               <el-dropdown-menu>

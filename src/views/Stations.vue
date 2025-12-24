@@ -22,7 +22,7 @@
             <!-- Image Container -->
             <div class="relative h-48 overflow-hidden bg-gray-200">
               <!-- Loading Skeleton -->
-              <div class="skeleton-loader absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200"></div>
+              <div class="skeleton-loader absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200" />
               
               <img 
                 :src="getStationImageUrl(station)" 
@@ -32,9 +32,9 @@
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 relative z-10"
                 @load="imageLoaded"
                 @error="imageError"
-              />
+              >
               <!-- Gradient Overlay -->
-              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20"></div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20" />
             </div>
             
             <!-- Content -->
@@ -50,14 +50,14 @@
               <!-- Action Buttons -->
               <div class="flex gap-3">
                 <button 
-                  @click="$router.push(`/station/${station.id}`)"
                   class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-lg"
+                  @click="$router.push(`/station/${station.id}`)"
                 >
                   Подробнее
                 </button>
                 <button 
-                  @click="$router.push(`/station/${station.id}/courses`)"
                   class="px-4 py-2.5 border border-blue-600 text-blue-600 rounded-lg font-semibold text-sm hover:bg-blue-600 hover:text-white transition-all duration-300"
+                  @click="$router.push(`/station/${station.id}/courses`)"
                 >
                   Тренинги
                 </button>

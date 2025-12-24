@@ -3,19 +3,21 @@
     <!-- Compact Header -->
     <div class="p-4 border-b border-gray-200 relative">
       <div class="flex items-center justify-between mb-1">
-        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Содержание</h2>
+        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">
+          Содержание
+        </h2>
         <el-button
-          @click="handleToggleSidebar"
           :icon="Fold"
           circle
           size="small"
           class="sidebar-toggle-btn"
           title="Свернуть сайдбар"
+          @click="handleToggleSidebar"
         />
       </div>
       <button 
-        @click="toggleAllLessons"
         class="text-xs text-blue-600 hover:text-blue-700 font-medium"
+        @click="toggleAllLessons"
       >
         {{ allExpanded ? 'Свернуть' : 'Развернуть' }}
       </button>
@@ -23,11 +25,15 @@
 
     <!-- Lessons List -->
     <div class="lessons-list-container">
-      <div v-for="(lesson, lessonIndex) in lessons" :key="lessonIndex" class="border-b border-gray-100">
+      <div
+        v-for="(lesson, lessonIndex) in lessons"
+        :key="lessonIndex"
+        class="border-b border-gray-100"
+      >
         <!-- Compact Lesson Header -->
         <button
-          @click="toggleLesson(lessonIndex)"
           class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors group"
+          @click="toggleLesson(lessonIndex)"
         >
           <div class="flex-1 text-left min-w-0">
             <div class="text-xs font-semibold text-blue-600 mb-0.5">
@@ -53,18 +59,21 @@
 
         <!-- Compact Topics -->
         <el-collapse-transition>
-          <div v-show="expandedLessons.includes(lessonIndex)" class="bg-gray-50">
+          <div
+            v-show="expandedLessons.includes(lessonIndex)"
+            class="bg-gray-50"
+          >
             <!-- Topics -->
             <button
               v-for="(topic, topicIndex) in lesson.topics"
               :key="topicIndex"
-              @click="selectTopic(lessonIndex, topicIndex)"
               :class="[
                 'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3',
                 isCurrentTopic(lessonIndex, topicIndex)
                   ? 'border-blue-600 bg-blue-50'
                   : 'border-transparent'
               ]"
+              @click="selectTopic(lessonIndex, topicIndex)"
             >
               <!-- Compact Status Icon -->
               <div class="flex-shrink-0 mt-0.5">
@@ -72,7 +81,10 @@
                   v-if="isTopicCompleted(lessonIndex, topicIndex)"
                   class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"
                 >
-                  <el-icon class="text-white" :size="12">
+                  <el-icon
+                    class="text-white"
+                    :size="12"
+                  >
                     <Check />
                   </el-icon>
                 </div>
@@ -80,7 +92,10 @@
                   v-else-if="isCurrentTopic(lessonIndex, topicIndex)"
                   class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"
                 >
-                  <el-icon class="text-white" :size="12">
+                  <el-icon
+                    class="text-white"
+                    :size="12"
+                  >
                     <VideoPlay />
                   </el-icon>
                 </div>
@@ -88,7 +103,7 @@
                   v-else
                   class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center"
                 >
-                  <div class="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                  <div class="w-1.5 h-1.5 rounded-full bg-gray-300" />
                 </div>
               </div>
 
@@ -110,8 +125,14 @@
               </div>
 
               <!-- Play Icon for current -->
-              <div v-if="isCurrentTopic(lessonIndex, topicIndex)" class="flex-shrink-0">
-                <el-icon class="text-blue-600" :size="14">
+              <div
+                v-if="isCurrentTopic(lessonIndex, topicIndex)"
+                class="flex-shrink-0"
+              >
+                <el-icon
+                  class="text-blue-600"
+                  :size="14"
+                >
                   <CaretRight />
                 </el-icon>
               </div>
@@ -119,13 +140,13 @@
 
             <!-- Lesson Test -->
             <button
-              @click="selectTest(lessonIndex)"
               :class="[
                 'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3 border-t border-gray-200',
                 isCurrentTest(lessonIndex)
                   ? 'border-purple-600 bg-purple-50'
                   : 'border-transparent'
               ]"
+              @click="selectTest(lessonIndex)"
             >
               <!-- Test Icon -->
               <div class="flex-shrink-0 mt-0.5">
@@ -133,7 +154,10 @@
                   v-if="isLessonTestPassed(lessonIndex)"
                   class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"
                 >
-                  <el-icon class="text-white" :size="12">
+                  <el-icon
+                    class="text-white"
+                    :size="12"
+                  >
                     <Check />
                   </el-icon>
                 </div>
@@ -141,7 +165,10 @@
                   v-else-if="isCurrentTest(lessonIndex)"
                   class="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center"
                 >
-                  <el-icon class="text-white" :size="12">
+                  <el-icon
+                    class="text-white"
+                    :size="12"
+                  >
                     <Document />
                   </el-icon>
                 </div>
@@ -149,7 +176,10 @@
                   v-else
                   class="w-5 h-5 rounded-lg border-2 border-purple-300 flex items-center justify-center"
                 >
-                  <el-icon class="text-purple-500" :size="12">
+                  <el-icon
+                    class="text-purple-500"
+                    :size="12"
+                  >
                     <Document />
                   </el-icon>
                 </div>
@@ -166,7 +196,14 @@
                   ]"
                 >
                   <span>Тест модуля {{ lessonIndex + 1 }}</span>
-                  <el-tag v-if="isLessonTestPassed(lessonIndex)" type="success" size="small" class="ml-1">✓</el-tag>
+                  <el-tag
+                    v-if="isLessonTestPassed(lessonIndex)"
+                    type="success"
+                    size="small"
+                    class="ml-1"
+                  >
+                    ✓
+                  </el-tag>
                 </div>
                 <div class="text-xs text-gray-500">
                   Проверка знаний
@@ -174,8 +211,14 @@
               </div>
 
               <!-- Arrow Icon for current -->
-              <div v-if="isCurrentTest(lessonIndex)" class="flex-shrink-0">
-                <el-icon class="text-purple-600" :size="14">
+              <div
+                v-if="isCurrentTest(lessonIndex)"
+                class="flex-shrink-0"
+              >
+                <el-icon
+                  class="text-purple-600"
+                  :size="14"
+                >
                   <CaretRight />
                 </el-icon>
               </div>
@@ -184,7 +227,6 @@
         </el-collapse-transition>
       </div>
     </div>
-
   </div>
 </template>
 

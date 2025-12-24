@@ -19,53 +19,63 @@
           :completed-topics="completedTopics"
           :passed-tests="passedTests"
           :is-test-mode="isTestMode"
-          @select-lesson="handleSelectLesson"
-          @select-test="handleSelectTest"
-          @toggle-sidebar="handleToggleSidebar"
           :class="[
             'flex-shrink-0',
             isMobile ? 'sidebar-mobile' : 'sidebar-desktop'
           ]"
+          @select-lesson="handleSelectLesson"
+          @select-test="handleSelectTest"
+          @toggle-sidebar="handleToggleSidebar"
         />
       </transition>
 
       <!-- Mobile Overlay for Left Sidebar -->
       <div
         v-if="showSidebar && isMobile"
-        @click="showSidebar = false"
         class="mobile-overlay"
-      ></div>
+        @click="showSidebar = false"
+      />
 
       <!-- Mobile Overlay for Right Sidebar (Materials) -->
       <div
         v-if="showMaterialsSidebar && isMobile"
-        @click="showMaterialsSidebar = false"
         class="mobile-overlay"
-      ></div>
+        @click="showMaterialsSidebar = false"
+      />
 
       <!-- Expand Left Sidebar Button (when sidebar is hidden) -->
       <el-button
         v-if="!showSidebar && !isMobile"
-        @click="showSidebar = true"
         class="sidebar-expand-btn sidebar-expand-btn-left"
         type="primary"
         circle
         :icon="Menu"
         title="Показать сайдбар"
+        @click="showSidebar = true"
       />
 
       <!-- Main Content Area -->
       <el-main class="main-content-area">
-        <el-card class="lesson-content-card" shadow="never">
+        <el-card
+          class="lesson-content-card"
+          shadow="never"
+        >
           <!-- Test Mode -->
-          <div v-if="isTestMode" class="test-container">
+          <div
+            v-if="isTestMode"
+            class="test-container"
+          >
             <TestQuiz 
               v-if="currentLessonTest"
               :test-data="currentLessonTest"
               @test-completed="handleTestCompleted"
               @test-started="handleTestStarted"
             />
-            <el-empty v-else description="Тест для этого модуля пока недоступен" :image-size="80" />
+            <el-empty
+              v-else
+              description="Тест для этого модуля пока недоступен"
+              :image-size="80"
+            />
           </div>
 
           <!-- Content Viewer (PDF/Video/Other) -->
@@ -84,11 +94,11 @@
             <!-- Navigation Buttons -->
             <div class="navigation-buttons">
               <el-button
-                @click="previousLesson"
                 :disabled="!hasPreviousLesson"
                 :icon="ArrowLeft"
                 size="small"
                 class="nav-btn"
+                @click="previousLesson"
               >
                 <span class="nav-btn-text">Назад</span>
               </el-button>
@@ -97,29 +107,36 @@
                 <el-button
                   v-if="!isTopicCompleted"
                   type="success"
-                  @click="markAsCompleted"
                   :icon="Check"
                   size="small"
                   class="nav-btn"
+                  @click="markAsCompleted"
                 >
                   <span class="nav-btn-text-desktop">Завершить</span>
                   <span class="nav-btn-text-mobile">✓</span>
                 </el-button>
-                <el-tag v-else type="success" size="small" class="completed-tag">
+                <el-tag
+                  v-else
+                  type="success"
+                  size="small"
+                  class="completed-tag"
+                >
                   <el-icon><Check /></el-icon>
                   <span class="completed-text">Завершено</span>
                 </el-tag>
               </div>
 
               <el-button
-                @click="nextLesson"
                 :disabled="!hasNextLesson"
                 type="primary"
                 size="small"
                 class="nav-btn"
+                @click="nextLesson"
               >
                 <span class="nav-btn-text">Далее</span>
-                <el-icon class="nav-icon"><ArrowRight /></el-icon>
+                <el-icon class="nav-icon">
+                  <ArrowRight />
+                </el-icon>
               </el-button>
             </div>
           </div>
@@ -134,33 +151,33 @@
           :additional-materials="additionalMaterials"
           :current-file="currentFile"
           :topic-title="currentTopic?.title || currentLesson?.title || ''"
-          @select-material="openMaterial"
-          @toggle-sidebar="handleToggleMaterialsSidebar"
           :class="[
             'flex-shrink-0',
             isMobile ? 'materials-sidebar-mobile' : 'materials-sidebar-desktop'
           ]"
+          @select-material="openMaterial"
+          @toggle-sidebar="handleToggleMaterialsSidebar"
         />
       </transition>
 
       <!-- Expand Right Sidebar Button (when sidebar is hidden) -->
       <el-button
         v-if="!showMaterialsSidebar && !isMobile"
-        @click="showMaterialsSidebar = true"
         class="sidebar-expand-btn sidebar-expand-btn-right"
         type="primary"
         circle
         :icon="Menu"
         title="Показать материалы"
+        @click="showMaterialsSidebar = true"
       />
     </el-container>
 
     <!-- Mobile Menu Buttons -->
     <el-button
-      @click="showSidebar = !showSidebar"
       class="mobile-menu-btn mobile-menu-btn-left"
       type="primary"
       circle
+      @click="showSidebar = !showSidebar"
     >
       <el-icon class="mobile-menu-icon">
         <Menu v-if="!showSidebar" />
@@ -170,10 +187,10 @@
 
     <!-- Mobile Materials Button -->
     <el-button
-      @click="showMaterialsSidebar = !showMaterialsSidebar"
       class="mobile-menu-btn mobile-menu-btn-right"
       type="primary"
       circle
+      @click="showMaterialsSidebar = !showMaterialsSidebar"
     >
       <el-icon class="mobile-menu-icon">
         <Folder v-if="!showMaterialsSidebar" />

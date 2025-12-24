@@ -16,8 +16,8 @@
           v-for="notification in notifications" 
           :key="notification.id" 
           :notification="notification"
-          @close="remove(notification.id)"
           class="pointer-events-auto"
+          @close="remove(notification.id)"
         />
       </TransitionGroup>
     </div>

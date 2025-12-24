@@ -1,39 +1,75 @@
 <template>
   <div class="test-quiz">
     <!-- Test Header -->
-    <div v-if="!testStarted && !testCompleted" class="test-intro">
-      <el-card shadow="hover" class="intro-card">
+    <div
+      v-if="!testStarted && !testCompleted"
+      class="test-intro"
+    >
+      <el-card
+        shadow="hover"
+        class="intro-card"
+      >
         <div class="text-center">
           <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <el-icon :size="40" class="text-white">
+            <el-icon
+              :size="40"
+              class="text-white"
+            >
               <Document />
             </el-icon>
           </div>
           
-          <h2 class="text-2xl font-bold text-gray-900 mb-3">{{ testData.title }}</h2>
-          <p class="text-gray-600 mb-6">{{ testData.description }}</p>
+          <h2 class="text-2xl font-bold text-gray-900 mb-3">
+            {{ testData.title }}
+          </h2>
+          <p class="text-gray-600 mb-6">
+            {{ testData.description }}
+          </p>
           
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="stat-card">
-              <div class="text-2xl font-bold text-blue-600">{{ testData.questions?.length || 0 }}</div>
-              <div class="text-xs text-gray-600">Вопросов</div>
+              <div class="text-2xl font-bold text-blue-600">
+                {{ testData.questions?.length || 0 }}
+              </div>
+              <div class="text-xs text-gray-600">
+                Вопросов
+              </div>
             </div>
             <div class="stat-card">
-              <div class="text-2xl font-bold text-green-600">{{ testData.passingScore || 70 }}%</div>
-              <div class="text-xs text-gray-600">Проходной балл</div>
+              <div class="text-2xl font-bold text-green-600">
+                {{ testData.passingScore || 70 }}%
+              </div>
+              <div class="text-xs text-gray-600">
+                Проходной балл
+              </div>
             </div>
             <div class="stat-card">
-              <div class="text-2xl font-bold text-purple-600">{{ testData.timeLimit || 30 }}</div>
-              <div class="text-xs text-gray-600">Минут</div>
+              <div class="text-2xl font-bold text-purple-600">
+                {{ testData.timeLimit || 30 }}
+              </div>
+              <div class="text-xs text-gray-600">
+                Минут
+              </div>
             </div>
             <div class="stat-card">
-              <div class="text-2xl font-bold text-orange-600">{{ testData.attempts || '∞' }}</div>
-              <div class="text-xs text-gray-600">Попыток</div>
+              <div class="text-2xl font-bold text-orange-600">
+                {{ testData.attempts || '∞' }}
+              </div>
+              <div class="text-xs text-gray-600">
+                Попыток
+              </div>
             </div>
           </div>
 
-          <el-button type="primary" size="large" @click="startTest" class="px-8">
-            <el-icon class="mr-2"><VideoPlay /></el-icon>
+          <el-button
+            type="primary"
+            size="large"
+            class="px-8"
+            @click="startTest"
+          >
+            <el-icon class="mr-2">
+              <VideoPlay />
+            </el-icon>
             Начать тест
           </el-button>
         </div>
@@ -41,7 +77,10 @@
     </div>
 
     <!-- Test Progress -->
-    <div v-if="testStarted && !testCompleted" class="test-content">
+    <div
+      v-if="testStarted && !testCompleted"
+      class="test-content"
+    >
       <!-- Progress Bar -->
       <div class="sticky top-0 z-10 bg-white border-b border-gray-200 p-2 shadow-sm">
         <div class="max-w-4xl mx-auto">
@@ -50,13 +89,29 @@
               <span class="text-xs font-semibold text-gray-600">
                 Вопрос {{ currentQuestionIndex + 1 }} / {{ testData.questions.length }}
               </span>
-              <el-tag v-if="timeRemaining" :type="timeRemaining < 300 ? 'danger' : 'info'" size="small" effect="plain" class="!border-none !bg-gray-100">
-                <el-icon class="mr-1"><Timer /></el-icon>
+              <el-tag
+                v-if="timeRemaining"
+                :type="timeRemaining < 300 ? 'danger' : 'info'"
+                size="small"
+                effect="plain"
+                class="!border-none !bg-gray-100"
+              >
+                <el-icon class="mr-1">
+                  <Timer />
+                </el-icon>
                 {{ formatTime(timeRemaining) }}
               </el-tag>
             </div>
-            <el-button type="danger" text bg size="small" @click="confirmExit">
-              <el-icon class="mr-1"><Close /></el-icon>
+            <el-button
+              type="danger"
+              text
+              bg
+              size="small"
+              @click="confirmExit"
+            >
+              <el-icon class="mr-1">
+                <Close />
+              </el-icon>
               Выйти
             </el-button>
           </div>
@@ -71,7 +126,10 @@
 
       <!-- Question Card -->
       <div class="max-w-3xl mx-auto p-3 md:p-4">
-        <el-card shadow="never" class="question-card border-none !shadow-none md:!border md:!shadow-sm md:rounded-xl">
+        <el-card
+          shadow="never"
+          class="question-card border-none !shadow-none md:!border md:!shadow-sm md:rounded-xl"
+        >
           <div class="mb-4">
             <div class="flex items-start gap-3 mb-3">
               <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0 border border-blue-100">
@@ -81,15 +139,28 @@
                 <h3 class="text-base font-bold text-gray-900 mb-1 leading-tight">
                   {{ currentQuestion.question }}
                 </h3>
-                <el-tag v-if="currentQuestion.points" size="small" type="warning" effect="plain" class="!h-5 !px-1.5 !text-xs">
+                <el-tag
+                  v-if="currentQuestion.points"
+                  size="small"
+                  type="warning"
+                  effect="plain"
+                  class="!h-5 !px-1.5 !text-xs"
+                >
                   {{ currentQuestion.points }} {{ currentQuestion.points === 1 ? 'балл' : 'балла' }}
                 </el-tag>
               </div>
             </div>
 
             <!-- Image if exists -->
-            <div v-if="currentQuestion.image" class="mb-3">
-              <img :src="currentQuestion.image" :alt="currentQuestion.question" class="max-w-full rounded-lg border border-gray-100" />
+            <div
+              v-if="currentQuestion.image"
+              class="mb-3"
+            >
+              <img
+                :src="currentQuestion.image"
+                :alt="currentQuestion.question"
+                class="max-w-full rounded-lg border border-gray-100"
+              >
             </div>
           </div>
 
@@ -98,23 +169,29 @@
             <div
               v-for="(option, index) in currentQuestion.options"
               :key="index"
-              @click="selectAnswer(index)"
               :class="[
                 'option-card',
                 selectedAnswers[currentQuestionIndex] === index ? 'selected' : '',
                 showExplanation && index === currentQuestion.correctAnswer ? 'correct' : '',
                 showExplanation && selectedAnswers[currentQuestionIndex] === index && index !== currentQuestion.correctAnswer ? 'incorrect' : ''
               ]"
+              @click="selectAnswer(index)"
             >
               <div class="flex items-center gap-3">
                 <div class="option-indicator text-xs">
                   <span>{{ String.fromCharCode(65 + index) }}</span>
                 </div>
                 <span class="flex-1 text-sm text-gray-700 leading-snug">{{ option }}</span>
-                <el-icon v-if="showExplanation && index === currentQuestion.correctAnswer" class="text-green-600">
+                <el-icon
+                  v-if="showExplanation && index === currentQuestion.correctAnswer"
+                  class="text-green-600"
+                >
                   <Check />
                 </el-icon>
-                <el-icon v-if="showExplanation && selectedAnswers[currentQuestionIndex] === index && index !== currentQuestion.correctAnswer" class="text-red-600">
+                <el-icon
+                  v-if="showExplanation && selectedAnswers[currentQuestionIndex] === index && index !== currentQuestion.correctAnswer"
+                  class="text-red-600"
+                >
                   <Close />
                 </el-icon>
               </div>
@@ -125,10 +202,10 @@
           <div class="border-t border-gray-100 pt-4 mt-4">
             <div class="flex items-center justify-between flex-wrap gap-3">
               <el-button
-                @click="previousQuestion"
                 :disabled="currentQuestionIndex === 0"
                 :icon="ArrowLeft"
                 size="default"
+                @click="previousQuestion"
               >
                 Назад
               </el-button>
@@ -137,23 +214,27 @@
                 <div class="flex gap-2">
                   <el-button
                     v-if="currentQuestionIndex < testData.questions.length - 1"
-                    @click="nextQuestion"
                     type="primary"
                     :disabled="selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null"
                     size="default"
+                    @click="nextQuestion"
                   >
                     Далее
-                    <el-icon class="ml-2"><ArrowRight /></el-icon>
+                    <el-icon class="ml-2">
+                      <ArrowRight />
+                    </el-icon>
                   </el-button>
                   <el-button
                     v-else
-                    @click="submitTest"
                     type="success"
                     :disabled="selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null"
                     size="default"
+                    @click="submitTest"
                   >
                     Завершить тест
-                    <el-icon class="ml-2"><Check /></el-icon>
+                    <el-icon class="ml-2">
+                      <Check />
+                    </el-icon>
                   </el-button>
                 </div>
                 <p 
@@ -204,8 +285,14 @@
     </div>
 
     <!-- Test Results -->
-    <div v-if="testCompleted" class="test-results">
-      <el-card shadow="hover" class="results-card">
+    <div
+      v-if="testCompleted"
+      class="test-results"
+    >
+      <el-card
+        shadow="hover"
+        class="results-card"
+      >
         <div class="text-center">
           <div 
             :class="[
@@ -213,12 +300,18 @@
               isPassed ? 'bg-gradient-to-br from-green-400 to-green-600' : 'bg-gradient-to-br from-red-400 to-red-600'
             ]"
           >
-            <el-icon :size="60" class="text-white">
+            <el-icon
+              :size="60"
+              class="text-white"
+            >
               <component :is="isPassed ? SuccessFilled : CircleCloseFilled" />
             </el-icon>
           </div>
 
-          <h2 class="text-3xl font-bold mb-2" :class="isPassed ? 'text-green-600' : 'text-red-600'">
+          <h2
+            class="text-3xl font-bold mb-2"
+            :class="isPassed ? 'text-green-600' : 'text-red-600'"
+          >
             {{ isPassed ? 'Тест пройден!' : 'Тест не пройден' }}
           </h2>
           <p class="text-xl text-gray-600 mb-6">
@@ -227,20 +320,36 @@
 
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="result-stat">
-              <div class="text-3xl font-bold text-blue-600">{{ correctAnswersCount }}</div>
-              <div class="text-sm text-gray-600">Правильных</div>
+              <div class="text-3xl font-bold text-blue-600">
+                {{ correctAnswersCount }}
+              </div>
+              <div class="text-sm text-gray-600">
+                Правильных
+              </div>
             </div>
             <div class="result-stat">
-              <div class="text-3xl font-bold text-red-600">{{ wrongAnswersCount }}</div>
-              <div class="text-sm text-gray-600">Неправильных</div>
+              <div class="text-3xl font-bold text-red-600">
+                {{ wrongAnswersCount }}
+              </div>
+              <div class="text-sm text-gray-600">
+                Неправильных
+              </div>
             </div>
             <div class="result-stat">
-              <div class="text-3xl font-bold text-green-600">{{ score }}%</div>
-              <div class="text-sm text-gray-600">Процент</div>
+              <div class="text-3xl font-bold text-green-600">
+                {{ score }}%
+              </div>
+              <div class="text-sm text-gray-600">
+                Процент
+              </div>
             </div>
             <div class="result-stat">
-              <div class="text-3xl font-bold text-purple-600">{{ testData.passingScore }}%</div>
-              <div class="text-sm text-gray-600">Проходной</div>
+              <div class="text-3xl font-bold text-purple-600">
+                {{ testData.passingScore }}%
+              </div>
+              <div class="text-sm text-gray-600">
+                Проходной
+              </div>
             </div>
           </div>
 
@@ -267,16 +376,35 @@
           </el-alert>
 
           <div class="flex gap-4 justify-center">
-            <el-button @click="reviewAnswers" size="large">
-              <el-icon class="mr-2"><View /></el-icon>
+            <el-button
+              size="large"
+              @click="reviewAnswers"
+            >
+              <el-icon class="mr-2">
+                <View />
+              </el-icon>
               Просмотреть ответы
             </el-button>
-            <el-button type="primary" @click="retryTest" size="large" v-if="!isPassed">
-              <el-icon class="mr-2"><RefreshRight /></el-icon>
+            <el-button
+              v-if="!isPassed"
+              type="primary"
+              size="large"
+              @click="retryTest"
+            >
+              <el-icon class="mr-2">
+                <RefreshRight />
+              </el-icon>
               Попробовать снова
             </el-button>
-            <el-button type="success" @click="$emit('test-completed', { score, isPassed })" size="large" v-if="isPassed">
-              <el-icon class="mr-2"><ArrowRight /></el-icon>
+            <el-button
+              v-if="isPassed"
+              type="success"
+              size="large"
+              @click="$emit('test-completed', { score, isPassed })"
+            >
+              <el-icon class="mr-2">
+                <ArrowRight />
+              </el-icon>
               Продолжить обучение
             </el-button>
           </div>

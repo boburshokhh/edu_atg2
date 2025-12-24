@@ -6,13 +6,15 @@
       :title="videoTitle"
       width="90%"
       class="video-dialog"
-      @close="handleClose"
       :before-close="handleClose"
+      @close="handleClose"
     >
-      <div class="video-wrapper relative bg-black rounded-lg overflow-hidden" 
-           @contextmenu.prevent
-           @dragstart.prevent
-           @selectstart.prevent>
+      <div
+        class="video-wrapper relative bg-black rounded-lg overflow-hidden" 
+        @contextmenu.prevent
+        @dragstart.prevent
+        @selectstart.prevent
+      >
         <!-- Native HTML5 Video Player -->
         <video
           ref="videoElement"
@@ -33,12 +35,15 @@
           @progress="handleProgress"
           @contextmenu.prevent
           @dragstart.prevent
-        ></video>
+        />
 
         <!-- Loading Overlay -->
-        <div v-if="loading" class="absolute inset-0 bg-black/50 flex items-center justify-center z-50 pointer-events-none">
+        <div
+          v-if="loading"
+          class="absolute inset-0 bg-black/50 flex items-center justify-center z-50 pointer-events-none"
+        >
           <div class="text-white text-center">
-            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4" />
             <p>{{ loadingText }}</p>
           </div>
         </div>
@@ -46,8 +51,12 @@
 
       <!-- Video Info -->
       <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h3 class="text-lg font-semibold mb-2">{{ videoTitle }}</h3>
-        <p class="text-gray-600">{{ videoDescription }}</p>
+        <h3 class="text-lg font-semibold mb-2">
+          {{ videoTitle }}
+        </h3>
+        <p class="text-gray-600">
+          {{ videoDescription }}
+        </p>
         
         <!-- Progress Info -->
         <div class="mt-4">
@@ -60,13 +69,24 @@
 
       <template #footer>
         <div class="flex items-center justify-between w-full">
-          <el-button @click="emit('previous')" :disabled="currentIndex === 0">
-            <el-icon class="mr-2"><ArrowLeft /></el-icon>
+          <el-button
+            :disabled="currentIndex === 0"
+            @click="emit('previous')"
+          >
+            <el-icon class="mr-2">
+              <ArrowLeft />
+            </el-icon>
             Предыдущий урок
           </el-button>
-          <el-button type="primary" @click="emit('next')" :disabled="currentIndex >= lessons.length - 1">
+          <el-button
+            type="primary"
+            :disabled="currentIndex >= lessons.length - 1"
+            @click="emit('next')"
+          >
             Следующий урок
-            <el-icon class="ml-2"><ArrowRight /></el-icon>
+            <el-icon class="ml-2">
+              <ArrowRight />
+            </el-icon>
           </el-button>
         </div>
       </template>

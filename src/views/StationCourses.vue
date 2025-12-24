@@ -8,11 +8,11 @@
           :src="stationImageSrc" 
           :alt="station?.name"
           class="w-full h-full object-cover"
-        />
+        >
         <!-- Градиентный оверлей -->
-        <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
         <!-- Дополнительный вертикальный градиент для читаемости текста -->
-        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
       </div>
 
       <!-- Контент хедера -->
@@ -20,8 +20,8 @@
         <!-- Навигация -->
         <div>
           <button 
-            @click="$router.push('/stations')"
             class="inline-flex items-center bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all duration-300 group px-4 py-2.5 rounded-xl border border-white/20 hover:border-white/40"
+            @click="$router.push('/stations')"
           >
             <ChevronLeftIcon class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
             <span class="text-sm font-semibold">Все станции</span>
@@ -29,9 +29,15 @@
 
           <!-- Breadcrumb сразу под кнопкой -->
           <nav class="mt-4 flex items-center space-x-2 text-sm text-white/70">
-            <a href="/stations" class="hover:text-white transition-colors">Станции</a>
+            <a
+              href="/stations"
+              class="hover:text-white transition-colors"
+            >Станции</a>
             <ChevronRightIcon class="w-4 h-4" />
-            <a :href="`/station/${stationId}`" class="hover:text-white transition-colors">{{ station?.short_name || station?.shortName }}</a>
+            <a
+              :href="`/station/${stationId}`"
+              class="hover:text-white transition-colors"
+            >{{ station?.short_name || station?.shortName }}</a>
             <ChevronRightIcon class="w-4 h-4" />
             <span class="text-white font-medium">Обучающая программа</span>
           </nav>
@@ -39,8 +45,6 @@
 
         <!-- Основная информация -->
         <div class="max-w-4xl">
-          
-
           <div class="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md px-3.5 py-1.5 rounded-full mb-3 border border-white/20">
             <BookOpenIcon class="w-4 h-4 mr-2 text-white" />
             <span class="text-sm font-semibold text-white">Онлайн-тренинг</span>
@@ -61,8 +65,12 @@
                 <ClockIcon class="w-5 h-5 text-white" />
               </div>
               <div>
-                <div class="text-white/70 text-xs">Длительность</div>
-                <div class="text-white font-bold">{{ courseStats.duration }}</div>
+                <div class="text-white/70 text-xs">
+                  Длительность
+                </div>
+                <div class="text-white font-bold">
+                  {{ courseStats.duration }}
+                </div>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -70,8 +78,12 @@
                 <PlayCircleIcon class="w-5 h-5 text-white" />
               </div>
               <div>
-                <div class="text-white/70 text-xs">Видеоуроков</div>
-                <div class="text-white font-bold">{{ courseStats.videos }}</div>
+                <div class="text-white/70 text-xs">
+                  Видеоуроков
+                </div>
+                <div class="text-white font-bold">
+                  {{ courseStats.videos }}
+                </div>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -79,8 +91,12 @@
                 <DocumentTextIcon class="w-5 h-5 text-white" />
               </div>
               <div>
-                <div class="text-white/70 text-xs">Материалов</div>
-                <div class="text-white font-bold">{{ courseStats.materials }}</div>
+                <div class="text-white/70 text-xs">
+                  Материалов
+                </div>
+                <div class="text-white font-bold">
+                  {{ courseStats.materials }}
+                </div>
               </div>
             </div>
           </div>
@@ -99,28 +115,34 @@
               <div class="border-b border-gray-100">
                 <nav class="flex">
                   <button 
-                    @click="activeTab = 'about'"
                     :class="[
                       'flex-1 py-3 px-4 font-semibold text-sm transition-all relative',
                       activeTab === 'about' 
                         ? 'text-blue-600 bg-blue-50/50' 
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     ]"
+                    @click="activeTab = 'about'"
                   >
                     О программе
-                    <div v-if="activeTab === 'about'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                    <div
+                      v-if="activeTab === 'about'"
+                      class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                    />
                   </button>
                   <button 
-                    @click="activeTab = 'curriculum'"
                     :class="[
                       'flex-1 py-3 px-4 font-semibold text-sm transition-all relative',
                       activeTab === 'curriculum' 
                         ? 'text-blue-600 bg-blue-50/50' 
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     ]"
+                    @click="activeTab = 'curriculum'"
                   >
                     Программа тренинга
-                    <div v-if="activeTab === 'curriculum'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                    <div
+                      v-if="activeTab === 'curriculum'"
+                      class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                    />
                   </button>
                 </nav>
               </div>
@@ -129,23 +151,44 @@
               <div class="p-8">
                 <!-- About Tab -->
                 <div v-show="activeTab === 'about'">
-                  <h2 class="text-3xl font-bold text-gray-900 mb-6">О программе</h2>
+                  <h2 class="text-3xl font-bold text-gray-900 mb-6">
+                    О программе
+                  </h2>
                   
                   <!-- Learning Outcomes -->
                   <div class="mb-10">
                     <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
                       <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        <svg
+                          class="w-5 h-5 text-green-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
                         </svg>
                       </div>
                       Что вы изучите
                     </h3>
                     <div class="grid md:grid-cols-2 gap-4">
-                      <div v-for="(item, index) in courseProgram?.learningOutcomes" :key="index" 
-                           class="flex items-start p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                        <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                      <div
+                        v-for="(item, index) in courseProgram?.learningOutcomes"
+                        :key="index" 
+                        class="flex items-start p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                      >
+                        <svg
+                          class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-0.5"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
                         </svg>
                         <span class="text-gray-700">{{ item }}</span>
                       </div>
@@ -156,17 +199,36 @@
                   <div class="mb-10">
                     <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
                       <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                        <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        <svg
+                          class="w-5 h-5 text-blue-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clip-rule="evenodd"
+                          />
                         </svg>
                       </div>
                       Требования
                     </h3>
                     <ul class="space-y-3">
-                      <li v-for="(req, index) in courseProgram?.requirements" :key="index" 
-                          class="flex items-start p-4 bg-blue-50 rounded-xl">
-                        <svg class="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      <li
+                        v-for="(req, index) in courseProgram?.requirements"
+                        :key="index" 
+                        class="flex items-start p-4 bg-blue-50 rounded-xl"
+                      >
+                        <svg
+                          class="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd"
+                          />
                         </svg>
                         <span class="text-gray-700">{{ req }}</span>
                       </li>
@@ -177,18 +239,37 @@
                   <div>
                     <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
                       <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                        <svg class="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        <svg
+                          class="w-5 h-5 text-purple-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                            clip-rule="evenodd"
+                          />
                         </svg>
                       </div>
                       Целевая аудитория
                     </h3>
                     <div class="grid md:grid-cols-2 gap-4">
-                      <div v-for="(audience, index) in courseProgram?.targetAudience" :key="index" 
-                           class="flex items-center space-x-3 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors">
+                      <div
+                        v-for="(audience, index) in courseProgram?.targetAudience"
+                        :key="index" 
+                        class="flex items-center space-x-3 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
+                      >
                         <div class="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center flex-shrink-0">
-                          <svg class="w-5 h-5 text-purple-700" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                          <svg
+                            class="w-5 h-5 text-purple-700"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fill-rule="evenodd"
+                              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                              clip-rule="evenodd"
+                            />
                           </svg>
                         </div>
                         <span class="font-medium text-gray-900">{{ audience }}</span>
@@ -215,9 +296,17 @@
           <div class="lg:col-span-1">
             <div class="sticky top-28 space-y-6">
               <!-- Video Player Card -->
-              <div v-if="sidebarVideoUrl" class="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 overflow-hidden">
-                <h3 class="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">Видео</h3>
-                <div class="relative w-full rounded-lg overflow-hidden bg-black" style="aspect-ratio: 16/9;">
+              <div
+                v-if="sidebarVideoUrl"
+                class="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 overflow-hidden"
+              >
+                <h3 class="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">
+                  Видео
+                </h3>
+                <div
+                  class="relative w-full rounded-lg overflow-hidden bg-black"
+                  style="aspect-ratio: 16/9;"
+                >
                   <video
                     ref="sidebarVideoPlayer"
                     class="w-full h-full"
@@ -230,23 +319,31 @@
                   >
                     Ваш браузер не поддерживает воспроизведение видео.
                   </video>
-                  <div v-if="loadingSidebarVideo" class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div
+                    v-if="loadingSidebarVideo"
+                    class="absolute inset-0 bg-black/50 flex items-center justify-center"
+                  >
                     <div class="text-white text-center">
-                      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
-                      <p class="text-xs">Загрузка видео...</p>
+                      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2" />
+                      <p class="text-xs">
+                        Загрузка видео...
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Enrollment Card -->
-              <el-card class="enrollment-card" shadow="always">
+              <el-card
+                class="enrollment-card"
+                shadow="always"
+              >
                 <div class="enrollment-card-content">
                   <el-button 
-                    @click="startLearning"
                     type="primary"
                     size="large"
                     class="start-learning-btn"
+                    @click="startLearning"
                   >
                     <template #icon>
                       <PlayCircleIcon class="w-5 h-5" />
@@ -317,23 +414,48 @@
               <h3 class="text-lg font-bold text-gray-900 truncate">
                 {{ currentPdf?.original_name || currentPdf?.originalName || 'Документ PDF' }}
               </h3>
-              <p class="text-sm text-gray-600" v-if="currentPdf?.sizeFormatted">{{ currentPdf.sizeFormatted }}</p>
+              <p
+                v-if="currentPdf?.sizeFormatted"
+                class="text-sm text-gray-600"
+              >
+                {{ currentPdf.sizeFormatted }}
+              </p>
             </div>
           </div>
           <button
-            @click="closePdfViewer"
             class="ml-4 p-2 rounded-lg bg-white hover:bg-gray-100 transition-colors border border-gray-200"
             title="Закрыть"
+            @click="closePdfViewer"
           >
-            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <svg
+              class="w-6 h-6 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
         <!-- PDF Content - Полный документ с прокруткой -->
-        <div class="flex-1 overflow-y-auto overflow-x-hidden relative pdf-viewer-container bg-gray-100" @contextmenu.prevent @dragstart.prevent @copy.prevent @cut.prevent @keydown.prevent="handleKeyDown">
-          <div v-if="currentPdf && pdfSource && pdfPages.length > 0" class="w-full flex flex-col items-center py-6 px-4 space-y-6">
+        <div
+          class="flex-1 overflow-y-auto overflow-x-hidden relative pdf-viewer-container bg-gray-100"
+          @contextmenu.prevent
+          @dragstart.prevent
+          @copy.prevent
+          @cut.prevent
+          @keydown.prevent="handleKeyDown"
+        >
+          <div
+            v-if="currentPdf && pdfSource && pdfPages.length > 0"
+            class="w-full flex flex-col items-center py-6 px-4 space-y-6"
+          >
             <div
               v-for="(pageCanvas, pageIndex) in pdfPages"
               :key="`page-${pageIndex + 1}`"
@@ -346,19 +468,29 @@
                   transform: 'none',
                   imageOrientation: 'from-image'
                 }"
-              ></canvas>
+              />
             </div>
           </div>
-          <div v-else-if="loadingPdf" class="flex items-center justify-center h-full">
+          <div
+            v-else-if="loadingPdf"
+            class="flex items-center justify-center h-full"
+          >
             <div class="text-center">
               <DocumentTextIcon class="w-16 h-16 text-gray-400 mx-auto mb-4 animate-pulse" />
-              <p class="text-gray-600">Загрузка документа...</p>
+              <p class="text-gray-600">
+                Загрузка документа...
+              </p>
             </div>
           </div>
-          <div v-else class="flex items-center justify-center h-full">
+          <div
+            v-else
+            class="flex items-center justify-center h-full"
+          >
             <div class="text-center">
               <DocumentTextIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p class="text-gray-600">Документ недоступен</p>
+              <p class="text-gray-600">
+                Документ недоступен
+              </p>
             </div>
           </div>
         </div>

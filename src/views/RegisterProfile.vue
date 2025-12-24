@@ -2,11 +2,21 @@
   <div class="min-h-screen flex relative overflow-hidden">
     <!-- Кнопка "Назад" -->
     <button 
-      @click="handleCancel"
       class="back-button absolute top-6 left-6 z-50 inline-flex items-center bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300 group px-4 py-2 rounded-lg border border-white/30 hover:border-white/50 shadow-lg hover:shadow-xl"
+      @click="handleCancel"
     >
-      <svg class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      <svg
+        class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
       <span class="text-sm font-semibold">Назад</span>
     </button>
@@ -14,7 +24,7 @@
     <!-- Левая часть - синий фон с 3D моделью турбины -->
     <div class="hidden lg:flex lg:w-1/2 xl:w-[55%] bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 relative overflow-hidden">
       <!-- Декоративная диагональная граница -->
-      <div class="absolute right-0 top-0 bottom-0 w-40 bg-white/5 transform skew-x-[-12deg] translate-x-20"></div>
+      <div class="absolute right-0 top-0 bottom-0 w-40 bg-white/5 transform skew-x-[-12deg] translate-x-20" />
       
       <!-- 3D модель турбины -->
       <div class="flex items-center justify-center w-full relative z-10 px-8 py-12">
@@ -23,21 +33,21 @@
             src="/login/turbine.png" 
             alt="Gas Turbine Engine" 
             class="w-full h-auto object-contain drop-shadow-2xl transform hover:scale-105 transition-all duration-700 ease-out"
-          />
+          >
         </div>
       </div>
       
       <!-- Декоративные элементы -->
-      <div class="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-      <div class="absolute bottom-20 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
-      <div class="absolute top-1/3 right-24 w-20 h-20 bg-white/10 rounded-full blur-lg"></div>
-      <div class="absolute bottom-1/4 right-1/3 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
+      <div class="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+      <div class="absolute bottom-20 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl" />
+      <div class="absolute top-1/3 right-24 w-20 h-20 bg-white/10 rounded-full blur-lg" />
+      <div class="absolute bottom-1/4 right-1/3 w-32 h-32 bg-white/5 rounded-full blur-xl" />
     </div>
 
     <!-- Правая часть - форма регистрации -->
     <div class="w-full lg:w-1/2 xl:w-[45%] flex items-center justify-center bg-white px-6 sm:px-12 lg:px-16 xl:px-20 relative">
       <!-- Декоративный градиент фон -->
-      <div class="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-blue-50/30"></div>
+      <div class="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-blue-50/30" />
       
       <div class="w-full max-w-md relative z-10">
         <!-- Логотип и заголовок -->
@@ -48,7 +58,7 @@
                 src="/login/logo 1.svg" 
                 alt="ATG Logo" 
                 class="h-20 w-auto sm:h-24 drop-shadow-lg"
-              />
+              >
             </div>
           </div>
           <div class="space-y-2 animate-slide-up">
@@ -67,11 +77,14 @@
             ref="registerForm" 
             :model="form" 
             :rules="rules" 
-            @submit.prevent="handleSubmit"
             class="space-y-5"
+            @submit.prevent="handleSubmit"
           >
             <!-- ФИО -->
-            <el-form-item prop="full_name" class="mb-5">
+            <el-form-item
+              prop="full_name"
+              class="mb-5"
+            >
               <el-input
                 v-model="form.full_name"
                 placeholder="ФИО (полное имя)"
@@ -80,13 +93,18 @@
                 @keyup.enter="handleSubmit"
               >
                 <template #prefix>
-                  <el-icon class="input-icon"><User /></el-icon>
+                  <el-icon class="input-icon">
+                    <User />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
 
             <!-- Номер телефона -->
-            <el-form-item prop="phone" class="mb-5">
+            <el-form-item
+              prop="phone"
+              class="mb-5"
+            >
               <el-input
                 v-model="form.phone"
                 placeholder="Номер телефона"
@@ -95,13 +113,18 @@
                 @keyup.enter="handleSubmit"
               >
                 <template #prefix>
-                  <el-icon class="input-icon"><Phone /></el-icon>
+                  <el-icon class="input-icon">
+                    <Phone />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
 
             <!-- Название станции -->
-            <el-form-item prop="station_id" class="mb-5">
+            <el-form-item
+              prop="station_id"
+              class="mb-5"
+            >
               <el-select
                 v-model="form.station_id"
                 placeholder="Выберите станцию"
@@ -120,7 +143,10 @@
             </el-form-item>
 
             <!-- Должность -->
-            <el-form-item prop="position" class="mb-6">
+            <el-form-item
+              prop="position"
+              class="mb-6"
+            >
               <el-input
                 v-model="form.position"
                 placeholder="Должность"
@@ -129,7 +155,9 @@
                 @keyup.enter="handleSubmit"
               >
                 <template #prefix>
-                  <el-icon class="input-icon"><Briefcase /></el-icon>
+                  <el-icon class="input-icon">
+                    <Briefcase />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
@@ -144,8 +172,19 @@
             >
               <span class="flex items-center justify-center gap-2">
                 <span>Сохранить и продолжить</span>
-                <svg v-if="!loading" class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                <svg
+                  v-if="!loading"
+                  class="w-4 h-4 transition-transform group-hover:translate-x-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
                 </svg>
               </span>
             </el-button>

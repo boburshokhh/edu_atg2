@@ -1,43 +1,149 @@
 <template>
-  <section ref="featuresSection" class="relative section-padding bg-white overflow-hidden">
+  <section
+    ref="featuresSection"
+    class="relative section-padding bg-white overflow-hidden"
+  >
     <!-- Background Pattern -->
     <div class="section-pattern">
       <div class="absolute inset-0">
         <svg class="w-full h-full">
           <defs>
-            <pattern id="blueprint-grid-features" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#06b6d4" stroke-width="0.5"></path>
-              <path d="M 0 20 L 40 20 M 20 0 L 20 40" fill="none" stroke="#06b6d4" stroke-width="0.3"></path>
+            <pattern
+              id="blueprint-grid-features"
+              width="40"
+              height="40"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 40 0 L 0 0 0 40"
+                fill="none"
+                stroke="#06b6d4"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 0 20 L 40 20 M 20 0 L 20 40"
+                fill="none"
+                stroke="#06b6d4"
+                stroke-width="0.3"
+              />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#blueprint-grid-features)"></rect>
+          <rect
+            width="100%"
+            height="100%"
+            fill="url(#blueprint-grid-features)"
+          />
         </svg>
       </div>
       <!-- Decorative Elements -->
       <svg class="absolute inset-0 w-full h-full opacity-30 dark:opacity-40">
         <g>
-          <rect x="15%" y="20%" width="80" height="60" fill="none" stroke="#22d3ee" stroke-width="2" rx="8"></rect>
-          <circle cx="15%" cy="35%" r="4" fill="#06b6d4"></circle>
+          <rect
+            x="15%"
+            y="20%"
+            width="80"
+            height="60"
+            fill="none"
+            stroke="#22d3ee"
+            stroke-width="2"
+            rx="8"
+          />
+          <circle
+            cx="15%"
+            cy="35%"
+            r="4"
+            fill="#06b6d4"
+          />
         </g>
         <g>
-          <rect x="29%" y="60%" width="80" height="60" fill="none" stroke="#22d3ee" stroke-width="2" rx="8"></rect>
-          <circle cx="29%" cy="75%" r="4" fill="#06b6d4"></circle>
+          <rect
+            x="29%"
+            y="60%"
+            width="80"
+            height="60"
+            fill="none"
+            stroke="#22d3ee"
+            stroke-width="2"
+            rx="8"
+          />
+          <circle
+            cx="29%"
+            cy="75%"
+            r="4"
+            fill="#06b6d4"
+          />
         </g>
         <g>
-          <rect x="43%" y="20%" width="80" height="60" fill="none" stroke="#22d3ee" stroke-width="2" rx="8"></rect>
-          <circle cx="43%" cy="35%" r="4" fill="#06b6d4"></circle>
+          <rect
+            x="43%"
+            y="20%"
+            width="80"
+            height="60"
+            fill="none"
+            stroke="#22d3ee"
+            stroke-width="2"
+            rx="8"
+          />
+          <circle
+            cx="43%"
+            cy="35%"
+            r="4"
+            fill="#06b6d4"
+          />
         </g>
         <g>
-          <rect x="57%" y="60%" width="80" height="60" fill="none" stroke="#22d3ee" stroke-width="2" rx="8"></rect>
-          <circle cx="57%" cy="75%" r="4" fill="#06b6d4"></circle>
+          <rect
+            x="57%"
+            y="60%"
+            width="80"
+            height="60"
+            fill="none"
+            stroke="#22d3ee"
+            stroke-width="2"
+            rx="8"
+          />
+          <circle
+            cx="57%"
+            cy="75%"
+            r="4"
+            fill="#06b6d4"
+          />
         </g>
         <g>
-          <rect x="71%" y="20%" width="80" height="60" fill="none" stroke="#22d3ee" stroke-width="2" rx="8"></rect>
-          <circle cx="71%" cy="35%" r="4" fill="#06b6d4"></circle>
+          <rect
+            x="71%"
+            y="20%"
+            width="80"
+            height="60"
+            fill="none"
+            stroke="#22d3ee"
+            stroke-width="2"
+            rx="8"
+          />
+          <circle
+            cx="71%"
+            cy="35%"
+            r="4"
+            fill="#06b6d4"
+          />
         </g>
         <g>
-          <rect x="85%" y="60%" width="80" height="60" fill="none" stroke="#22d3ee" stroke-width="2" rx="8"></rect>
-          <circle cx="85%" cy="75%" r="4" fill="#06b6d4"></circle>
+          <rect
+            x="85%"
+            y="60%"
+            width="80"
+            height="60"
+            fill="none"
+            stroke="#22d3ee"
+            stroke-width="2"
+            rx="8"
+          />
+          <circle
+            cx="85%"
+            cy="75%"
+            r="4"
+            fill="#06b6d4"
+          />
         </g>
       </svg>
     </div>
@@ -67,9 +173,28 @@
           <div class="relative h-80 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8 overflow-hidden">
             <!-- Background Decoration -->
             <div class="absolute inset-0 opacity-5">
-              <svg class="w-full h-full" viewBox="0 0 200 200">
-                <circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="1" class="text-tamex-blue-500" />
-                <circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="1" class="text-tamex-blue-400" />
+              <svg
+                class="w-full h-full"
+                viewBox="0 0 200 200"
+              >
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="80"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  class="text-tamex-blue-500"
+                />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="60"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  class="text-tamex-blue-400"
+                />
               </svg>
             </div>
             
@@ -78,7 +203,7 @@
               :src="feature.icon" 
               :alt="feature.title"
               class="relative z-10 w-48 h-48 sm:w-56 sm:h-56 object-contain transition-transform duration-300 group-hover:scale-105"
-            />
+            >
             
             <!-- Hover Overlay with Description -->
             <div class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
@@ -97,7 +222,7 @@
             </h3>
             
             <!-- Bottom Accent Line -->
-            <div class="mt-4 h-1 w-16 bg-gradient-to-r from-tamex-blue-500 to-tamex-blue-700 rounded-full mx-auto group-hover:w-24 transition-all duration-300"></div>
+            <div class="mt-4 h-1 w-16 bg-gradient-to-r from-tamex-blue-500 to-tamex-blue-700 rounded-full mx-auto group-hover:w-24 transition-all duration-300" />
           </div>
         </div>
       </div>

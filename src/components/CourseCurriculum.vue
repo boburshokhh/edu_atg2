@@ -27,8 +27,8 @@
         >
           <!-- Lesson Header -->
           <button 
-            @click="toggleLesson(lessonIndex)"
             class="w-full bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-blue-50/50 transition-all duration-300"
+            @click="toggleLesson(lessonIndex)"
           >
             <div class="flex items-center justify-between p-5">
               <div class="flex items-center space-x-4 flex-1 text-left">
@@ -36,13 +36,18 @@
                   {{ lessonIndex + 1 }}
                 </div>
                 <div class="flex-1">
-                  <h3 class="font-bold text-gray-900 text-base mb-0.5">{{ getLessonTitle(lesson.title) }}</h3>
+                  <h3 class="font-bold text-gray-900 text-base mb-0.5">
+                    {{ getLessonTitle(lesson.title) }}
+                  </h3>
                   <div class="flex items-center gap-3 text-xs text-gray-500">
                     <span class="flex items-center gap-1">
                       <BookOpenIcon class="w-4 h-4 text-blue-600" />
                       {{ lesson.topics?.length || 0 }} тем
                     </span>
-                    <span v-if="lesson.duration" class="flex items-center gap-1">
+                    <span
+                      v-if="lesson.duration"
+                      class="flex items-center gap-1"
+                    >
                       <ClockIcon class="w-4 h-4 text-blue-600" />
                       {{ lesson.duration }}
                     </span>
@@ -56,17 +61,28 @@
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </button>
 
           <!-- Lesson Topics -->
           <transition name="expand">
-            <div v-if="expandedLessons.includes(lessonIndex)" class="border-t-2 border-gray-100 bg-white">
+            <div
+              v-if="expandedLessons.includes(lessonIndex)"
+              class="border-t-2 border-gray-100 bg-white"
+            >
               <div class="p-5 space-y-2">
                 <!-- Topics -->
-                <div v-for="(topic, topicIndex) in lesson.topics" :key="topicIndex">
+                <div
+                  v-for="(topic, topicIndex) in lesson.topics"
+                  :key="topicIndex"
+                >
                   <div class="flex items-center p-3 rounded-xl hover:bg-blue-50 transition-all duration-200 border border-transparent hover:border-blue-200">
                     <div class="flex items-center space-x-3 flex-1">
                       <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -74,10 +90,16 @@
                       </div>
                       <div class="flex-1">
                         <p class="font-semibold text-gray-900">
-                          <span v-if="topic.code" class="text-blue-600 mr-2">{{ topic.code }}</span>
+                          <span
+                            v-if="topic.code"
+                            class="text-blue-600 mr-2"
+                          >{{ topic.code }}</span>
                           {{ topic.title }}
                         </p>
-                        <div v-if="topic.duration" class="flex items-center gap-3 mt-1">
+                        <div
+                          v-if="topic.duration"
+                          class="flex items-center gap-3 mt-1"
+                        >
                           <span class="text-xs text-gray-500">{{ topic.duration }}</span>
                         </div>
                       </div>
@@ -90,8 +112,16 @@
                   <div class="flex items-center p-3 rounded-xl hover:bg-blue-50 transition-all duration-200 border border-transparent hover:border-blue-200">
                     <div class="flex items-center space-x-3 flex-1">
                       <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        <svg
+                          class="w-5 h-5 text-blue-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
                         </svg>
                       </div>
                       <div class="flex-1">
@@ -111,7 +141,10 @@
         </div>
 
         <!-- Final Test -->
-        <div v-if="finalTest" class="border-2 border-gray-200 rounded-2xl overflow-hidden transition-all duration-300 hover:border-blue-300 hover:shadow-lg">
+        <div
+          v-if="finalTest"
+          class="border-2 border-gray-200 rounded-2xl overflow-hidden transition-all duration-300 hover:border-blue-300 hover:shadow-lg"
+        >
           <div class="p-5">
             <div class="flex items-center space-x-3">
               <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">

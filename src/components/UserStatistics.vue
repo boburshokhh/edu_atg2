@@ -10,7 +10,9 @@
           <span class="text-sm text-gray-500 font-medium">Общий рейтинг</span>
         </div>
         <div class="flex items-end gap-2">
-          <div class="text-4xl font-bold text-gray-900">94/100</div>
+          <div class="text-4xl font-bold text-gray-900">
+            94/100
+          </div>
           <div class="text-sm text-green-500 flex items-center mb-1.5 font-medium bg-green-50 px-2 py-0.5 rounded">
             <el-icon><Top /></el-icon> +2.5%
           </div>
@@ -25,8 +27,12 @@
           <span class="text-sm text-gray-500 font-medium">Время обучения</span>
         </div>
         <div class="flex items-end gap-2">
-          <div class="text-4xl font-bold text-gray-900">42.5 ч</div>
-          <div class="text-sm text-gray-400 mb-1.5">всего</div>
+          <div class="text-4xl font-bold text-gray-900">
+            42.5 ч
+          </div>
+          <div class="text-sm text-gray-400 mb-1.5">
+            всего
+          </div>
         </div>
       </div>
 
@@ -38,8 +44,12 @@
           <span class="text-sm text-gray-500 font-medium">Пройдено тестов</span>
         </div>
         <div class="flex items-end gap-2">
-          <div class="text-4xl font-bold text-gray-900">18</div>
-          <div class="text-sm text-green-500 mb-1.5 font-medium">17 успешно</div>
+          <div class="text-4xl font-bold text-gray-900">
+            18
+          </div>
+          <div class="text-sm text-green-500 mb-1.5 font-medium">
+            17 успешно
+          </div>
         </div>
       </div>
     </div>
@@ -49,7 +59,9 @@
       <!-- Карта компетенций -->
       <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
         <div class="flex justify-between items-center mb-6">
-          <h3 class="text-lg font-bold text-gray-900">Карта компетенций</h3>
+          <h3 class="text-lg font-bold text-gray-900">
+            Карта компетенций
+          </h3>
           <span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-md">WKC-1</span>
         </div>
         <div class="h-[320px] flex items-center justify-center">
@@ -66,7 +78,9 @@
       <!-- Активность обучения -->
       <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
         <div class="flex justify-between items-center mb-6">
-          <h3 class="text-lg font-bold text-gray-900">Активность обучения</h3>
+          <h3 class="text-lg font-bold text-gray-900">
+            Активность обучения
+          </h3>
           <select class="text-xs border-none bg-gray-100 text-gray-600 rounded-md px-2 py-1 focus:ring-0 cursor-pointer hover:bg-gray-200 transition-colors">
             <option>За неделю</option>
             <option>За месяц</option>
@@ -88,7 +102,9 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <!-- Распределение времени -->
       <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">Типы активности</h3>
+        <h3 class="text-lg font-bold text-gray-900 mb-4">
+          Типы активности
+        </h3>
         <div class="flex-1 flex items-center justify-center">
           <apexchart 
             type="donut" 
@@ -102,7 +118,9 @@
 
       <!-- Успеваемость по модулям -->
       <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">Результативность по модулям</h3>
+        <h3 class="text-lg font-bold text-gray-900 mb-4">
+          Результативность по модулям
+        </h3>
         <div class="h-[280px]">
           <apexchart 
             type="bar" 
@@ -120,50 +138,78 @@
       <!-- История тестов -->
       <div class="xl:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
         <div class="flex justify-between items-center mb-6">
-          <h3 class="text-lg font-bold text-gray-900">История тестирования</h3>
-          <button class="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">Все результаты</button>
+          <h3 class="text-lg font-bold text-gray-900">
+            История тестирования
+          </h3>
+          <button class="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
+            Все результаты
+          </button>
         </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
             <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
-            <tr>
-                <th class="px-4 py-3 rounded-l-lg font-semibold tracking-wider">Модуль / Тема</th>
-                <th class="px-4 py-3 font-semibold tracking-wider hidden sm:table-cell">Дата</th>
-                <th class="px-4 py-3 font-semibold tracking-wider">Результат</th>
-                <th class="px-4 py-3 rounded-r-lg font-semibold tracking-wider text-right">Статус</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-              <tr v-for="(test, i) in recentTests" :key="i" class="group hover:bg-blue-50/50 transition-colors">
+              <tr>
+                <th class="px-4 py-3 rounded-l-lg font-semibold tracking-wider">
+                  Модуль / Тема
+                </th>
+                <th class="px-4 py-3 font-semibold tracking-wider hidden sm:table-cell">
+                  Дата
+                </th>
+                <th class="px-4 py-3 font-semibold tracking-wider">
+                  Результат
+                </th>
+                <th class="px-4 py-3 rounded-r-lg font-semibold tracking-wider text-right">
+                  Статус
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr
+                v-for="(test, i) in recentTests"
+                :key="i"
+                class="group hover:bg-blue-50/50 transition-colors"
+              >
                 <td class="px-4 py-3">
-                  <div class="font-medium text-gray-900 group-hover:text-blue-700 transition-colors">{{ test.name }}</div>
-                  <div class="text-xs text-gray-500 mt-0.5 truncate max-w-[200px] sm:max-w-xs">{{ test.topic }}</div>
-              </td>
-                <td class="px-4 py-3 text-gray-500 whitespace-nowrap hidden sm:table-cell">{{ test.date }}</td>
-              <td class="px-4 py-3">
+                  <div class="font-medium text-gray-900 group-hover:text-blue-700 transition-colors">
+                    {{ test.name }}
+                  </div>
+                  <div class="text-xs text-gray-500 mt-0.5 truncate max-w-[200px] sm:max-w-xs">
+                    {{ test.topic }}
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-gray-500 whitespace-nowrap hidden sm:table-cell">
+                  {{ test.date }}
+                </td>
+                <td class="px-4 py-3">
                   <div class="flex items-center gap-3">
                     <div class="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden hidden sm:block">
-                    <div 
+                      <div 
                         class="h-full rounded-full transition-all duration-1000 ease-out" 
-                      :class="getScoreColor(test.score)"
-                      :style="{ width: `${test.score}%` }"
-                    ></div>
+                        :class="getScoreColor(test.score)"
+                        :style="{ width: `${test.score}%` }"
+                      />
+                    </div>
+                    <span
+                      class="font-bold"
+                      :class="getTextScoreColor(test.score)"
+                    >{{ test.score }}%</span>
                   </div>
-                    <span class="font-bold" :class="getTextScoreColor(test.score)">{{ test.score }}%</span>
-                </div>
-              </td>
+                </td>
                 <td class="px-4 py-3 text-right">
-                <span 
+                  <span 
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
                     :class="test.passed ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="test.passed ? 'bg-green-500' : 'bg-red-500'"></span>
-                  {{ test.passed ? 'Сдан' : 'Не сдан' }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  >
+                    <span
+                      class="w-1.5 h-1.5 rounded-full"
+                      :class="test.passed ? 'bg-green-500' : 'bg-red-500'"
+                    />
+                    {{ test.passed ? 'Сдан' : 'Не сдан' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -175,20 +221,32 @@
           </div>
           Зоны роста
         </h3>
-        <p class="text-sm text-gray-500 mb-4">Темы, требующие повторного изучения на основе результатов тестов</p>
+        <p class="text-sm text-gray-500 mb-4">
+          Темы, требующие повторного изучения на основе результатов тестов
+        </p>
         
         <div class="space-y-4">
-          <div v-for="(topic, i) in weakTopics" :key="i" class="group">
+          <div
+            v-for="(topic, i) in weakTopics"
+            :key="i"
+            class="group"
+          >
             <div class="flex justify-between items-center mb-1.5">
               <span class="text-sm font-medium text-gray-800 group-hover:text-blue-600 transition-colors duration-300">{{ topic.name }}</span>
               <span class="text-xs font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">{{ topic.score }}%</span>
             </div>
             <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-              <div class="bg-red-500 h-1.5 rounded-full transition-all duration-500" :style="{ width: topic.score + '%' }"></div>
+              <div
+                class="bg-red-500 h-1.5 rounded-full transition-all duration-500"
+                :style="{ width: topic.score + '%' }"
+              />
             </div>
             <div class="flex justify-between items-center mt-1.5">
               <span class="text-[10px] text-gray-400">{{ topic.lesson }}</span>
-              <a href="#" class="text-[10px] font-medium text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors">
+              <a
+                href="#"
+                class="text-[10px] font-medium text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors"
+              >
                 Перейти к уроку <el-icon><ArrowRight /></el-icon>
               </a>
             </div>

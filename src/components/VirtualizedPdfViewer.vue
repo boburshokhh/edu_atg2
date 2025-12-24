@@ -6,8 +6,14 @@
     @scroll="handleScroll"
   >
     <!-- Loading indicator -->
-    <div v-if="isLoading" class="flex items-center justify-center min-h-[400px]">
-      <el-icon class="is-loading" :size="32">
+    <div
+      v-if="isLoading"
+      class="flex items-center justify-center min-h-[400px]"
+    >
+      <el-icon
+        class="is-loading"
+        :size="32"
+      >
         <Loading />
       </el-icon>
     </div>
@@ -23,11 +29,20 @@
       <div class="text-xs text-gray-500 mb-4 break-all max-w-[90%]">
         {{ loadError }}
       </div>
-      <el-button type="primary" @click="retryLoad">Повторить</el-button>
+      <el-button
+        type="primary"
+        @click="retryLoad"
+      >
+        Повторить
+      </el-button>
     </div>
 
     <!-- Virtual PDF Pages -->
-    <div v-else class="pdf-pages-wrapper" :style="{ height: totalHeight + 'px' }">
+    <div
+      v-else
+      class="pdf-pages-wrapper"
+      :style="{ height: totalHeight + 'px' }"
+    >
       <div 
         v-for="page in visiblePages" 
         :key="page.pageNumber"
@@ -178,7 +193,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const retry = async (fn, { retries = 2, baseDelay = 250, factor = 2 } = {}) => {
   let attempt = 0
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     try {
       return await fn()

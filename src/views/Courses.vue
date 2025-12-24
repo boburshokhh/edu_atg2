@@ -21,8 +21,8 @@
                 :placeholder="$t('courses.searchPlaceholder')"
                 :prefix-icon="Search"
                 clearable
-                @input="handleSearch"
                 size="default"
+                @input="handleSearch"
               />
             </div>
             <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full lg:w-auto">
@@ -30,9 +30,9 @@
                 v-model="selectedCategory" 
                 :placeholder="$t('courses.category')"
                 clearable
-                @change="handleFilter"
                 class="w-full lg:w-48"
                 size="default"
+                @change="handleFilter"
               >
                 <el-option
                   v-for="category in categories"
@@ -45,9 +45,9 @@
                 v-model="selectedLevel" 
                 :placeholder="$t('courses.level')"
                 clearable
-                @change="handleFilter"
                 class="w-full lg:w-48"
                 size="default"
+                @change="handleFilter"
               >
                 <el-option
                   v-for="level in levels"
@@ -59,12 +59,21 @@
               <el-select 
                 v-model="sortBy" 
                 :placeholder="$t('courses.sortBy')"
-                @change="handleSort"
                 class="w-full lg:w-48"
+                @change="handleSort"
               >
-                <el-option :label="$t('courses.sortPopularity')" value="popularity" />
-                <el-option :label="$t('courses.sortRating')" value="rating" />
-                <el-option :label="$t('courses.sortDate')" value="date" />
+                <el-option
+                  :label="$t('courses.sortPopularity')"
+                  value="popularity"
+                />
+                <el-option
+                  :label="$t('courses.sortRating')"
+                  value="rating"
+                />
+                <el-option
+                  :label="$t('courses.sortDate')"
+                  value="date"
+                />
               </el-select>
             </div>
           </div>
@@ -83,9 +92,12 @@
                 :alt="course.title"
                 class="w-full h-full object-cover"
                 @error="handleImageError"
-              />
+              >
               <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-                <el-icon :size="32" class="text-white sm:w-12 sm:h-12">
+                <el-icon
+                  :size="32"
+                  class="text-white sm:w-12 sm:h-12"
+                >
                   <component :is="course.icon" />
                 </el-icon>
               </div>
@@ -137,10 +149,10 @@
                   <span class="text-sm sm:text-base text-blue-600 font-semibold">{{ $t('courses.free') }}</span>
                 </div>
                 <el-button 
-                  @click="$router.push(`/course/${course.id}`)"
                   type="primary"
                   size="default"
                   class="w-full sm:w-auto"
+                  @click="$router.push(`/course/${course.id}`)"
                 >
                   {{ $t('courses.details') }}
                 </el-button>
@@ -150,8 +162,14 @@
         </div>
 
         <!-- Empty State -->
-        <div v-if="filteredCourses.length === 0" class="text-center py-12 sm:py-16">
-          <el-icon :size="48" class="text-gray-400 mb-4 sm:w-16 sm:h-16">
+        <div
+          v-if="filteredCourses.length === 0"
+          class="text-center py-12 sm:py-16"
+        >
+          <el-icon
+            :size="48"
+            class="text-gray-400 mb-4 sm:w-16 sm:h-16"
+          >
             <search />
           </el-icon>
           <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
@@ -160,20 +178,26 @@
           <p class="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 px-4">
             Попробуйте изменить параметры поиска или фильтры
           </p>
-          <el-button @click="clearFilters" type="primary">
+          <el-button
+            type="primary"
+            @click="clearFilters"
+          >
             Сбросить фильтры
           </el-button>
         </div>
 
         <!-- Pagination -->
-        <div v-if="filteredCourses.length > 0" class="flex justify-center mt-8 sm:mt-12">
+        <div
+          v-if="filteredCourses.length > 0"
+          class="flex justify-center mt-8 sm:mt-12"
+        >
           <el-pagination
             v-model:current-page="currentPage"
             :page-size="pageSize"
             :total="totalCourses"
             layout="prev, pager, next"
-            @current-change="handlePageChange"
             class="flex-wrap"
+            @current-change="handlePageChange"
           />
         </div>
       </div>

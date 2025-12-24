@@ -5,36 +5,57 @@
         <!-- Header -->
         <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Профиль сотрудника</h1>
-            <p class="text-gray-600">Персональная информация и настройки</p>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+              Профиль сотрудника
+            </h1>
+            <p class="text-gray-600">
+              Персональная информация и настройки
+            </p>
           </div>
-          <el-button type="primary" @click="openEditModal" :icon="Edit" :disabled="loading">
+          <el-button
+            type="primary"
+            :icon="Edit"
+            :disabled="loading"
+            @click="openEditModal"
+          >
             Редактировать
           </el-button>
         </div>
 
         <!-- Loading State -->
-        <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div
+          v-if="loading"
+          class="grid grid-cols-1 lg:grid-cols-3 gap-8"
+        >
           <div class="lg:col-span-1">
             <el-skeleton animated>
               <template #template>
-                <el-skeleton-item variant="image" style="width: 100%; height: 400px; border-radius: 16px;" />
+                <el-skeleton-item
+                  variant="image"
+                  style="width: 100%; height: 400px; border-radius: 16px;"
+                />
               </template>
             </el-skeleton>
           </div>
           <div class="lg:col-span-2">
-            <el-skeleton animated :rows="10" />
+            <el-skeleton
+              animated
+              :rows="10"
+            />
           </div>
         </div>
 
         <!-- Content -->
-        <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div
+          v-else
+          class="grid grid-cols-1 lg:grid-cols-3 gap-8"
+        >
           <!-- Карточка профиля (Левая колонка) -->
           <div class="lg:col-span-1">
             <div class="card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <!-- Верхняя часть с фоном -->
               <div class="h-32 bg-gradient-to-r from-blue-600 to-blue-800 relative overflow-hidden">
-                <div class="absolute inset-0 opacity-20 pattern-dots"></div>
+                <div class="absolute inset-0 opacity-20 pattern-dots" />
               </div>
               
               <!-- Аватар и основная инфо -->
@@ -46,38 +67,57 @@
                       :src="user.avatar" 
                       class="border-4 border-white shadow-lg bg-white text-4xl font-bold text-gray-400 flex items-center justify-center"
                     >
-                      <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" />
+                      <img
+                        v-if="user.avatar"
+                        :src="user.avatar"
+                        class="w-full h-full object-cover"
+                      >
                       <span v-else>{{ user.name ? user.name.charAt(0).toUpperCase() : 'U' }}</span>
                     </el-avatar>
                     
                     <!-- Кнопка загрузки поверх аватара -->
                     <div class="absolute inset-0 rounded-full overflow-hidden">
-                    <el-upload
+                      <el-upload
                         class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
-                      action="#"
-                      :auto-upload="false"
-                      :on-change="handleAvatarChange"
-                      :show-file-list="false"
+                        action="#"
+                        :auto-upload="false"
+                        :on-change="handleAvatarChange"
+                        :show-file-list="false"
                         accept="image/jpeg,image/png,image/webp"
-                    >
+                      >
                         <div class="text-center">
-                          <el-icon class="text-white text-2xl mb-1"><Camera /></el-icon>
-                          <p class="text-white text-xs font-medium">Изменить</p>
+                          <el-icon class="text-white text-2xl mb-1">
+                            <Camera />
+                          </el-icon>
+                          <p class="text-white text-xs font-medium">
+                            Изменить
+                          </p>
                         </div>
-                    </el-upload>
+                      </el-upload>
                     </div>
                     
                     <!-- Индикатор загрузки -->
-                    <div v-if="uploading" class="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full z-10">
-                      <el-icon class="is-loading text-blue-600 text-2xl"><Loading /></el-icon>
+                    <div
+                      v-if="uploading"
+                      class="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full z-10"
+                    >
+                      <el-icon class="is-loading text-blue-600 text-2xl">
+                        <Loading />
+                      </el-icon>
                     </div>
                   </div>
                 </div>
 
                 <div class="text-center mb-6">
-                  <h2 class="text-2xl font-bold text-gray-900 mb-1 break-words">{{ user.name || 'Пользователь' }}</h2>
-                  <p class="text-blue-600 font-medium mb-1">{{ user.position || 'Должность не указана' }}</p>
-                  <p class="text-gray-500 text-sm">{{ user.station || 'Станция не выбрана' }}</p>
+                  <h2 class="text-2xl font-bold text-gray-900 mb-1 break-words">
+                    {{ user.name || 'Пользователь' }}
+                  </h2>
+                  <p class="text-blue-600 font-medium mb-1">
+                    {{ user.position || 'Должность не указана' }}
+                  </p>
+                  <p class="text-gray-500 text-sm">
+                    {{ user.station || 'Станция не выбрана' }}
+                  </p>
                 </div>
 
                 <el-divider class="!my-6" />
@@ -89,8 +129,15 @@
                       <el-icon><Message /></el-icon>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Email</p>
-                      <p class="text-gray-900 font-medium truncate" :title="user.email">{{ user.email || 'Не указан' }}</p>
+                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
+                        Email
+                      </p>
+                      <p
+                        class="text-gray-900 font-medium truncate"
+                        :title="user.email"
+                      >
+                        {{ user.email || 'Не указан' }}
+                      </p>
                     </div>
                   </div>
 
@@ -99,8 +146,12 @@
                       <el-icon><OfficeBuilding /></el-icon>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Станция</p>
-                      <p class="text-gray-900 font-medium truncate">{{ user.station || 'Не выбрана' }}</p>
+                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
+                        Станция
+                      </p>
+                      <p class="text-gray-900 font-medium truncate">
+                        {{ user.station || 'Не выбрана' }}
+                      </p>
                     </div>
                   </div>
 
@@ -109,8 +160,12 @@
                       <el-icon><Suitcase /></el-icon>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Должность</p>
-                      <p class="text-gray-900 font-medium truncate">{{ user.position || 'Не указана' }}</p>
+                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
+                        Должность
+                      </p>
+                      <p class="text-gray-900 font-medium truncate">
+                        {{ user.position || 'Не указана' }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -120,12 +175,20 @@
             <!-- Краткая статистика -->
             <div class="grid grid-cols-2 gap-4 mt-6">
               <div class="card bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-                <p class="text-3xl font-bold text-blue-600 mb-1">{{ userStats.completedCourses }}</p>
-                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Курсов пройдено</p>
+                <p class="text-3xl font-bold text-blue-600 mb-1">
+                  {{ userStats.completedCourses }}
+                </p>
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                  Курсов пройдено
+                </p>
               </div>
               <div class="card bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-                <p class="text-3xl font-bold text-orange-600 mb-1">{{ userStats.hoursStudied }}</p>
-                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Часов обучения</p>
+                <p class="text-3xl font-bold text-orange-600 mb-1">
+                  {{ userStats.hoursStudied }}
+                </p>
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                  Часов обучения
+                </p>
               </div>
             </div>
           </div>
@@ -133,22 +196,35 @@
           <!-- Контент (Правая колонка) -->
           <div class="lg:col-span-2">
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[600px] flex flex-col overflow-hidden">
-              <el-tabs v-model="activeTab" class="profile-tabs flex-1">
-                <el-tab-pane label="Мои курсы" name="courses">
+              <el-tabs
+                v-model="activeTab"
+                class="profile-tabs flex-1"
+              >
+                <el-tab-pane
+                  label="Мои курсы"
+                  name="courses"
+                >
                   <div class="p-6">
-                    <div v-if="userCourses.length" class="space-y-4">
-                  <div 
-                    v-for="course in userCourses" 
-                    :key="course.id"
+                    <div
+                      v-if="userCourses.length"
+                      class="space-y-4"
+                    >
+                      <div 
+                        v-for="course in userCourses" 
+                        :key="course.id"
                         class="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all cursor-pointer"
                         @click="$router.push(`/course/${course.course_id || course.id}`)"
-                  >
+                      >
                         <div class="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform">
-                          <el-icon size="28"><component :is="course.course?.icon || 'Monitor'" /></el-icon>
+                          <el-icon size="28">
+                            <component :is="course.course?.icon || 'Monitor'" />
+                          </el-icon>
                         </div>
                         <div class="flex-1 min-w-0 w-full">
                           <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
-                            <h3 class="font-bold text-gray-900 text-lg leading-tight group-hover:text-blue-600 transition-colors">{{ course.course?.title || course.title }}</h3>
+                            <h3 class="font-bold text-gray-900 text-lg leading-tight group-hover:text-blue-600 transition-colors">
+                              {{ course.course?.title || course.title }}
+                            </h3>
                             <span 
                               class="px-2.5 py-1 rounded-full text-xs font-medium shrink-0"
                               :class="getStatusClass(course.status)"
@@ -182,99 +258,156 @@
                       </div>
                     </div>
                     
-                    <div v-else class="flex flex-col items-center justify-center py-12 text-center">
+                    <div
+                      v-else
+                      class="flex flex-col items-center justify-center py-12 text-center"
+                    >
                       <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                        <el-icon class="text-gray-300 text-4xl"><Collection /></el-icon>
+                        <el-icon class="text-gray-300 text-4xl">
+                          <Collection />
+                        </el-icon>
                       </div>
-                      <h3 class="text-lg font-medium text-gray-900 mb-2">Нет активных курсов</h3>
-                      <p class="text-gray-500 max-w-xs mx-auto mb-6">Вы пока не записаны ни на один курс. Перейдите в каталог, чтобы начать обучение.</p>
-                      <el-button type="primary" @click="$router.push('/stations')">
+                      <h3 class="text-lg font-medium text-gray-900 mb-2">
+                        Нет активных курсов
+                      </h3>
+                      <p class="text-gray-500 max-w-xs mx-auto mb-6">
+                        Вы пока не записаны ни на один курс. Перейдите в каталог, чтобы начать обучение.
+                      </p>
+                      <el-button
+                        type="primary"
+                        @click="$router.push('/stations')"
+                      >
                         Перейти к курсам
                       </el-button>
                     </div>
                   </div>
-              </el-tab-pane>
+                </el-tab-pane>
 
-              <!-- Вкладка Статистики -->
-                <el-tab-pane label="Детальная статистика" name="stats">
+                <!-- Вкладка Статистики -->
+                <el-tab-pane
+                  label="Детальная статистика"
+                  name="stats"
+                >
                   <div class="p-6">
                     <UserStatistics :detailed="true" />
-                </div>
-              </el-tab-pane>
+                  </div>
+                </el-tab-pane>
 
-              <el-tab-pane label="Настройки" name="settings">
+                <el-tab-pane
+                  label="Настройки"
+                  name="settings"
+                >
                   <div class="p-6 max-w-2xl">
                     <div class="space-y-8">
                       <!-- Уведомления -->
                       <div>
                         <div class="flex items-center gap-3 mb-6">
                           <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                            <el-icon size="20"><Bell /></el-icon>
+                            <el-icon size="20">
+                              <Bell />
+                            </el-icon>
                           </div>
                           <div>
-                            <h3 class="font-bold text-gray-900">Уведомления</h3>
-                            <p class="text-sm text-gray-500">Управление оповещениями</p>
+                            <h3 class="font-bold text-gray-900">
+                              Уведомления
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                              Управление оповещениями
+                            </p>
                           </div>
                         </div>
                         
                         <div class="bg-gray-50 rounded-xl p-4 space-y-4 border border-gray-100">
-                    <div class="flex items-center justify-between">
+                          <div class="flex items-center justify-between">
                             <div>
-                              <p class="font-medium text-gray-900">Email рассылка</p>
-                              <p class="text-xs text-gray-500">Получать новости и отчеты на почту</p>
+                              <p class="font-medium text-gray-900">
+                                Email рассылка
+                              </p>
+                              <p class="text-xs text-gray-500">
+                                Получать новости и отчеты на почту
+                              </p>
                             </div>
-                      <el-switch v-model="settingsForm.emailNotifications" />
-                    </div>
-                          <el-divider class="!my-2" />
-                    <div class="flex items-center justify-between">
-                            <div>
-                              <p class="font-medium text-gray-900">Push уведомления</p>
-                              <p class="text-xs text-gray-500">Уведомления в браузере</p>
-                            </div>
-                      <el-switch v-model="settingsForm.pushNotifications" />
+                            <el-switch v-model="settingsForm.emailNotifications" />
                           </div>
-                    </div>
-                  </div>
+                          <el-divider class="!my-2" />
+                          <div class="flex items-center justify-between">
+                            <div>
+                              <p class="font-medium text-gray-900">
+                                Push уведомления
+                              </p>
+                              <p class="text-xs text-gray-500">
+                                Уведомления в браузере
+                              </p>
+                            </div>
+                            <el-switch v-model="settingsForm.pushNotifications" />
+                          </div>
+                        </div>
+                      </div>
                   
                       <!-- Интерфейс -->
                       <div>
                         <div class="flex items-center gap-3 mb-6">
                           <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                            <el-icon size="20"><Monitor /></el-icon>
+                            <el-icon size="20">
+                              <Monitor />
+                            </el-icon>
                           </div>
                           <div>
-                            <h3 class="font-bold text-gray-900">Интерфейс</h3>
-                            <p class="text-sm text-gray-500">Настройки отображения</p>
+                            <h3 class="font-bold text-gray-900">
+                              Интерфейс
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                              Настройки отображения
+                            </p>
                           </div>
                         </div>
                         
                         <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div class="flex items-center justify-between">
+                          <div class="flex items-center justify-between">
                             <div>
-                              <p class="font-medium text-gray-900">Язык системы</p>
-                              <p class="text-xs text-gray-500">Выберите предпочтительный язык</p>
+                              <p class="font-medium text-gray-900">
+                                Язык системы
+                              </p>
+                              <p class="text-xs text-gray-500">
+                                Выберите предпочтительный язык
+                              </p>
                             </div>
-                            <el-select v-model="settingsForm.language" size="large" class="w-40">
-                              <el-option label="Русский" value="ru">
+                            <el-select
+                              v-model="settingsForm.language"
+                              size="large"
+                              class="w-40"
+                            >
+                              <el-option
+                                label="Русский"
+                                value="ru"
+                              >
                                 <span class="flex items-center gap-2">🇷🇺 Русский</span>
                               </el-option>
-                              <el-option label="English" value="en">
+                              <el-option
+                                label="English"
+                                value="en"
+                              >
                                 <span class="flex items-center gap-2">🇺🇸 English</span>
                               </el-option>
-                    </el-select>
+                            </el-select>
                           </div>
                         </div>
-                  </div>
+                      </div>
                   
                       <div class="pt-4">
-                        <el-button type="primary" size="large" @click="saveSettings" class="w-full sm:w-auto px-8">
+                        <el-button
+                          type="primary"
+                          size="large"
+                          class="w-full sm:w-auto px-8"
+                          @click="saveSettings"
+                        >
                           Сохранить настройки
                         </el-button>
                       </div>
+                    </div>
                   </div>
-                </div>
-              </el-tab-pane>
-            </el-tabs>
+                </el-tab-pane>
+              </el-tabs>
             </div>
           </div>
         </div>
@@ -290,19 +423,34 @@
       align-center
       destroy-on-close
     >
-      <el-form :model="editForm" label-position="top" size="large" class="mt-2">
+      <el-form
+        :model="editForm"
+        label-position="top"
+        size="large"
+        class="mt-2"
+      >
         <el-form-item label="ФИО Сотрудника">
-          <el-input v-model="editForm.name" placeholder="Введите ваше полное имя" :prefix-icon="User" />
+          <el-input
+            v-model="editForm.name"
+            placeholder="Введите ваше полное имя"
+            :prefix-icon="User"
+          />
         </el-form-item>
         
         <el-form-item label="Корпоративный Email">
-          <el-input v-model="editForm.email" disabled>
+          <el-input
+            v-model="editForm.email"
+            disabled
+          >
             <template #prefix>
               <el-icon><Message /></el-icon>
             </template>
             <template #append>
-              <el-tooltip content="Email нельзя изменить самостоятельно. Обратитесь к администратору." placement="top">
-              <el-icon><Lock /></el-icon>
+              <el-tooltip
+                content="Email нельзя изменить самостоятельно. Обратитесь к администратору."
+                placement="top"
+              >
+                <el-icon><Lock /></el-icon>
               </el-tooltip>
             </template>
           </el-input>
@@ -327,15 +475,27 @@
           </el-form-item>
           
           <el-form-item label="Должность">
-            <el-input v-model="editForm.position" placeholder="Например, Инженер" :prefix-icon="Suitcase" />
+            <el-input
+              v-model="editForm.position"
+              placeholder="Например, Инженер"
+              :prefix-icon="Suitcase"
+            />
           </el-form-item>
         </div>
       </el-form>
       
       <template #footer>
         <div class="flex justify-end gap-3 pt-2">
-          <el-button @click="showEditProfile = false">Отмена</el-button>
-          <el-button type="primary" :loading="saving" @click="saveProfile">Сохранить изменения</el-button>
+          <el-button @click="showEditProfile = false">
+            Отмена
+          </el-button>
+          <el-button
+            type="primary"
+            :loading="saving"
+            @click="saveProfile"
+          >
+            Сохранить изменения
+          </el-button>
         </div>
       </template>
     </el-dialog>

@@ -23,9 +23,8 @@
               class="h-8 w-auto transition-all duration-300"
               :class="isScrolled ? 'opacity-100' : 'opacity-100'"
               @error="handleLogoError"
-            />
+            >
           </div>
-
         </router-link>
 
         <!-- Desktop Navigation -->
@@ -39,17 +38,17 @@
             ]"
           >
             {{ $t('nav.home') }}
-            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full"></div>
+            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full" />
           </router-link>
           
           <a 
             href="#about" 
-            @click.prevent="scrollToAbout"
             class="nav-link cursor-pointer relative group"
             :class="isLightTheme ? 'text-gray-700 hover:text-gray-900' : 'text-white/90 hover:text-white'"
+            @click.prevent="scrollToAbout"
           >
             {{ $t('nav.about') }}
-            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full"></div>
+            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full" />
           </a>
           
           <router-link 
@@ -61,7 +60,7 @@
             ]"
           >
             {{ $t('nav.stations') }}
-            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full"></div>
+            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full" />
           </router-link>
         </nav>
 
@@ -70,15 +69,25 @@
           <!-- Language Switcher -->
           <div class="relative">
             <button
-              @click="langDropdownOpen = !langDropdownOpen"
               class="flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-200"
               :class="isLightTheme 
                 ? 'text-gray-700 hover:bg-gray-100' 
                 : 'text-white/90 hover:bg-white/10'"
+              @click="langDropdownOpen = !langDropdownOpen"
             >
               <span class="text-sm font-medium">{{ currentLocale.toUpperCase() }}</span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
             
@@ -97,16 +106,16 @@
                 @click="langDropdownOpen = false"
               >
                 <button
-                  @click="changeLanguage('ru')"
                   class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
                   :class="currentLocale === 'ru' ? 'text-tamex-blue-600 font-semibold' : 'text-gray-700'"
+                  @click="changeLanguage('ru')"
                 >
                   🇷🇺 Русский
                 </button>
                 <button
-                  @click="changeLanguage('en')"
                   class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
                   :class="currentLocale === 'en' ? 'text-tamex-blue-600 font-semibold' : 'text-gray-700'"
+                  @click="changeLanguage('en')"
                 >
                   🇺🇸 English
                 </button>
@@ -131,11 +140,11 @@
           <template v-else>
             <div class="relative hidden md:block">
               <button
-                @click="userDropdownOpen = !userDropdownOpen"
                 class="flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-opacity-80"
                 :class="isLightTheme 
                   ? 'text-gray-700 hover:bg-gray-100' 
                   : 'text-white/90 hover:bg-white/10'"
+                @click="userDropdownOpen = !userDropdownOpen"
               >
                 <div 
                   class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-offset-2 transition-all hover:ring-offset-4"
@@ -150,20 +159,40 @@
                     :alt="userName"
                     class="w-full h-full object-cover transition-transform duration-300"
                     :class="hoveringAvatar ? 'scale-110' : ''"
-                  />
-                  <div v-else-if="userName" class="w-full h-full flex items-center justify-center text-white text-sm font-semibold">
+                  >
+                  <div
+                    v-else-if="userName"
+                    class="w-full h-full flex items-center justify-center text-white text-sm font-semibold"
+                  >
                     {{ userName.charAt(0).toUpperCase() }}
                   </div>
-                  <div v-else class="w-full h-full flex items-center justify-center text-white text-sm font-semibold">
+                  <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center text-white text-sm font-semibold"
+                  >
                     ?
                   </div>
                 </div>
-                <div class="flex flex-col items-start" v-if="userName">
+                <div
+                  v-if="userName"
+                  class="flex flex-col items-start"
+                >
                   <span class="text-sm font-medium">{{ userName }}</span>
                   <span class="text-xs opacity-70">{{ userRole }}</span>
                 </div>
-                <svg class="w-4 h-4 transition-transform duration-200" :class="userDropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                <svg
+                  class="w-4 h-4 transition-transform duration-200"
+                  :class="userDropdownOpen ? 'rotate-180' : ''"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
               
@@ -200,10 +229,10 @@
                   >
                     Админ-панель
                   </router-link>
-                  <hr class="my-1 border-gray-100" />
+                  <hr class="my-1 border-gray-100">
                   <button
-                    @click="logout"
                     class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    @click="logout"
                   >
                     {{ $t('nav.logout') }}
                   </button>
@@ -214,11 +243,11 @@
 
           <!-- Mobile Menu Button -->
           <button
-            @click="mobileMenuOpen = !mobileMenuOpen"
             class="lg:hidden p-2 rounded-lg transition-all duration-200"
             :class="isLightTheme 
               ? 'text-gray-700 hover:bg-gray-100' 
               : 'text-white hover:bg-white/10'"
+            @click="mobileMenuOpen = !mobileMenuOpen"
           >
             <svg 
               class="w-6 h-6" 
@@ -273,9 +302,9 @@
             
             <a
               href="#about"
-              @click.prevent="scrollToAbout(); mobileMenuOpen = false"
               class="mobile-nav-link cursor-pointer"
               :class="isLightTheme ? 'text-gray-700 hover:bg-gray-50' : 'text-white hover:bg-white/10'"
+              @click.prevent="scrollToAbout(); mobileMenuOpen = false"
             >
               {{ $t('nav.about') }}
             </a>
@@ -291,7 +320,10 @@
 
             <!-- Mobile Auth Buttons -->
             <template v-if="!isAuthenticated">
-              <div class="pt-4 space-y-2" :class="isLightTheme ? 'border-t border-gray-100' : 'border-t border-white/10'">
+              <div
+                class="pt-4 space-y-2"
+                :class="isLightTheme ? 'border-t border-gray-100' : 'border-t border-white/10'"
+              >
                 <router-link
                   to="/login"
                   class="block w-full text-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all"
@@ -307,7 +339,10 @@
 
             <!-- Mobile User Menu -->
             <template v-else-if="isAuthenticated && userName">
-              <div class="pt-4 space-y-1" :class="isLightTheme ? 'border-t border-gray-100' : 'border-t border-white/10'">
+              <div
+                class="pt-4 space-y-1"
+                :class="isLightTheme ? 'border-t border-gray-100' : 'border-t border-white/10'"
+              >
                 <div 
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg"
                   :class="isLightTheme ? 'bg-gray-50' : 'bg-white/5'"
@@ -316,10 +351,16 @@
                     {{ userName.charAt(0).toUpperCase() }}
                   </div>
                   <div>
-                    <p class="text-sm font-medium" :class="isLightTheme ? 'text-gray-900' : 'text-white'">
+                    <p
+                      class="text-sm font-medium"
+                      :class="isLightTheme ? 'text-gray-900' : 'text-white'"
+                    >
                       {{ userName }}
                     </p>
-                    <p class="text-xs opacity-70" :class="isLightTheme ? 'text-gray-600' : 'text-white/70'">
+                    <p
+                      class="text-xs opacity-70"
+                      :class="isLightTheme ? 'text-gray-600' : 'text-white/70'"
+                    >
                       {{ userRole }}
                     </p>
                   </div>
@@ -333,9 +374,9 @@
                   {{ $t('nav.profile') }}
                 </router-link>
                 <button
-                  @click="logout"
                   class="mobile-nav-link w-full text-left text-red-600"
                   :class="isLightTheme ? 'hover:bg-red-50' : 'hover:bg-red-500/10'"
+                  @click="logout"
                 >
                   {{ $t('nav.logout') }}
                 </button>
@@ -354,14 +395,27 @@
           class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center"
           @click="showAvatarPreview = false; resetZoom()"
         >
-          <div class="relative max-w-4xl max-h-[90vh] p-8" @click.stop>
+          <div
+            class="relative max-w-4xl max-h-[90vh] p-8"
+            @click.stop
+          >
             <!-- Close Button -->
             <button
-              @click="showAvatarPreview = false; resetZoom()"
               class="absolute -top-2 -right-2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all z-10"
+              @click="showAvatarPreview = false; resetZoom()"
             >
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <svg
+                class="w-6 h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
 
@@ -374,51 +428,94 @@
                 class="rounded-full shadow-2xl transition-transform duration-300"
                 :style="{ transform: `scale(${avatarScale})` }"
                 style="max-width: 500px; max-height: 500px; object-fit: cover;"
-              />
-              <div v-else-if="userName" class="w-64 h-64 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-6xl font-bold">
+              >
+              <div
+                v-else-if="userName"
+                class="w-64 h-64 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-6xl font-bold"
+              >
                 {{ userName.charAt(0).toUpperCase() }}
               </div>
-              <div v-else class="w-64 h-64 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-6xl font-bold">
+              <div
+                v-else
+                class="w-64 h-64 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-6xl font-bold"
+              >
                 ?
               </div>
             </div>
 
             <!-- User Info -->
-            <div v-if="userName" class="mt-6 text-center text-white">
-              <h3 class="text-2xl font-bold mb-2">{{ userName }}</h3>
-              <p class="text-blue-300 mb-4">{{ userRole }}</p>
+            <div
+              v-if="userName"
+              class="mt-6 text-center text-white"
+            >
+              <h3 class="text-2xl font-bold mb-2">
+                {{ userName }}
+              </h3>
+              <p class="text-blue-300 mb-4">
+                {{ userRole }}
+              </p>
             </div>
 
             <!-- Zoom Controls -->
             <div class="flex items-center justify-center gap-4 mt-6 bg-white/10 backdrop-blur-md rounded-xl px-6 py-3 border border-white/20">
               <button
-                @click="zoomOut"
                 class="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
                 :disabled="avatarScale <= 0.5"
+                @click="zoomOut"
               >
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                <svg
+                  class="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
+                  />
                 </svg>
               </button>
               
               <span class="text-white text-sm font-medium px-4">{{ Math.round(avatarScale * 100) }}%</span>
               
               <button
-                @click="zoomIn"
                 class="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
                 :disabled="avatarScale >= 3"
+                @click="zoomIn"
               >
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                <svg
+                  class="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"
+                  />
                 </svg>
               </button>
 
               <button
-                @click="resetZoom"
                 class="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all ml-4"
+                @click="resetZoom"
               >
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg
+                  class="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
               </button>
             </div>

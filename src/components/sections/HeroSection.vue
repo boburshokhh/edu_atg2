@@ -12,19 +12,22 @@
           disableOnInteraction: false,
         }"
         :effect="'fade'"
-        :fadeEffect="{ crossFade: true }"
+        :fade-effect="{ crossFade: true }"
         class="w-full h-full"
       >
-        <swiper-slide v-for="(imageUrl, index) in stationImages" :key="index">
+        <swiper-slide
+          v-for="(imageUrl, index) in stationImages"
+          :key="index"
+        >
           <div class="w-full h-full relative">
             <img 
               :src="imageUrl || fallbackImageUrl" 
               :alt="`Станция ${index + 1}`"
               class="w-full h-full object-cover"
               @error="imageError"
-            />
+            >
             <!-- Градиентный оверлей как в StationDetail -->
-            <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-gray-900/90"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-gray-900/90" />
           </div>
         </swiper-slide>
       </swiper>
@@ -33,7 +36,6 @@
     <!-- Content -->
     <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-32">
       <div class="text-center space-y-8 sm:space-y-10">
-        
         <!-- Main Heading -->
         <div class="space-y-4 sm:space-y-6 animate-fade-in-up delay-100">
           <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
@@ -56,27 +58,47 @@
         <!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-200">
           <button
-            @click="$router.push('/stations')"
             class="group relative w-full sm:w-auto px-8 py-4 bg-tamex-blue-600 text-white rounded-xl font-semibold text-base overflow-hidden transition-all duration-300 hover:bg-tamex-blue-700 hover:scale-105 hover:shadow-2xl hover:shadow-tamex-blue-500/50"
+            @click="$router.push('/stations')"
           >
             <span class="relative z-10 flex items-center justify-center space-x-2">
               <span>{{ $t('nav.stations') }}</span>
-              <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <svg
+                class="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
               </svg>
             </span>
             <!-- Shine Effect -->
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           </button>
           
           <button
-            @click="scrollToAbout"
             class="group w-full sm:w-auto px-8 py-4 bg-white/5 backdrop-blur-sm border border-white/20 text-white rounded-xl font-semibold text-base transition-all duration-300 hover:bg-white/10 hover:scale-105 hover:shadow-xl"
+            @click="scrollToAbout"
           >
             <span class="flex items-center justify-center space-x-2">
               <span>{{ $t('home.aboutCompany') }}</span>
-              <svg class="w-5 h-5 transform group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                class="w-5 h-5 transform group-hover:scale-110 transition-transform duration-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </span>
           </button>
@@ -87,13 +109,13 @@
     <!-- Scroll Indicator -->
     <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
       <div class="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-2">
-        <div class="w-1 h-3 bg-white/50 rounded-full animate-pulse"></div>
+        <div class="w-1 h-3 bg-white/50 rounded-full animate-pulse" />
       </div>
     </div>
 
     <!-- Decorative Elements -->
-    <div class="absolute top-20 left-10 w-20 h-20 border border-white/10 rounded-lg rotate-12 animate-float"></div>
-    <div class="absolute bottom-20 right-10 w-16 h-16 border border-white/10 rounded-lg -rotate-12 animate-float delay-500"></div>
+    <div class="absolute top-20 left-10 w-20 h-20 border border-white/10 rounded-lg rotate-12 animate-float" />
+    <div class="absolute bottom-20 right-10 w-16 h-16 border border-white/10 rounded-lg -rotate-12 animate-float delay-500" />
   </section>
 </template>
 

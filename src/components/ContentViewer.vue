@@ -14,17 +14,17 @@
           :icon="ZoomOut" 
           circle 
           size="small"
-          @click="$emit('zoom-out')"
           class="bg-white/90 backdrop-blur-sm"
           :disabled="currentFileType === 'video' && isFullscreen"
+          @click="$emit('zoom-out')"
         />
         <el-button 
           :icon="ZoomIn" 
           circle 
           size="small"
-          @click="$emit('zoom-in')"
           class="bg-white/90 backdrop-blur-sm"
           :disabled="currentFileType === 'video' && isFullscreen"
+          @click="$emit('zoom-in')"
         />
         <el-tag class="bg-white/90 backdrop-blur-sm">
           {{ currentZoom }}%
@@ -35,9 +35,9 @@
           :icon="FullScreen" 
           circle 
           size="small"
-          @click="toggleFullscreen"
           class="bg-white/90 backdrop-blur-sm"
           title="Полный экран"
+          @click="toggleFullscreen"
         />
       </div>
     </div>
@@ -55,7 +55,10 @@
       v-else-if="currentFile && currentFileType === 'pdf' && !(currentFile.url || currentFile.file_url)"
       class="flex items-center justify-center min-h-[400px]"
     >
-      <el-icon class="is-loading" :size="32">
+      <el-icon
+        class="is-loading"
+        :size="32"
+      >
         <Loading />
       </el-icon>
       <span class="ml-2">Загрузка файла...</span>
@@ -75,7 +78,10 @@
       v-else-if="currentFile && currentFileType === 'unknown'"
       class="flex flex-col items-center justify-center min-h-[400px] p-8"
     >
-      <el-icon :size="64" class="text-gray-400 mb-4">
+      <el-icon
+        :size="64"
+        class="text-gray-400 mb-4"
+      >
         <Document />
       </el-icon>
       <h3 class="text-lg font-semibold text-gray-700 mb-2">
@@ -93,8 +99,14 @@
     </div>
 
     <!-- No Content Placeholder -->
-    <div v-else class="flex items-center justify-center min-h-[400px]">
-      <el-empty description="Выберите материал для просмотра" :image-size="80" />
+    <div
+      v-else
+      class="flex items-center justify-center min-h-[400px]"
+    >
+      <el-empty
+        description="Выберите материал для просмотра"
+        :image-size="80"
+      />
     </div>
   </div>
 </template>

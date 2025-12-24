@@ -13,23 +13,44 @@
       label-width="180px"
       label-position="left"
     >
-      <el-tabs v-model="activeTab" type="border-card">
+      <el-tabs
+        v-model="activeTab"
+        type="border-card"
+      >
         <!-- Основная информация -->
-        <el-tab-pane label="Основная информация" name="basic">
+        <el-tab-pane
+          label="Основная информация"
+          name="basic"
+        >
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="Название" prop="name">
-                <el-input v-model="formData.name" placeholder="Введите название станции" />
+              <el-form-item
+                label="Название"
+                prop="name"
+              >
+                <el-input
+                  v-model="formData.name"
+                  placeholder="Введите название станции"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="Короткое название" prop="shortName">
-                <el-input v-model="formData.shortName" placeholder="WKC1, WKC2, etc." />
+              <el-form-item
+                label="Короткое название"
+                prop="shortName"
+              >
+                <el-input
+                  v-model="formData.shortName"
+                  placeholder="WKC1, WKC2, etc."
+                />
               </el-form-item>
             </el-col>
           </el-row>
 
-          <el-form-item label="Описание" prop="description">
+          <el-form-item
+            label="Описание"
+            prop="description"
+          >
             <el-input
               v-model="formData.description"
               type="textarea"
@@ -57,8 +78,12 @@
                     class="upload-image"
                   >
                     <template #default>
-                      <el-icon class="upload-icon"><Plus /></el-icon>
-                      <div class="upload-text">Нажмите для загрузки</div>
+                      <el-icon class="upload-icon">
+                        <Plus />
+                      </el-icon>
+                      <div class="upload-text">
+                        Нажмите для загрузки
+                      </div>
                     </template>
                   </el-upload>
                   <el-input 
@@ -66,14 +91,17 @@
                     placeholder="Или введите путь к изображению (например: stations/WKC1.jpg)"
                     clearable
                   />
-                  <div v-if="formData.image && !imageFileList.length" class="mt-2">
+                  <div
+                    v-if="formData.image && !imageFileList.length"
+                    class="mt-2"
+                  >
                     <img 
                       v-if="isImageUrl(formData.image)" 
                       :src="imagePreviewUrl" 
                       alt="Preview" 
                       class="max-w-full h-32 object-cover rounded"
                       @error="handleImageError"
-                    />
+                    >
                   </div>
                 </div>
               </el-form-item>
@@ -96,8 +124,12 @@
                     class="upload-image"
                   >
                     <template #default>
-                      <el-icon class="upload-icon"><Plus /></el-icon>
-                      <div class="upload-text">Нажмите для загрузки</div>
+                      <el-icon class="upload-icon">
+                        <Plus />
+                      </el-icon>
+                      <div class="upload-text">
+                        Нажмите для загрузки
+                      </div>
                     </template>
                   </el-upload>
                   <el-input 
@@ -105,14 +137,17 @@
                     placeholder="Или введите путь (например: /tex_kart/КС1.jpg)"
                     clearable
                   />
-                  <div v-if="formData.techMapImage && !techMapFileList.length" class="mt-2">
+                  <div
+                    v-if="formData.techMapImage && !techMapFileList.length"
+                    class="mt-2"
+                  >
                     <img 
                       v-if="isImageUrl(formData.techMapImage)" 
                       :src="techMapPreviewUrl" 
                       alt="Tech Map Preview" 
                       class="max-w-full h-32 object-cover rounded"
                       @error="handleImageError"
-                    />
+                    >
                   </div>
                 </div>
               </el-form-item>
@@ -122,12 +157,18 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Мощность">
-                <el-input v-model="formData.power" placeholder="30 МВт" />
+                <el-input
+                  v-model="formData.power"
+                  placeholder="30 МВт"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Дата ввода в эксплуатацию">
-                <el-input v-model="formData.commissionDate" placeholder="2009" />
+                <el-input
+                  v-model="formData.commissionDate"
+                  placeholder="2009"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -144,14 +185,29 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Тип станции">
-                <el-input v-model="formData.type" placeholder="Тип станции" />
+                <el-input
+                  v-model="formData.type"
+                  placeholder="Тип станции"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="Статус" prop="status">
-                <el-select v-model="formData.status" placeholder="Выберите статус">
-                  <el-option label="Активна" value="active" />
-                  <el-option label="На обслуживании" value="maintenance" />
+              <el-form-item
+                label="Статус"
+                prop="status"
+              >
+                <el-select
+                  v-model="formData.status"
+                  placeholder="Выберите статус"
+                >
+                  <el-option
+                    label="Активна"
+                    value="active"
+                  />
+                  <el-option
+                    label="На обслуживании"
+                    value="maintenance"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -160,12 +216,18 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Проектная мощность">
-                <el-input v-model="formData.designCapacity" placeholder="30 млрд м³/год" />
+                <el-input
+                  v-model="formData.designCapacity"
+                  placeholder="30 млрд м³/год"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Давление газа">
-                <el-input v-model="formData.gasPressure" placeholder="7.0 МПа" />
+                <el-input
+                  v-model="formData.gasPressure"
+                  placeholder="7.0 МПа"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -173,12 +235,18 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Расстояние от границы">
-                <el-input v-model="formData.distanceFromBorder" placeholder="10.6 км" />
+                <el-input
+                  v-model="formData.distanceFromBorder"
+                  placeholder="10.6 км"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Диаметр трубопровода">
-                <el-input v-model="formData.pipelineDiameter" placeholder="1067 мм" />
+                <el-input
+                  v-model="formData.pipelineDiameter"
+                  placeholder="1067 мм"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -186,63 +254,132 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="Входное давление">
-                <el-input v-model="formData.inputPressure" placeholder="7.0 МПа" />
+                <el-input
+                  v-model="formData.inputPressure"
+                  placeholder="7.0 МПа"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Выходное давление">
-                <el-input v-model="formData.outputPressure" placeholder="9.81 МПа" />
+                <el-input
+                  v-model="formData.outputPressure"
+                  placeholder="9.81 МПа"
+                />
               </el-form-item>
             </el-col>
           </el-row>
 
           <el-form-item label="Параллельные линии">
-            <el-input v-model="formData.parallelLines" placeholder="Две нитки (А, В)" />
+            <el-input
+              v-model="formData.parallelLines"
+              placeholder="Две нитки (А, В)"
+            />
           </el-form-item>
         </el-tab-pane>
 
         <!-- Оборудование -->
-        <el-tab-pane label="Оборудование" name="equipment">
+        <el-tab-pane
+          label="Оборудование"
+          name="equipment"
+        >
           <div class="mb-4">
-            <el-button type="primary" @click="addEquipment">
+            <el-button
+              type="primary"
+              @click="addEquipment"
+            >
               <el-icon><Plus /></el-icon>
               Добавить оборудование
             </el-button>
           </div>
-          <el-table :data="formData.equipment" border>
-            <el-table-column prop="name" label="Название" width="200">
+          <el-table
+            :data="formData.equipment"
+            border
+          >
+            <el-table-column
+              prop="name"
+              label="Название"
+              width="200"
+            >
               <template #default="{ row, $index }">
-                <el-input v-model="row.name" placeholder="Название" />
+                <el-input
+                  v-model="row.name"
+                  placeholder="Название"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="model" label="Модель" width="200">
+            <el-table-column
+              prop="model"
+              label="Модель"
+              width="200"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.model" placeholder="Модель" />
+                <el-input
+                  v-model="row.model"
+                  placeholder="Модель"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="manufacturer" label="Производитель" width="200">
+            <el-table-column
+              prop="manufacturer"
+              label="Производитель"
+              width="200"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.manufacturer" placeholder="Производитель" />
+                <el-input
+                  v-model="row.manufacturer"
+                  placeholder="Производитель"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="quantity" label="Количество" width="120">
+            <el-table-column
+              prop="quantity"
+              label="Количество"
+              width="120"
+            >
               <template #default="{ row }">
-                <el-input-number v-model="row.quantity" :min="1" />
+                <el-input-number
+                  v-model="row.quantity"
+                  :min="1"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="power" label="Мощность" width="150">
+            <el-table-column
+              prop="power"
+              label="Мощность"
+              width="150"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.power" placeholder="Мощность" />
+                <el-input
+                  v-model="row.power"
+                  placeholder="Мощность"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="description" label="Описание">
+            <el-table-column
+              prop="description"
+              label="Описание"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.description" type="textarea" :rows="2" placeholder="Описание" />
+                <el-input
+                  v-model="row.description"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="Описание"
+                />
               </template>
             </el-table-column>
-            <el-table-column label="Действия" width="100" fixed="right">
+            <el-table-column
+              label="Действия"
+              width="100"
+              fixed="right"
+            >
               <template #default="{ $index }">
-                <el-button type="danger" size="small" @click="removeEquipment($index)">
+                <el-button
+                  type="danger"
+                  size="small"
+                  @click="removeEquipment($index)"
+                >
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </template>
@@ -251,37 +388,83 @@
         </el-tab-pane>
 
         <!-- Спецификации -->
-        <el-tab-pane label="Спецификации" name="specifications">
+        <el-tab-pane
+          label="Спецификации"
+          name="specifications"
+        >
           <div class="mb-4">
-            <el-button type="primary" @click="addSpecification">
+            <el-button
+              type="primary"
+              @click="addSpecification"
+            >
               <el-icon><Plus /></el-icon>
               Добавить спецификацию
             </el-button>
           </div>
-          <el-table :data="formData.specifications" border>
-            <el-table-column prop="category" label="Категория" width="200">
+          <el-table
+            :data="formData.specifications"
+            border
+          >
+            <el-table-column
+              prop="category"
+              label="Категория"
+              width="200"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.category" placeholder="Категория" />
+                <el-input
+                  v-model="row.category"
+                  placeholder="Категория"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="value" label="Значение" width="150">
+            <el-table-column
+              prop="value"
+              label="Значение"
+              width="150"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.value" placeholder="Значение" />
+                <el-input
+                  v-model="row.value"
+                  placeholder="Значение"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="unit" label="Единица" width="120">
+            <el-table-column
+              prop="unit"
+              label="Единица"
+              width="120"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.unit" placeholder="Единица" />
+                <el-input
+                  v-model="row.unit"
+                  placeholder="Единица"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="description" label="Описание">
+            <el-table-column
+              prop="description"
+              label="Описание"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.description" type="textarea" :rows="2" placeholder="Описание" />
+                <el-input
+                  v-model="row.description"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="Описание"
+                />
               </template>
             </el-table-column>
-            <el-table-column label="Действия" width="100" fixed="right">
+            <el-table-column
+              label="Действия"
+              width="100"
+              fixed="right"
+            >
               <template #default="{ $index }">
-                <el-button type="danger" size="small" @click="removeSpecification($index)">
+                <el-button
+                  type="danger"
+                  size="small"
+                  @click="removeSpecification($index)"
+                >
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </template>
@@ -290,30 +473,64 @@
         </el-tab-pane>
 
         <!-- Системы безопасности -->
-        <el-tab-pane label="Системы безопасности" name="safety">
+        <el-tab-pane
+          label="Системы безопасности"
+          name="safety"
+        >
           <div class="mb-4">
-            <el-button type="primary" @click="addSafetySystem">
+            <el-button
+              type="primary"
+              @click="addSafetySystem"
+            >
               <el-icon><Plus /></el-icon>
               Добавить систему безопасности
             </el-button>
           </div>
-          <el-table :data="formData.safetySystems" border>
-            <el-table-column prop="name" label="Название" width="250">
+          <el-table
+            :data="formData.safetySystems"
+            border
+          >
+            <el-table-column
+              prop="name"
+              label="Название"
+              width="250"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.name" placeholder="Название системы" />
+                <el-input
+                  v-model="row.name"
+                  placeholder="Название системы"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="manufacturer" label="Производитель" width="200">
+            <el-table-column
+              prop="manufacturer"
+              label="Производитель"
+              width="200"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.manufacturer" placeholder="Производитель" />
+                <el-input
+                  v-model="row.manufacturer"
+                  placeholder="Производитель"
+                />
               </template>
             </el-table-column>
-            <el-table-column prop="description" label="Описание">
+            <el-table-column
+              prop="description"
+              label="Описание"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.description" type="textarea" :rows="2" placeholder="Описание" />
+                <el-input
+                  v-model="row.description"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="Описание"
+                />
               </template>
             </el-table-column>
-            <el-table-column label="Характеристики" width="300">
+            <el-table-column
+              label="Характеристики"
+              width="300"
+            >
               <template #default="{ row }">
                 <div class="flex flex-col gap-2">
                   <div
@@ -321,7 +538,11 @@
                     :key="idx"
                     class="flex items-center gap-2"
                   >
-                    <el-input v-model="row.features[idx]" placeholder="Характеристика" size="small" />
+                    <el-input
+                      v-model="row.features[idx]"
+                      placeholder="Характеристика"
+                      size="small"
+                    />
                     <el-button
                       type="danger"
                       size="small"
@@ -341,9 +562,17 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="Действия" width="100" fixed="right">
+            <el-table-column
+              label="Действия"
+              width="100"
+              fixed="right"
+            >
               <template #default="{ $index }">
-                <el-button type="danger" size="small" @click="removeSafetySystem($index)">
+                <el-button
+                  type="danger"
+                  size="small"
+                  @click="removeSafetySystem($index)"
+                >
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </template>
@@ -352,22 +581,45 @@
         </el-tab-pane>
 
         <!-- Источники газоснабжения -->
-        <el-tab-pane label="Источники газоснабжения" name="gasSources">
+        <el-tab-pane
+          label="Источники газоснабжения"
+          name="gasSources"
+        >
           <div class="mb-4">
-            <el-button type="primary" @click="addGasSource">
+            <el-button
+              type="primary"
+              @click="addGasSource"
+            >
               <el-icon><Plus /></el-icon>
               Добавить источник
             </el-button>
           </div>
-          <el-table :data="formData.gasSupplySources" border>
-            <el-table-column prop="sourceName" label="Название источника">
+          <el-table
+            :data="formData.gasSupplySources"
+            border
+          >
+            <el-table-column
+              prop="sourceName"
+              label="Название источника"
+            >
               <template #default="{ row }">
-                <el-input v-model="row.sourceName" placeholder="Название источника" />
+                <el-input
+                  v-model="row.sourceName"
+                  placeholder="Название источника"
+                />
               </template>
             </el-table-column>
-            <el-table-column label="Действия" width="100" fixed="right">
+            <el-table-column
+              label="Действия"
+              width="100"
+              fixed="right"
+            >
               <template #default="{ $index }">
-                <el-button type="danger" size="small" @click="removeGasSource($index)">
+                <el-button
+                  type="danger"
+                  size="small"
+                  @click="removeGasSource($index)"
+                >
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </template>
@@ -379,8 +631,14 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleClose">Отмена</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSubmit">
+        <el-button @click="handleClose">
+          Отмена
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="saving"
+          @click="handleSubmit"
+        >
           {{ isEdit ? 'Сохранить' : 'Создать' }}
         </el-button>
       </div>

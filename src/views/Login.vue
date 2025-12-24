@@ -2,11 +2,21 @@
   <div class="min-h-screen flex relative overflow-hidden">
     <!-- Кнопка "Назад" -->
     <button 
-      @click="$router.go(-1)"
       class="back-button absolute top-6 left-6 z-50 inline-flex items-center bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300 group px-4 py-2 rounded-lg border border-white/30 hover:border-white/50 shadow-lg hover:shadow-xl"
+      @click="$router.go(-1)"
     >
-      <svg class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      <svg
+        class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M15 19l-7-7 7-7"
+        />
       </svg>
       <span class="text-sm font-semibold">{{ $t('nav.back') }}</span>
     </button>
@@ -14,7 +24,7 @@
     <!-- Левая часть - синий фон с 3D моделью турбины -->
     <div class="hidden lg:flex lg:w-1/2 xl:w-[55%] bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 relative overflow-hidden">
       <!-- Декоративная диагональная граница -->
-      <div class="absolute right-0 top-0 bottom-0 w-40 bg-white/5 transform skew-x-[-12deg] translate-x-20"></div>
+      <div class="absolute right-0 top-0 bottom-0 w-40 bg-white/5 transform skew-x-[-12deg] translate-x-20" />
       
       <!-- 3D модель турбины -->
       <div class="flex items-center justify-center w-full relative z-10 px-8 py-12">
@@ -23,21 +33,21 @@
             src="/login/turbine.png" 
             alt="Gas Turbine Engine" 
             class="w-full h-auto object-contain drop-shadow-2xl transform hover:scale-105 transition-all duration-700 ease-out"
-          />
+          >
         </div>
       </div>
       
       <!-- Декоративные элементы -->
-      <div class="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-      <div class="absolute bottom-20 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
-      <div class="absolute top-1/3 right-24 w-20 h-20 bg-white/10 rounded-full blur-lg"></div>
-      <div class="absolute bottom-1/4 right-1/3 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
+      <div class="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+      <div class="absolute bottom-20 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl" />
+      <div class="absolute top-1/3 right-24 w-20 h-20 bg-white/10 rounded-full blur-lg" />
+      <div class="absolute bottom-1/4 right-1/3 w-32 h-32 bg-white/5 rounded-full blur-xl" />
     </div>
 
     <!-- Правая часть - форма входа -->
     <div class="w-full lg:w-1/2 xl:w-[45%] flex items-center justify-center bg-white px-6 sm:px-12 lg:px-16 xl:px-20 relative">
       <!-- Декоративный градиент фон -->
-      <div class="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-blue-50/30"></div>
+      <div class="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-blue-50/30" />
       
       <div class="w-full max-w-md relative z-10">
         <!-- Логотип и заголовок -->
@@ -48,7 +58,7 @@
                 src="/login/logo 1.svg" 
                 alt="ATG Logo" 
                 class="h-20 w-auto sm:h-24 drop-shadow-lg"
-              />
+              >
             </div>
           </div>
           <div class="space-y-2 animate-slide-up">
@@ -59,9 +69,22 @@
               {{ $t('login.subtitle') }}
             </p>
             <!-- LDAP Indicator -->
-            <div v-if="isLdapEnabled" class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg animate-fade-in">
-              <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            <div
+              v-if="isLdapEnabled"
+              class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg animate-fade-in"
+            >
+              <svg
+                class="w-4 h-4 text-blue-600 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
               </svg>
               <span class="text-xs font-medium text-blue-700">Аутентификация через Active Directory (LDAP)</span>
             </div>
@@ -74,11 +97,14 @@
             ref="loginForm" 
             :model="form" 
             :rules="rules" 
-            @submit.prevent="handleLogin"
             class="space-y-5"
+            @submit.prevent="handleLogin"
           >
             <!-- Username -->
-            <el-form-item prop="username" class="mb-5">
+            <el-form-item
+              prop="username"
+              class="mb-5"
+            >
               <el-input
                 v-model="form.username"
                 :placeholder="isLdapEnabled ? 'LDAP Username (sAMAccountName)' : $t('login.username')"
@@ -87,16 +113,24 @@
                 @keyup.enter="handleLogin"
               >
                 <template #prefix>
-                  <el-icon class="input-icon"><User /></el-icon>
+                  <el-icon class="input-icon">
+                    <User />
+                  </el-icon>
                 </template>
               </el-input>
-              <div v-if="isLdapEnabled" class="mt-1 text-xs text-gray-500">
+              <div
+                v-if="isLdapEnabled"
+                class="mt-1 text-xs text-gray-500"
+              >
                 Используйте ваше имя пользователя Active Directory
               </div>
             </el-form-item>
 
             <!-- Password -->
-            <el-form-item prop="password" class="mb-6">
+            <el-form-item
+              prop="password"
+              class="mb-6"
+            >
               <el-input
                 v-model="form.password"
                 type="password"
@@ -107,7 +141,9 @@
                 @keyup.enter="handleLogin"
               >
                 <template #prefix>
-                  <el-icon class="input-icon"><Lock /></el-icon>
+                  <el-icon class="input-icon">
+                    <Lock />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
@@ -122,8 +158,19 @@
             >
               <span class="flex items-center justify-center gap-2">
                 <span>{{ $t('login.loginButton') }}</span>
-                <svg v-if="!loading" class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                <svg
+                  v-if="!loading"
+                  class="w-4 h-4 transition-transform group-hover:translate-x-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
                 </svg>
               </span>
             </el-button>
@@ -132,7 +179,7 @@
           <!-- Разделитель -->
           <div class="relative my-8">
             <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-gray-200"></div>
+              <div class="w-full border-t border-gray-200" />
             </div>
             <div class="relative flex justify-center text-sm">
               <span class="px-4 bg-white text-gray-500">{{ $t('login.divider') }}</span>
@@ -142,7 +189,10 @@
           <!-- Дополнительные ссылки -->
           <div class="text-center space-y-3">
             <div>
-              <a href="#" class="text-gray-500 hover:text-gray-700 text-xs transition-colors">
+              <a
+                href="#"
+                class="text-gray-500 hover:text-gray-700 text-xs transition-colors"
+              >
                 {{ $t('login.forgotPassword') }}
               </a>
             </div>
