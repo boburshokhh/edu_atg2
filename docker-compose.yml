@@ -135,16 +135,16 @@ services:
       LDAP_TLS_CA_FILE: ${LDAP_TLS_CA_FILE:-}
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend_django:/app
+    # volumes:
+    #   - ./backend_django:/app  # Раскомментируйте для разработки
     networks:
       - edu_network
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 90s
 
   frontend:
     build:
