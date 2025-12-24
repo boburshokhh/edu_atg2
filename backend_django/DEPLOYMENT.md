@@ -108,8 +108,6 @@ docker-compose logs -f backend
 
 ```bash
 docker-compose exec backend python manage.py shell
-# или
-docker-compose exec backend python apply_sql.py
 ```
 
 ## Troubleshooting

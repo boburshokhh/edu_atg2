@@ -30,25 +30,9 @@ RUN pip install --no-cache-dir \
 # Copy project files
 COPY . .
 
-# Create entrypoint script
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-# Wait for postgres\n\
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1" > /dev/null 2>&1; do\n\
-  echo "Waiting for postgres..."\n\
-  sleep 1\n\
-done\n\
-\n\
-# Run migrations\n\
-python manage.py migrate --noinput || true\n\
-\n\
-# Collect static files\n\
-python manage.py collectstatic --noinput || true\n\
-\n\
-# Start server\n\
-exec gunicorn atg_backend.wsgi:application --bind 0.0.0.0:8000 --workers 4\n\
-' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# Copy and set permissions for entrypoint script
+COPY docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Expose port
 EXPOSE 8000

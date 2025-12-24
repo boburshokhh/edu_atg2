@@ -28,7 +28,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
-.venv
+.venv/
 
 # Django
 *.log
@@ -36,6 +36,7 @@ venv.bak/
 *.pyc
 db.sqlite3
 db.sqlite3-journal
+# Django static/media in project root (leading / means root of repo only)
 /media
 /staticfiles
 /static
@@ -72,6 +73,12 @@ htmlcov/
 .tox/
 .hypothesis/
 *.cover
+# Test scripts and utilities (not part of production code)
+test_*.py
+*_test.py
+*_tests.py
+test_minio_connection.py
+update_minio_credentials.py
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -84,9 +91,6 @@ ipython_config.py
 *.tmp
 *.temp
 *.bak
-*.swp
-*.swo
-*~
 
 # FFmpeg temporary files (if any)
 *.ts
@@ -101,24 +105,19 @@ ipython_config.py
 local_settings.py
 local_config.py
 
-# Media files (if stored locally)
+# Media files (if stored locally in backend_django root)
+# Note: These patterns match anywhere in backend_django/, not just root
 media/
 uploads/
 
-# Static files (if collected locally)
+# Static files (if collected locally in backend_django root)
+# Note: These patterns match anywhere in backend_django/, not just root
 staticfiles/
 static_root/
 
 # Celery
 celerybeat-schedule
 celerybeat.pid
-
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
-*.cover
 
 # mypy
 .mypy_cache/
