@@ -1,9 +1,7 @@
 // Service for managing stations via Django REST API
 
-// Unified API base:
-// - Dev: use Vite proxy via same-origin path (/api)
-// - Prod: use explicit URL (VITE_API_BASE_URL) or fall back to same-origin (/api)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+// Unified API base - always use /api proxy (works in both dev and prod)
+const API_BASE_URL = '/api'
 
 /**
  * Get authentication token from localStorage
@@ -591,7 +589,6 @@ class StationService {
     // Upload directly through Django backend (uses correct Minio credentials)
     // Use fetch directly instead of apiRequest to avoid Content-Type header issues with FormData
     const token = getAuthToken()
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
     const fullUrl = `${API_BASE_URL}/files/upload`
     
     const headers = {}

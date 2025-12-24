@@ -1,22 +1,15 @@
 // Authentication service with LDAP support via Django API
 
-// API base URL - use proxy in dev, explicit URL in prod
-// In dev mode, always use /api proxy to avoid CORS issues
-// In prod, use VITE_API_TARGET if set, otherwise /api
-const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development' || !import.meta.env.PROD
-const API_BASE_URL = isDev 
-  ? '/api'  // Always use proxy in dev mode - Vite will proxy to http://localhost:8000
-  : (import.meta.env.VITE_API_TARGET || import.meta.env.VITE_API_BASE_URL || '/api')
+// API base URL - always use /api proxy (works in both dev and prod)
+// In dev mode: Vite proxy handles /api -> http://localhost:8000
+// In prod: nginx proxy handles /api -> http://backend:8000 (or backend service name)
+const API_BASE_URL = '/api'
 
 const LOGIN_TIMEOUT_MS = Number(import.meta.env.VITE_LOGIN_TIMEOUT_MS || 8000)
 
 console.log('[Auth] Environment:', {
-  isDev,
   MODE: import.meta.env.MODE,
-  DEV: import.meta.env.DEV,
-  PROD: import.meta.env.PROD,
   API_BASE_URL,
-  VITE_API_TARGET: import.meta.env.VITE_API_TARGET,
   LOGIN_TIMEOUT_MS,
 })
 

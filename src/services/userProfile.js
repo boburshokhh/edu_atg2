@@ -1,10 +1,7 @@
 // User Profile Service for Django API
 
-// API base URL - use proxy in dev, explicit URL in prod
-const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development' || !import.meta.env.PROD
-const API_BASE_URL = isDev 
-  ? '/api'  
-  : (import.meta.env.VITE_API_TARGET || import.meta.env.VITE_API_BASE_URL || '/api')
+// API base URL - always use /api proxy (works in both dev and prod)
+const API_BASE_URL = '/api'
 
 /**
  * Get authentication token from localStorage

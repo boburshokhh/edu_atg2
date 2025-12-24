@@ -16,8 +16,8 @@ const MINIO_ENDPOINT = MINIO_ENDPOINT_RAW.replace(/\/+$/, '')
 const MINIO_BUCKET = import.meta.env.VITE_MINIO_BUCKET || 'atgedu'
 const DEFAULT_BUCKET = MINIO_BUCKET
 
-// Unified API base (same pattern as stationService)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+// Unified API base - always use /api proxy (works in both dev and prod)
+const API_BASE_URL = '/api'
 
 const encodeKeyPath = (key) => {
   const clean = (key || '').replace(/^\/+/, '')
