@@ -64,7 +64,7 @@ services:
       start_period: 30s
 
   minio-init:
-    image: minio/mc:RELEASE.2024-10-11T00-39-54Z
+    image: minio/mc:latest
     depends_on:
       - minio
     entrypoint: >
