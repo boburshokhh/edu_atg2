@@ -27,7 +27,7 @@ mv ~/edu_portal/data ~/edu_data_backup
 rm -rf ~/edu_portal
 
 # Клонировать репозиторий
-git clone <ваш-репозиторий> ~/edu_atg
+git clone https://github.com/boburshokhh/edu_atg2.git ~/edu_atg
 cd ~/edu_atg
 ```
 
