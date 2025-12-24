@@ -168,16 +168,31 @@ src/
 
 ### Docker
 
-```dockerfile
-FROM node:16-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "run", "preview"]
+Быстрый запуск всего стека:
+
+```bash
+# 1. Создайте .env файл из примера
+cp .env.example .env
+# Отредактируйте .env и установите свои пароли и секреты
+
+# 2. Соберите и запустите все сервисы
+docker compose build
+docker compose up -d
+
+# 3. Проверьте статус
+docker compose ps
+
+# 4. Просмотр логов
+docker compose logs -f backend
 ```
+
+Сервисы:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **MinIO Console**: http://localhost:9001
+- **PostgreSQL**: localhost:5432
+
+Подробная документация: `DOCKER_SETUP.md`
 
 ## 🤝 Вклад в проект
 

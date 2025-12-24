@@ -17,12 +17,13 @@
 
 3. **Запустите все сервисы:**
    ```bash
-   docker-compose up -d
+   docker compose build
+   docker compose up -d
    ```
 
 4. **Проверьте статус:**
    ```bash
-   docker-compose ps
+   docker compose ps
    ```
 
 ## Структура сервисов
@@ -32,10 +33,6 @@
 - Пользователь: `atg`
 - Пароль: из переменной `POSTGRES_PASSWORD` в `.env`
 - Автоматически создаются расширения и применяется схема БД
-
-### Redis (порт 6379)
-- Используется для кеширования (если нужно)
-- Данные сохраняются в volume `redisdata`
 
 ### MinIO (порты 9000, 9001)
 - API: http://localhost:9000
@@ -87,68 +84,67 @@ JWT_REFRESH_SECRET=your_jwt_refresh_secret
 ### Запуск
 ```bash
 # Запуск в фоновом режиме
-docker-compose up -d
+docker compose up -d
 
 # Запуск с выводом логов
-docker-compose up
+docker compose up
 ```
 
 ### Остановка
 ```bash
 # Остановка сервисов
-docker-compose stop
+docker compose stop
 
 # Остановка и удаление контейнеров
-docker-compose down
+docker compose down
 
 # Остановка с удалением volumes (⚠️ удалит данные!)
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Логи
 ```bash
 # Все сервисы
-docker-compose logs -f
+docker compose logs -f
 
 # Конкретный сервис
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f postgres
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f postgres
 ```
 
 ### Пересборка
 ```bash
 # Пересобрать все образы
-docker-compose build
+docker compose build
 
 # Пересобрать конкретный сервис
-docker-compose build backend
-docker-compose build frontend
+docker compose build backend
+docker compose build frontend
 
 # Пересобрать и перезапустить
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Выполнение команд в контейнерах
 ```bash
 # Django shell
-docker-compose exec backend python manage.py shell
+docker compose exec backend python manage.py shell
 
 # Django migrations
-docker-compose exec backend python manage.py migrate
+docker compose exec backend python manage.py migrate
 
 # Django createsuperuser (если используется)
-docker-compose exec backend python manage.py createsuperuser
+docker compose exec backend python manage.py createsuperuser
 
 # Bash в контейнере
-docker-compose exec backend bash
+docker compose exec backend bash
 ```
 
 ## Health Checks
 
 Все сервисы имеют health checks:
 - **PostgreSQL**: проверка готовности через `pg_isready`
-- **Redis**: проверка через `redis-cli ping`
 - **MinIO**: проверка через HTTP health endpoint
 - **Backend**: проверка через `/health` endpoint
 - **Frontend**: проверка доступности через `wget`
@@ -158,7 +154,6 @@ docker-compose exec backend bash
 Данные сохраняются в Docker volumes:
 - `pgdata` - данные PostgreSQL
 - `miniodata` - данные MinIO
-- `redisdata` - данные Redis
 
 Для просмотра volumes:
 ```bash
@@ -177,27 +172,27 @@ docker-compose exec minio-init /usr/bin/mc mirror local/atgedu /backup
 ## Troubleshooting
 
 ### Backend не запускается
-1. Проверьте логи: `docker-compose logs backend`
-2. Убедитесь, что PostgreSQL готов: `docker-compose ps postgres`
+1. Проверьте логи: `docker compose logs backend`
+2. Убедитесь, что PostgreSQL готов: `docker compose ps postgres`
 3. Проверьте переменные окружения в `.env`
 
 ### Frontend не подключается к API
-1. Проверьте, что backend запущен: `docker-compose ps backend`
+1. Проверьте, что backend запущен: `docker compose ps backend`
 2. Проверьте health endpoint: `curl http://localhost:8000/health`
 3. Проверьте nginx конфигурацию в `nginx.conf`
 
 ### MinIO bucket не создается
-1. Проверьте логи minio-init: `docker-compose logs minio-init`
+1. Проверьте логи minio-init: `docker compose logs minio-init`
 2. Убедитесь, что переменная `MINIO_BUCKET` установлена
 3. Проверьте доступ к MinIO console: http://localhost:9001
 
 ### Проблемы с миграциями
 ```bash
 # Выполнить миграции вручную
-docker-compose exec backend python manage.py migrate
+docker compose exec backend python manage.py migrate
 
 # Откатить миграции (если нужно)
-docker-compose exec backend python manage.py migrate app_name zero
+docker compose exec backend python manage.py migrate app_name zero
 ```
 
 ## Production настройки
