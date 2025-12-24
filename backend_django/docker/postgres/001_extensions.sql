@@ -10,3 +10,4 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 -- Enable unaccent for accent-insensitive search (if needed)
 CREATE EXTENSION IF NOT EXISTS "unaccent";
 
+

@@ -216,3 +216,4 @@ docker-compose exec backend python manage.py migrate app_name zero
 - Frontend конфигурация: `frontend.env`
 - Nginx конфигурация: `nginx.conf`
 
+

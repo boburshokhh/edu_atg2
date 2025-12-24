@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir \
     django \
     djangorestframework \
     django-cors-headers \
-    psycopg2-binary \
+    "psycopg[binary]" \
     boto3 \
     PyJWT \
     python-dotenv \
