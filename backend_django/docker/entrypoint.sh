@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -eu
+set -e
 
 echo "Waiting for Postgres..."
 python - <<'PY'
@@ -50,10 +50,22 @@ for i in range(max_attempts):
 PY
 
 echo "Running migrations..."
-python manage.py migrate --noinput || echo "Migrations failed or already applied"
+set +e
+python manage.py migrate --noinput
+MIGRATE_EXIT=$?
+set -e
+if [ $MIGRATE_EXIT -ne 0 ]; then
+    echo "WARNING: Migrations failed (exit code: $MIGRATE_EXIT), but continuing..."
+fi
 
 echo "Running database bootstrap..."
-python manage.py bootstrap_db || echo "Bootstrap failed or already done"
+set +e
+python manage.py bootstrap_db
+BOOTSTRAP_EXIT=$?
+set -e
+if [ $BOOTSTRAP_EXIT -ne 0 ]; then
+    echo "WARNING: Bootstrap failed (exit code: $BOOTSTRAP_EXIT), but continuing..."
+fi
 
 echo "Starting API server..."
 exec gunicorn atg_backend.wsgi:application \

@@ -10,8 +10,11 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file (if exists)
-COPY requirements.txt* ./
+# Copy backend_django files first (includes requirements.txt)
+COPY backend_django/ /app/
+
+# Copy migrations from repo root (for bootstrap_db)
+COPY migrations/ /app/migrations/
 
 # Install Python dependencies
 RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
@@ -28,11 +31,8 @@ RUN pip install --no-cache-dir \
     gunicorn \
     ldap3 || true
 
-# Copy project files
-COPY . .
-
 # Copy and set permissions for entrypoint script
-COPY docker/entrypoint.sh /app/entrypoint.sh
+COPY backend_django/docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Expose port
