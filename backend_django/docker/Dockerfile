@@ -10,16 +10,21 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better layer caching
-COPY backend_django/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code
-COPY backend_django/ /app/
+COPY . /app/
 
-# Copy migrations from repo root (for bootstrap_db)
-COPY migrations/ /app/migrations/
+# Copy migrations from repo root if they exist (for bootstrap_db)
+# Note: migrations should be in the parent directory when build context is backend_django
+# If migrations are in the same directory, this will work
+COPY ../migrations/ /app/migrations/ 2>/dev/null || true
+RUN if [ ! -d /app/migrations ] || [ -z "$(ls -A /app/migrations 2>/dev/null)" ]; then \
+      echo "Warning: migrations directory not found or empty"; \
+    fi
 
 # Set permissions for entrypoint script
 RUN chmod +x /app/docker/entrypoint.sh

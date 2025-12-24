@@ -34,7 +34,7 @@ Thumbs.db
 
 # Backend (exclude from frontend build)
 backend_django/
-migrations/
+# migrations/ - НЕ исключаем, нужны для backend build
 
 # Documentation
 docs/
