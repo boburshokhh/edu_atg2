@@ -29,7 +29,7 @@ export default defineConfig(() => {
   const env = loadKeyValueEnvFile(resolve(__dirname, 'frontend.env'))
   
   // Настройки бэкенда
-  const apiTarget = env.VITE_API_TARGET || 'http://localhost:8000'
+  const apiTarget = env.VITE_API_TARGET || 'http://192.168.32.100:8000'
   const minioTarget = env.VITE_MINIO_TARGET || 'http://192.168.32.100:9000'
 
   return {
