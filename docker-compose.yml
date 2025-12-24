@@ -71,8 +71,8 @@ services:
 
   backend:
     build:
-      context: ./backend_django
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: backend_django/docker/Dockerfile
     container_name: edu_backend
     restart: unless-stopped
     depends_on:

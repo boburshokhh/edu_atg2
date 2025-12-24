@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json - НЕ исключаем, нужен для npm ci в frontend build
 
 # Build outputs
 dist/
