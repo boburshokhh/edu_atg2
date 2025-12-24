@@ -60,6 +60,3 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
-
-# Backend Django folder
-backend_django/
