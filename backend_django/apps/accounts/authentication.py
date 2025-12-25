@@ -4,7 +4,7 @@ from django.utils import timezone
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from apps.accounts.jwt_utils import JwtError, verify_access
+from apps.accounts.jwt_utils import JwtError, verify_access, verify_pending_registration
 from apps.accounts.models import User, UserSession
 
 
@@ -104,4 +104,69 @@ class SessionTokenAuthentication(BaseAuthentication):
 
         request.session_token = token
         return (session.user, None)
+
+
+class PendingRegistrationAuthentication(BaseAuthentication):
+    """
+    Bearer <pending_registration_token>
+    Handles authentication for users who have authenticated via LDAP but haven't completed registration yet.
+    Creates a temporary User object from token data for use in registration endpoints.
+    """
+    
+    def authenticate(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        header = request.headers.get("Authorization") or ""
+        if not header.startswith("Bearer "):
+            return None
+        
+        token = header[len("Bearer ") :].strip()
+        if not token:
+            return None
+        
+        try:
+            payload = verify_pending_registration(token)
+        except JwtError:
+            logger.debug("[PendingRegAuth] Invalid pending registration token")
+            return None
+        
+        # Create a temporary User object from token data
+        # This user doesn't exist in DB yet, but we need it for registration endpoint
+        from apps.accounts.models import User as UserModel
+        from uuid import UUID
+        
+        # Generate a temporary UUID from username hash (deterministic)
+        import hashlib
+        username_hash = hashlib.md5(payload.get("username", "").encode()).hexdigest()
+        temp_id = UUID(f"00000000-0000-0000-0000-{username_hash[:12]}")
+        
+        # Create a temporary user object (not saved to DB)
+        temp_user = UserModel(
+            id=temp_id,
+            username=payload.get("username", "")[:50],
+            password="",  # Not used for pending registration
+            full_name=payload.get("full_name", "")[:100],
+            email=payload.get("email", "")[:100],
+            role=payload.get("role", "user"),
+            is_active=True,
+        )
+        
+        # Add is_authenticated property (required by DRF)
+        temp_user.is_authenticated = True
+        
+        # Store LDAP data in request for use in registration
+        request.pending_registration_data = {
+            "username": payload.get("username", ""),
+            "email": payload.get("email", ""),
+            "full_name": payload.get("full_name", ""),
+            "phone": payload.get("phone", ""),
+            "department": payload.get("department", ""),
+            "position": payload.get("position", ""),
+            "role": payload.get("role", "user"),
+            "token": token,
+        }
+        
+        logger.info(f"[PendingRegAuth] Authenticated pending registration for: {payload.get('username')}")
+        return (temp_user, None)
 

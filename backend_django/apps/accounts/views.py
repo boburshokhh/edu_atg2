@@ -10,10 +10,11 @@ from django.contrib.auth.hashers import make_password
 from django.db import models, transaction
 from django.http import JsonResponse
 from django.utils import timezone
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
 from rest_framework.views import APIView
 
-from apps.accounts.jwt_utils import JwtError, JwtUserPayload, sign_access, sign_refresh, verify_refresh
+from apps.accounts.jwt_utils import JwtError, JwtUserPayload, JwtPendingRegistrationPayload, sign_access, sign_refresh, verify_refresh, sign_pending_registration
+from apps.accounts.authentication import PendingRegistrationAuthentication, AccessJWTAuthentication, SessionTokenAuthentication
 from apps.accounts.models import User, UserProfile, UserSession
 from apps.accounts.serializers import (
     LoginSerializer,
@@ -24,6 +25,22 @@ from apps.accounts.serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class PendingRegistrationOrAuthenticated(BasePermission):
+    """Allow access for authenticated users or pending registration tokens"""
+    
+    def has_permission(self, request, view):
+        # Check if we have pending registration data (set by PendingRegistrationAuthentication)
+        if hasattr(request, 'pending_registration_data'):
+            return True
+        
+        # Check if user is authenticated (normal flow)
+        if request.user and hasattr(request.user, 'is_authenticated'):
+            if request.user.is_authenticated:
+                return True
+        
+        return False
 
 
 def _normalize_username(raw: str) -> str:
@@ -187,45 +204,63 @@ class LoginView(APIView):
                                 logger.warning(f"[LDAP] Could not backfill user profile: {profile_err}")
 
                         else:
-                            logger.info(f"[LDAP] Creating new user from LDAP: {username}")
-                            t_create0 = time.perf_counter()
-
-                            full_name = (ldap_user_info.get("full_name") or username or "")[:100]
-                            email = (ldap_email or f"{provided_username}@example.com")[:100]
-                            role = self._determine_role_from_ldap(ldap_user_info)
-
-                            user = User.objects.create(
+                            # User doesn't exist - don't create yet, store LDAP data in pending registration token
+                            logger.info(f"[LDAP] User not found in DB, creating pending registration token: {username}")
+                            
+                            # Prepare LDAP data for pending registration
+                            ldap_full_name = (ldap_user_info.get("full_name") or username or "")[:100]
+                            ldap_email_final = (ldap_email or f"{provided_username}@example.com")[:100]
+                            ldap_phone = (ldap_user_info.get("phone") or "")[:50]
+                            ldap_department = (ldap_user_info.get("department") or "")[:255]
+                            ldap_position = (ldap_user_info.get("position") or "")[:255]
+                            ldap_role = self._determine_role_from_ldap(ldap_user_info)
+                            
+                            # Create pending registration token with LDAP data
+                            pending_payload = JwtPendingRegistrationPayload(
                                 username=(canonical_username or provided_username)[:50],
-                                password=make_password(password),  # Store hashed password (legacy behavior)
-                                full_name=full_name,
-                                email=email,
-                                role=role,
-                                is_active=True,
+                                email=ldap_email_final,
+                                full_name=ldap_full_name,
+                                phone=ldap_phone,
+                                department=ldap_department,
+                                position=ldap_position,
+                                role=ldap_role
                             )
+                            
+                            pending_token, pending_sid = sign_pending_registration(pending_payload)
+                            
+                            # Store pending registration session (without user_id, since user doesn't exist yet)
+                            expires_at = timezone.now() + timedelta(seconds=settings.REFRESH_TTL_SEC)
+                            session_token = pending_token[:255] if pending_token else ""
+                            user_agent = request.META.get("HTTP_USER_AGENT", "") or ""
+                            user_agent = user_agent[:255] if user_agent else ""
+                            
+                            # Create a temporary session entry (we'll need to handle this differently)
+                            # For now, we'll return the token and let registration endpoint create the user
+                            
+                            logger.info(f"[LDAP] Created pending registration token for: {username}")
+                            
+                            # Return response with pending registration token
+                            response_data = {
+                                "token": pending_token,  # Use pending token as access token
+                                "refreshToken": pending_token,
+                                "user": {
+                                    "id": None,  # No user ID yet
+                                    "username": pending_payload.username,
+                                    "role": pending_payload.role,
+                                    "full_name": pending_payload.full_name,
+                                    "email": pending_payload.email,
+                                },
+                                "expiresIn": settings.ACCESS_TTL_SEC,
+                                "requires_registration": True,
+                                "pending_registration": True,  # Flag to indicate this is a pending registration
+                            }
+                            
                             logger.info(
-                                "[Perf][Login] step=db_create_user ms=%d username=%s",
-                                int((time.perf_counter() - t_create0) * 1000),
+                                "[Perf][Login] step=total ms=%d username=%s",
+                                int((time.perf_counter() - t0) * 1000),
                                 username,
                             )
-
-                            # Create profile with LDAP defaults (still incomplete until station/company is chosen).
-                            try:
-                                profile_full_name = (ldap_user_info.get("full_name") or username or "")[:255]
-                                profile_email = (ldap_email_raw or email or "")[:255]
-                                profile_phone = (ldap_user_info.get("phone") or "")[:50]
-                                profile_department = (ldap_user_info.get("department") or "")[:255]
-                                profile_position = (ldap_user_info.get("position") or "")[:255]
-
-                                UserProfile.objects.create(
-                                    id=user,
-                                    full_name=profile_full_name or None,
-                                    email=profile_email or None,
-                                    phone=profile_phone or None,
-                                    position=profile_position or None,
-                                    bio=profile_department or None,
-                                )
-                            except Exception as profile_err:
-                                logger.warning(f"[LDAP] Could not create user profile: {profile_err}")
+                            return JsonResponse(response_data)
                     else:
                         logger.info(f"[LDAP] Authentication failed for user: {username}")
                 except ImportError as e:
@@ -476,10 +511,33 @@ class MyProfileView(APIView):
 
 class RegisterProfileView(APIView):
     """View for first-time user registration (completing profile)"""
-    permission_classes = [IsAuthenticated]
+    authentication_classes = [
+        PendingRegistrationAuthentication,  # Check pending registration tokens first
+        SessionTokenAuthentication,  # Then check normal sessions
+        AccessJWTAuthentication,  # Then check JWT tokens
+    ]
+    permission_classes = [PendingRegistrationOrAuthenticated]
 
     def get(self, request):
         """Get existing profile data for editing"""
+        # Check if this is a pending registration
+        if hasattr(request, 'pending_registration_data'):
+            pending_data = request.pending_registration_data
+            logger.info(f"[Register] Getting profile data for pending registration: {pending_data.get('username')}")
+            
+            # Return LDAP data for pre-filling form
+            data = {
+                "full_name": pending_data.get("full_name", ""),
+                "email": pending_data.get("email", ""),
+                "phone": pending_data.get("phone", ""),
+                "station_id": None,
+                "position": pending_data.get("position", ""),
+                "department": pending_data.get("department", ""),
+            }
+            
+            logger.info(f"[Register] Returning pending registration data: {data}")
+            return JsonResponse({"data": data, "profile_complete": False})
+        
         user: User = request.user
         logger.info(f"[Register] Getting profile data for user: {user.username}")
         
@@ -540,7 +598,6 @@ class RegisterProfileView(APIView):
 
     def post(self, request):
         """Save user profile with required fields (full_name, phone, station_id, position)"""
-        user: User = request.user
         ser = RegisterProfileSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         
@@ -550,7 +607,94 @@ class RegisterProfileView(APIView):
         position = ser.validated_data["position"]  # Job title
         department = ser.validated_data["department"]
         
-        # Get email from user (from LDAP/auth, not from form)
+        # Check if this is a pending registration (user doesn't exist yet)
+        if hasattr(request, 'pending_registration_data'):
+            pending_data = request.pending_registration_data
+            logger.info(f"[Register] Creating new user from pending registration: {pending_data.get('username')}")
+            
+            # Get station name from database
+            try:
+                from apps.stations.models import Station
+                station = Station.objects.get(id=station_id)
+                company = station.name  # Use station name as company
+            except Station.DoesNotExist:
+                logger.error(f"[Register] Station with id {station_id} not found")
+                return JsonResponse({"error": "Station not found"}, status=400)
+            
+            # Get data from pending registration (LDAP)
+            username = pending_data.get("username", "")[:50]
+            email = pending_data.get("email", "")[:100]
+            ldap_full_name = pending_data.get("full_name", "")[:100]
+            ldap_phone = pending_data.get("phone", "")[:50]
+            ldap_department = pending_data.get("department", "")[:255]
+            ldap_position = pending_data.get("position", "")[:255]
+            role = pending_data.get("role", "user")
+            
+            # Use form data, fallback to LDAP data if form data is empty
+            final_full_name = (full_name or ldap_full_name or username)[:100]
+            final_phone = (phone or ldap_phone)[:50]
+            final_position = (position or ldap_position)[:255]
+            final_department = (department or ldap_department)[:255]
+            
+            with transaction.atomic():
+                # Create user (NOW, after registration form is filled)
+                user = User.objects.create(
+                    username=username,
+                    password=make_password(""),  # LDAP users don't need password in DB
+                    full_name=final_full_name,
+                    email=email,
+                    role=role,
+                    is_active=True,
+                )
+                logger.info(f"[Register] Created user: {user.id} username={user.username}")
+                
+                # Create user profile
+                UserProfile.objects.create(
+                    id=user,
+                    full_name=final_full_name[:255],
+                    email=email[:255],
+                    phone=final_phone,
+                    company=company,
+                    position=final_position,
+                    bio=final_department,
+                )
+                
+                # Create session for the newly created user
+                payload = JwtUserPayload(sub=str(user.id), username=user.username, role=user.role)
+                access_token = sign_access(payload)
+                refresh_token, _sid = sign_refresh(payload)
+                
+                expires_at = timezone.now() + timedelta(seconds=settings.REFRESH_TTL_SEC)
+                session_token = refresh_token[:255] if refresh_token else ""
+                user_agent = request.META.get("HTTP_USER_AGENT", "") or ""
+                user_agent = user_agent[:255] if user_agent else ""
+                
+                UserSession.objects.create(
+                    id=_sid,
+                    user=user,
+                    session_token=session_token,
+                    expires_at=expires_at,
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                    user_agent=user_agent,
+                )
+                
+                logger.info(f"[Register] Profile and user created successfully: {user.username}")
+                return JsonResponse({
+                    "success": True,
+                    "message": "Profile registered successfully",
+                    "token": access_token,  # Return new token for the created user
+                    "refreshToken": refresh_token,
+                    "user": {
+                        "id": str(user.id),
+                        "username": user.username,
+                        "role": user.role,
+                        "full_name": user.full_name,
+                        "email": user.email,
+                    }
+                })
+        
+        # Existing user flow (update existing profile)
+        user: User = request.user
         email = user.email or f'{user.username}@example.com'
         
         # Get station name from database
