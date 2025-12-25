@@ -60,6 +60,9 @@ services:
       - minio
     ports:
       - "8000:8000"
+    # LDAP server DNS resolution (replace XXX.XXX.XXX.XXX with actual IP of DC03.atg.uz)
+    extra_hosts:
+      - "DC03.atg.uz:192.168.32.XXX"  # TODO: Replace XXX with actual LDAP server IP
 
   frontend:
     build:
