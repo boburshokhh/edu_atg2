@@ -15,18 +15,6 @@ class JwtUserPayload:
     role: str
 
 
-@dataclass(frozen=True)
-class JwtPendingRegistrationPayload:
-    """Payload for users who authenticated via LDAP but haven't completed registration yet"""
-    username: str
-    email: str
-    full_name: str
-    phone: str
-    department: str
-    position: str
-    role: str
-
-
 class JwtError(Exception):
     pass
 
@@ -80,40 +68,6 @@ def verify_refresh(token: str) -> dict:
     except jwt.PyJWTError as e:
         raise JwtError("Invalid token") from e
     if data.get("type") != "refresh":
-        raise JwtError("Invalid token type")
-    if not data.get("sid"):
-        raise JwtError("Missing sid")
-    return data
-
-
-def sign_pending_registration(payload: JwtPendingRegistrationPayload) -> tuple[str, str]:
-    """Create a temporary token for users who need to complete registration"""
-    now = _now()
-    sid = str(uuid.uuid4())
-    body = {
-        "username": payload.username,
-        "email": payload.email,
-        "full_name": payload.full_name,
-        "phone": payload.phone,
-        "department": payload.department,
-        "position": payload.position,
-        "role": payload.role,
-        "sid": sid,
-        "type": "pending_registration",
-        "iat": now,
-        "exp": now + settings.REFRESH_TTL_SEC,  # Same TTL as refresh token
-    }
-    token = jwt.encode(body, settings.JWT_REFRESH_SECRET, algorithm="HS256")
-    return token, sid
-
-
-def verify_pending_registration(token: str) -> dict:
-    """Verify a pending registration token"""
-    try:
-        data = jwt.decode(token, settings.JWT_REFRESH_SECRET, algorithms=["HS256"])
-    except jwt.PyJWTError as e:
-        raise JwtError("Invalid token") from e
-    if data.get("type") != "pending_registration":
         raise JwtError("Invalid token type")
     if not data.get("sid"):
         raise JwtError("Missing sid")

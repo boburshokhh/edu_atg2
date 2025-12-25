@@ -84,6 +84,29 @@ class UserSession(models.Model):
         managed = False
 
 
+class LdapTempSession(models.Model):
+    """
+    Temporary LDAP session used during first-time registration.
+    Records are created on successful LDAP bind when the user does NOT exist in `users` yet.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    ldap_email = models.CharField(max_length=100)
+    ldap_username = models.CharField(max_length=50)
+    ldap_full_name = models.CharField(max_length=100, null=True, blank=True)
+    ldap_phone = models.CharField(max_length=50, null=True, blank=True)
+    ldap_department = models.CharField(max_length=255, null=True, blank=True)
+    ldap_position = models.CharField(max_length=255, null=True, blank=True)
+    ldap_groups = models.JSONField(null=True, blank=True)
+    session_token = models.TextField(unique=True)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "ldap_temp_sessions"
+        managed = False
+
+
 
 
 

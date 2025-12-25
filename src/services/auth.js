@@ -100,18 +100,14 @@ class AuthService {
       this.refreshToken = data.refreshToken
       this.sessionToken = data.refreshToken // Для совместимости
       
-      // Проверяем, является ли это pending registration (пользователь еще не создан)
-      const isPendingRegistration = data.pending_registration || false
-      
       // Формируем объект пользователя
       const user = {
-        id: data.user.id || null,  // Может быть null для pending registration
+        id: data.user.id,
         username: data.user.username,
         role: data.user.role,
         full_name: data.user.full_name || data.user.username,
         email: data.user.email || `${data.user.username}@example.com`,
-        is_active: true,
-        pending_registration: isPendingRegistration
+        is_active: true
       }
 
       // Сохраняем данные в localStorage
@@ -125,8 +121,7 @@ class AuthService {
         user: user,
         token: this.accessToken,
         refreshToken: this.refreshToken,
-        requires_registration: data.requires_registration || false,  // Флаг необходимости регистрации
-        pending_registration: isPendingRegistration  // Флаг pending registration
+        requires_registration: data.requires_registration || false  // Флаг необходимости регистрации
       }
 
     } catch (error) {

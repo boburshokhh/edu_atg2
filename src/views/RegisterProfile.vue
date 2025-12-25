@@ -411,23 +411,16 @@ export default {
         }
         
         const data = await response.json()
-        
-        // Если регистрация создала нового пользователя, обновляем токены
-        if (data.token && data.refreshToken && data.user) {
-          console.log('[RegisterProfile] Updating tokens after user creation')
+
+        // If backend returns fresh tokens (temp LDAP -> real user), update local auth state
+        if (data && data.token && data.refreshToken && data.user) {
           authService.accessToken = data.token
           authService.refreshToken = data.refreshToken
-          authService.currentUser = {
-            id: data.user.id,
-            username: data.user.username,
-            role: data.user.role,
-            full_name: data.user.full_name || data.user.username,
-            email: data.user.email || `${data.user.username}@example.com`,
-            is_active: true
-          }
+          authService.sessionToken = data.refreshToken
+          authService.currentUser = data.user
           localStorage.setItem('auth_token', data.token)
           localStorage.setItem('refresh_token', data.refreshToken)
-          localStorage.setItem('user', JSON.stringify(authService.currentUser))
+          localStorage.setItem('user', JSON.stringify(data.user))
         }
         
         ElMessage.success({
