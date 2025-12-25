@@ -6,9 +6,9 @@ import { LRUCache } from '@/utils/performance'
 
 // Конфигурация
 // IMPORTANT:
-// - We DO NOT upload directly from browser with S3 credentials (security + misconfig).
-// - We use Django backend endpoints to generate presigned URLs (/api/files/*).
-// - In dev we still SERVE through Vite proxy (/api/minio) via getFrontendUrl().
+// - Browser works with MinIO ONLY through frontend proxy (/api/minio) to avoid CORS
+//   and to keep Host header stable for presigned URLs.
+// - Backend talks to MinIO by container name: http://minio:9000
 const MINIO_ENDPOINT_RAW =
   import.meta.env.VITE_MINIO_ENDPOINT ||
   'http://192.168.32.100:9000'
@@ -16,7 +16,7 @@ const MINIO_ENDPOINT = MINIO_ENDPOINT_RAW.replace(/\/+$/, '')
 const MINIO_BUCKET = import.meta.env.VITE_MINIO_BUCKET || 'atgedu'
 const DEFAULT_BUCKET = MINIO_BUCKET
 
-// Unified API base - always use /api proxy (works in both dev and prod)
+// Unified API base - always use /api (frontend nginx proxies to backend)
 const API_BASE_URL = '/api'
 
 const encodeKeyPath = (key) => {
@@ -100,12 +100,9 @@ export const formatFileSize = (bytes) => {
 // Получение URL с кэшированием
 const getFrontendUrl = (url) => {
   if (typeof window === 'undefined') return url
-  
-  const isDev = import.meta.env.DEV
-  if (isDev && url.includes(MINIO_ENDPOINT)) {
+  if (url && url.includes(MINIO_ENDPOINT)) {
     return url.replace(MINIO_ENDPOINT, '/api/minio')
   }
-  
   return url
 }
 
