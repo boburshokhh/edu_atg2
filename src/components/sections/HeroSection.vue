@@ -15,16 +15,12 @@
         :fade-effect="{ crossFade: true }"
         class="w-full h-full"
       >
-        <swiper-slide
-          v-for="(imageUrl, index) in stationImages"
-          :key="index"
-        >
+        <swiper-slide>
           <div class="w-full h-full relative">
             <img 
-              :src="imageUrl || fallbackImageUrl" 
-              :alt="`Станция ${index + 1}`"
+              :src="fallbackImageUrl" 
+              alt="ATG Education Platform"
               class="w-full h-full object-cover"
-              @error="imageError"
             >
             <!-- Градиентный оверлей как в StationDetail -->
             <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-gray-900/90" />
@@ -120,13 +116,12 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, EffectFade } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/effect-fade'
 import 'swiper/css/autoplay'
-import minioService from '@/services/minioService'
 
 export default {
   name: 'HeroSection',
@@ -135,67 +130,7 @@ export default {
     SwiperSlide
   },
   setup() {
-    // Список изображений станций
-    const stationImageNames = [
-      'WKC1.jpg',
-      'WKC2.jpg',
-      'WKC3.jpg',
-      'UCS1.jpg',
-      'UCS3.jpg',
-      'GCS.jpg',
-      'MS.jpg',
-      'UKMS.jpg'
-    ]
-    
-    const stationImages = ref([])
-    const fallbackImageUrl = ref('/slider/photo_2025-10-16_14-31-39.jpg') // Fallback изображение
-
-    // Загрузить все изображения станций из MinIO
-    const loadStationImages = async () => {
-      try {
-        const promises = stationImageNames.map(async (imageName) => {
-          const objectName = `stations/${imageName}`
-          try {
-            // Получаем presigned URL (действителен 7 дней)
-            const url = await minioService.getPresignedDownloadUrl(
-              objectName, 
-              7 * 24 * 60 * 60, // 7 дней в секундах
-              'image/jpeg'
-            )
-            return url
-          } catch (error) {
-            console.error(`Ошибка загрузки изображения ${imageName}:`, error)
-            // Fallback к прямому URL
-            try {
-              return minioService.getFileUrl(objectName)
-            } catch (fallbackError) {
-              console.error(`Ошибка получения fallback URL для ${imageName}:`, fallbackError)
-              return null
-            }
-          }
-        })
-        
-        const urls = await Promise.all(promises)
-        // Фильтруем null значения и добавляем fallback для пустых
-        stationImages.value = urls.map(url => url || fallbackImageUrl.value)
-        
-        // Если ни одно изображение не загрузилось, используем fallback
-        if (stationImages.value.length === 0 || stationImages.value.every(url => !url)) {
-          stationImages.value = [fallbackImageUrl.value]
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки изображений станций:', error)
-        // Используем fallback
-        stationImages.value = [fallbackImageUrl.value]
-      }
-    }
-
-    const imageError = (event) => {
-      // Если изображение не загрузилось, используем fallback
-      if (event.target.src !== fallbackImageUrl.value) {
-        event.target.src = fallbackImageUrl.value
-      }
-    }
+    const fallbackImageUrl = ref('/slider/photo_2025-10-16_14-31-39.jpg')
 
     const scrollToAbout = () => {
       const aboutSection = document.getElementById('about')
@@ -204,17 +139,10 @@ export default {
       }
     }
 
-    // Загружаем изображения при монтировании компонента
-    onMounted(() => {
-      loadStationImages()
-    })
-
     return {
       modules: [Autoplay, EffectFade],
-      stationImages,
       fallbackImageUrl,
-      scrollToAbout,
-      imageError
+      scrollToAbout
     }
   }
 }

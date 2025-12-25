@@ -61,9 +61,10 @@ class LDAPAuthenticator:
             except (ValueError, TypeError):
                 return default
         
-        self.connect_timeout = safe_int(getattr(settings, 'LDAP_CONNECT_TIMEOUT_SEC', None), 3)
-        self.receive_timeout = safe_int(getattr(settings, 'LDAP_RECEIVE_TIMEOUT_SEC', None), 3)
-        self.search_time_limit = safe_int(getattr(settings, 'LDAP_SEARCH_TIME_LIMIT_SEC', None), 5)
+        # Settings.py already provides defaults; these are fallback defaults only.
+        self.connect_timeout = safe_int(getattr(settings, 'LDAP_CONNECT_TIMEOUT_SEC', None), 10)
+        self.receive_timeout = safe_int(getattr(settings, 'LDAP_RECEIVE_TIMEOUT_SEC', None), 10)
+        self.search_time_limit = safe_int(getattr(settings, 'LDAP_SEARCH_TIME_LIMIT_SEC', None), 10)
         
         # Parse server URL
         self._parse_server_url()

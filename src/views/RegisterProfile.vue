@@ -100,6 +100,26 @@
               </el-input>
             </el-form-item>
 
+            <!-- Email -->
+            <el-form-item
+              prop="email"
+              class="mb-5"
+            >
+              <el-input
+                v-model="form.email"
+                placeholder="Email"
+                size="large"
+                class="login-input"
+                @keyup.enter="handleSubmit"
+              >
+                <template #prefix>
+                  <el-icon class="input-icon">
+                    <Message />
+                  </el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+
             <!-- Номер телефона -->
             <el-form-item
               prop="phone"
@@ -223,7 +243,7 @@
 <script>
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Phone, OfficeBuilding, Briefcase } from '@element-plus/icons-vue'
+import { User, Phone, OfficeBuilding, Briefcase, Message } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import authService from '@/services/auth'
 import stationService from '@/services/stationService'
@@ -239,6 +259,7 @@ export default {
     
     const form = reactive({
       full_name: '',
+      email: '',
       phone: '',
       station_id: null,
       position: '',
@@ -250,6 +271,10 @@ export default {
         { required: true, message: 'ФИО обязательно для заполнения', trigger: 'blur' },
         { min: 2, message: 'ФИО должно содержать минимум 2 символа', trigger: 'blur' }
       ],
+      email: [
+        { required: true, message: 'Email обязателен для заполнения', trigger: 'blur' },
+        { type: 'email', message: 'Введите корректный Email', trigger: 'blur' }
+      ],
       phone: [
         { required: true, message: 'Номер телефона обязателен для заполнения', trigger: 'blur' },
         { min: 5, message: 'Номер телефона должен содержать минимум 5 символов', trigger: 'blur' }
@@ -260,6 +285,10 @@ export default {
       position: [
         { required: true, message: 'Должность обязательна для заполнения', trigger: 'blur' },
         { min: 2, message: 'Должность должна содержать минимум 2 символа', trigger: 'blur' }
+      ],
+      department: [
+        { required: true, message: 'Департамент обязателен для заполнения', trigger: 'blur' },
+        { min: 2, message: 'Департамент должен содержать минимум 2 символа', trigger: 'blur' }
       ]
     }
     
@@ -318,6 +347,10 @@ export default {
               form.full_name = result.data.full_name
               console.log('[RegisterProfile] Set full_name:', result.data.full_name)
             }
+            if (result.data.email) {
+              form.email = result.data.email
+              console.log('[RegisterProfile] Set email:', result.data.email)
+            }
             if (result.data.phone) {
               form.phone = result.data.phone
               console.log('[RegisterProfile] Set phone:', result.data.phone)
@@ -347,6 +380,7 @@ export default {
             
             console.log('[RegisterProfile] Form data after load:', {
               full_name: form.full_name,
+              email: form.email,
               phone: form.phone,
               station_id: form.station_id,
               position: form.position,
@@ -394,6 +428,7 @@ export default {
           },
           body: JSON.stringify({
             full_name: form.full_name.trim(),
+            email: form.email.trim(),
             phone: form.phone.trim(),
             station_id: form.station_id,
             position: form.position.trim(),
@@ -462,6 +497,7 @@ export default {
       handleSubmit,
       handleCancel,
       User,
+      Message,
       Phone,
       OfficeBuilding,
       Briefcase

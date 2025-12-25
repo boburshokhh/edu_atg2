@@ -25,13 +25,59 @@ class PresignDownloadView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         key = request.query_params.get("key")
         if not key:
             return JsonResponse({"error": "Missing key"}, status=400)
-        content_type = request.query_params.get("contentType") or None
-        expires_in = int(request.query_params.get("expiresIn") or 60 * 60 * 24 * 7)
-        url = presign_get(key, expires_in=expires_in, response_content_type=content_type)
-        return JsonResponse({"url": url})
+        
+        # Normalize key: remove leading slashes
+        key = key.lstrip("/")
+        
+        try:
+            content_type = request.query_params.get("contentType") or None
+            expires_in = int(request.query_params.get("expiresIn") or 60 * 60 * 24 * 7)
+            
+            # Validate expires_in to prevent too large values
+            if expires_in > 60 * 60 * 24 * 7:  # Max 7 days
+                expires_in = 60 * 60 * 24 * 7
+            
+            logger.debug(f"[Presign] Generating presigned URL for key: {key}, expires_in: {expires_in}")
+            url = presign_get(key, expires_in=expires_in, response_content_type=content_type)
+            
+            if not url:
+                logger.error(f"[Presign] Failed to generate presigned URL for key: {key}")
+                return JsonResponse({"error": "Failed to generate presigned URL"}, status=500)
+            
+            logger.debug(f"[Presign] Successfully generated presigned URL for key: {key}")
+            return JsonResponse({"url": url})
+            
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            message = (e.response.get("Error") or {}).get("Message", "Unknown error")
+            logger.error(f"[Presign] MinIO ClientError for key {key}: {code} - {message}")
+            
+            if code in ("NoSuchKey", "404", "NotFound"):
+                return JsonResponse({"error": "File not found"}, status=404)
+            elif code == "InvalidAccessKeyId":
+                return JsonResponse({
+                    "error": "MinIO configuration error. Please check MINIO_ACCESS_KEY and MINIO_SECRET_KEY."
+                }, status=500)
+            elif code == "SignatureDoesNotMatch":
+                return JsonResponse({
+                    "error": "MinIO authentication error. Please check MINIO_SECRET_KEY."
+                }, status=500)
+            else:
+                return JsonResponse({"error": f"MinIO error: {code} - {message}"}, status=500)
+                
+        except ValueError as e:
+            logger.error(f"[Presign] Invalid parameter for key {key}: {e}")
+            return JsonResponse({"error": f"Invalid parameter: {str(e)}"}, status=400)
+            
+        except Exception as e:
+            logger.exception(f"[Presign] Unexpected error for key {key}: {e}")
+            return JsonResponse({"error": "Internal server error"}, status=500)
 
 
 class PresignUploadView(APIView):

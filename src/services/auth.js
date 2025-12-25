@@ -5,7 +5,9 @@
 // In prod: nginx proxy handles /api -> http://backend:8000 (or backend service name)
 const API_BASE_URL = '/api'
 
-const LOGIN_TIMEOUT_MS = Number(import.meta.env.VITE_LOGIN_TIMEOUT_MS || 8000)
+// Default was 8s which is often too short for LDAP in real networks.
+// Can be overridden via VITE_LOGIN_TIMEOUT_MS (milliseconds).
+const LOGIN_TIMEOUT_MS = Number(import.meta.env.VITE_LOGIN_TIMEOUT_MS || 25000)
 
 console.log('[Auth] Environment:', {
   MODE: import.meta.env.MODE,

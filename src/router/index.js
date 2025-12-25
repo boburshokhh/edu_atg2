@@ -120,6 +120,34 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && !authResult.isAuthenticated) {
     // Пользователь не авторизован, перенаправляем на страницу входа
     next('/login')
+  } else if (to.path === '/register' && authResult.isAuthenticated) {
+    // Не показываем страницу регистрации повторно, если профиль уже заполнен
+    try {
+      const token = localStorage.getItem('auth_token')
+      if (token) {
+        const resp = await fetch('/api/auth/register-profile', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        if (resp.ok) {
+          const data = await resp.json()
+          if (data && data.profile_complete) {
+            if (authService.isInstructor()) {
+              next('/dashboard')
+            } else {
+              next('/station/1/lesson/0/0')
+            }
+            return
+          }
+        }
+      }
+    } catch (e) {
+      // Если проверка не удалась, просто показываем страницу регистрации
+    }
+    next()
   } else if (to.meta.requiresAdmin && !authService.isAdmin()) {
     // Требуются права администратора, но их нет
     ElMessage.error('Доступ запрещен. Требуются права администратора.')

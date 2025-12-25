@@ -30,10 +30,52 @@ def s3_client():
 
 
 def presign_get(key: str, expires_in: int = 60 * 60 * 24 * 7, response_content_type: str | None = None) -> str:
-    params: dict = {"Bucket": settings.MINIO_BUCKET, "Key": key}
-    if response_content_type:
-        params["ResponseContentType"] = response_content_type
-    return s3_client().generate_presigned_url("get_object", Params=params, ExpiresIn=expires_in)
+    """
+    Generate presigned URL for downloading object from MinIO.
+    
+    Args:
+        key: Object key in MinIO bucket
+        expires_in: URL expiration time in seconds (default: 7 days)
+        response_content_type: Optional content type override
+        
+    Returns:
+        Presigned URL string
+        
+    Raises:
+        ClientError: If MinIO operation fails
+        ValueError: If key is empty or invalid
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if not key or not key.strip():
+        raise ValueError("Key cannot be empty")
+    
+    # Normalize key: remove leading slashes
+    key = key.lstrip("/")
+    
+    try:
+        params: dict = {"Bucket": settings.MINIO_BUCKET, "Key": key}
+        if response_content_type:
+            params["ResponseContentType"] = response_content_type
+        
+        # Validate expires_in
+        if expires_in <= 0:
+            expires_in = 60 * 60 * 24 * 7  # Default to 7 days
+        if expires_in > 60 * 60 * 24 * 7:  # Max 7 days
+            expires_in = 60 * 60 * 24 * 7
+        
+        client = s3_client()
+        url = client.generate_presigned_url("get_object", Params=params, ExpiresIn=expires_in)
+        
+        if not url:
+            logger.error(f"[presign_get] Failed to generate URL for key: {key}")
+            raise ValueError("Failed to generate presigned URL")
+        
+        return url
+    except Exception as e:
+        logger.error(f"[presign_get] Error generating presigned URL for key {key}: {e}")
+        raise
 
 
 def presign_put(key: str, content_type: str | None = None, expires_in: int = 900) -> str:

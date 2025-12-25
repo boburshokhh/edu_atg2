@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import timedelta
+from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
@@ -23,6 +24,45 @@ from apps.accounts.serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_username(raw: str) -> str:
+    """
+    Normalize login identifier to a stable username key.
+    Supports inputs like:
+    - user@domain.com -> user
+    - DOMAIN\\user -> user
+    - user -> user
+    """
+    if not raw:
+        return ""
+    name = raw.strip()
+    if "@" in name:
+        name = name.split("@", 1)[0]
+    if "\\" in name:
+        name = name.split("\\")[-1]
+    return name.strip()
+
+
+def _profile_is_complete(user: User, profile: Optional[UserProfile]) -> bool:
+    """
+    Registration completion criteria:
+    - full_name (either in profile or in users table)
+    - email (either in profile or in users table)
+    - phone (profile)
+    - company/station (profile.company)
+    - position (profile.position)
+    """
+    if not profile:
+        return False
+
+    full_name = (profile.full_name or user.full_name or "").strip()
+    email = (profile.email or user.email or "").strip()
+    phone = (profile.phone or "").strip()
+    company = (profile.company or "").strip()
+    position = (profile.position or "").strip()
+
+    return bool(full_name and email and phone and company and position)
 
 
 class LoginView(APIView):
@@ -56,29 +96,52 @@ class LoginView(APIView):
                         logger.info(f"[LDAP] Authentication successful for user: {username}")
                         # LDAP authentication successful
                         # Try to get or create user in database
-                        try:
-                            t_db0 = time.perf_counter()
-                            user = User.objects.get(username=username, is_active=True)
-                            logger.info(
-                                "[Perf][Login] step=db_get_user ms=%d username=%s",
-                                int((time.perf_counter() - t_db0) * 1000),
-                                username,
-                            )
-                            logger.info(f"[LDAP] Found existing user in DB: {username}")
-                            # Update user info from LDAP if needed
+                        t_db0 = time.perf_counter()
+
+                        ldap_email_raw = (ldap_user_info.get("email") or "").strip()
+                        ldap_email = ldap_email_raw[:100] if ldap_email_raw else ""
+
+                        canonical_username = (_normalize_username(username) or username or "").strip()[:50]
+                        provided_username = (username or "").strip()[:50]
+
+                        # Find by email first (prevents duplicate users when login identifier changes).
+                        user = None
+                        if ldap_email:
+                            user = User.objects.filter(email__iexact=ldap_email, is_active=True).first()
+                        if not user and provided_username:
+                            user = User.objects.filter(username=provided_username, is_active=True).first()
+                        if not user and canonical_username and canonical_username != provided_username:
+                            user = User.objects.filter(username=canonical_username, is_active=True).first()
+
+                        logger.info(
+                            "[Perf][Login] step=db_find_user ms=%d username=%s found=%s",
+                            int((time.perf_counter() - t_db0) * 1000),
+                            username,
+                            bool(user),
+                        )
+
+                        if user:
+                            logger.info(f"[LDAP] Found existing user in DB: id={user.id} username={user.username}")
+
+                            desired_username = canonical_username or provided_username
                             update_fields = []
-                            if ldap_user_info.get('full_name') and not user.full_name:
-                                # Truncate to max 100 chars (User.full_name constraint)
-                                full_name = ldap_user_info['full_name'][:100]
-                                user.full_name = full_name
-                                update_fields.append('full_name')
-                            if ldap_user_info.get('email') and not user.email:
-                                # Truncate to max 100 chars (User.email constraint)
-                                email = ldap_user_info['email'][:100]
-                                user.email = email
-                                update_fields.append('email')
+
+                            # Best-effort: normalize stored username (no-op if it would conflict).
+                            if desired_username and user.username != desired_username:
+                                if not User.objects.filter(username=desired_username).exclude(id=user.id).exists():
+                                    user.username = desired_username
+                                    update_fields.append("username")
+
+                            if ldap_user_info.get("full_name") and not (user.full_name and user.full_name.strip()):
+                                user.full_name = (ldap_user_info.get("full_name") or "")[:100]
+                                update_fields.append("full_name")
+
+                            if ldap_email and not (user.email and user.email.strip()):
+                                user.email = ldap_email
+                                update_fields.append("email")
+
                             if update_fields:
-                                update_fields.append('updated_at')
+                                update_fields.append("updated_at")
                                 t_save0 = time.perf_counter()
                                 user.save(update_fields=update_fields)
                                 logger.info(
@@ -87,53 +150,79 @@ class LoginView(APIView):
                                     username,
                                     ",".join(update_fields),
                                 )
-                        except User.DoesNotExist:
+
+                            # Backfill profile with LDAP defaults (only if missing).
+                            try:
+                                profile = UserProfile.objects.filter(id=user.id).first()
+                                ldap_full_name = (ldap_user_info.get("full_name") or user.full_name or user.username or "")[:255]
+                                ldap_profile_email = (ldap_email_raw or user.email or "")[:255]
+                                ldap_phone = (ldap_user_info.get("phone") or "")[:50]
+                                ldap_department = (ldap_user_info.get("department") or "")[:255]
+                                ldap_position = (ldap_user_info.get("position") or "")[:255]
+
+                                if not profile:
+                                    UserProfile.objects.create(
+                                        id=user,
+                                        full_name=ldap_full_name or None,
+                                        email=ldap_profile_email or None,
+                                        phone=ldap_phone or None,
+                                        position=ldap_position or None,
+                                        bio=ldap_department or None,
+                                    )
+                                else:
+                                    profile_updates = {}
+                                    if ldap_full_name and not (profile.full_name and profile.full_name.strip()):
+                                        profile_updates["full_name"] = ldap_full_name
+                                    if ldap_profile_email and not (profile.email and profile.email.strip()):
+                                        profile_updates["email"] = ldap_profile_email
+                                    if ldap_phone and not (profile.phone and profile.phone.strip()):
+                                        profile_updates["phone"] = ldap_phone
+                                    if ldap_position and not (profile.position and profile.position.strip()):
+                                        profile_updates["position"] = ldap_position
+                                    if ldap_department and not (profile.bio and profile.bio.strip()):
+                                        profile_updates["bio"] = ldap_department
+                                    if profile_updates:
+                                        UserProfile.objects.filter(id=user.id).update(**profile_updates)
+                            except Exception as profile_err:
+                                logger.warning(f"[LDAP] Could not backfill user profile: {profile_err}")
+
+                        else:
                             logger.info(f"[LDAP] Creating new user from LDAP: {username}")
-                            # Create new user from LDAP
                             t_create0 = time.perf_counter()
-                            # Truncate values to fit database constraints
-                            full_name = ldap_user_info.get('full_name', username) or username
-                            email = ldap_user_info.get('email', f'{username}@example.com') or f'{username}@example.com'
-                            # User model constraints: full_name max 100, email max 100, username max 50
-                            full_name = full_name[:100] if full_name else username[:50]
-                            email = email[:100] if email else f'{username[:47]}@example.com'
-                            username_truncated = username[:50]  # Username max 50 chars
-                            
+
+                            full_name = (ldap_user_info.get("full_name") or username or "")[:100]
+                            email = (ldap_email or f"{provided_username}@example.com")[:100]
+                            role = self._determine_role_from_ldap(ldap_user_info)
+
                             user = User.objects.create(
-                                username=username_truncated,
-                                password=make_password(password),  # Store hashed password
+                                username=(canonical_username or provided_username)[:50],
+                                password=make_password(password),  # Store hashed password (legacy behavior)
                                 full_name=full_name,
                                 email=email,
-                                role=self._determine_role_from_ldap(ldap_user_info),
-                                is_active=True
+                                role=role,
+                                is_active=True,
                             )
                             logger.info(
                                 "[Perf][Login] step=db_create_user ms=%d username=%s",
                                 int((time.perf_counter() - t_create0) * 1000),
                                 username,
                             )
-                            # Create user profile
+
+                            # Create profile with LDAP defaults (still incomplete until station/company is chosen).
                             try:
-                                t_profile0 = time.perf_counter()
-                                # UserProfile allows up to 255 chars, but truncate to be safe
-                                profile_full_name = (ldap_user_info.get('full_name', username) or username)[:255]
-                                profile_email = (ldap_user_info.get('email', f'{username}@example.com') or f'{username}@example.com')[:255]
-                                profile_phone = (ldap_user_info.get('phone', '') or '')[:50]
-                                profile_department = (ldap_user_info.get('department', '') or '')[:255]
-                                profile_position = (ldap_user_info.get('position', '') or '')[:255]
-                                
+                                profile_full_name = (ldap_user_info.get("full_name") or username or "")[:255]
+                                profile_email = (ldap_email_raw or email or "")[:255]
+                                profile_phone = (ldap_user_info.get("phone") or "")[:50]
+                                profile_department = (ldap_user_info.get("department") or "")[:255]
+                                profile_position = (ldap_user_info.get("position") or "")[:255]
+
                                 UserProfile.objects.create(
                                     id=user,
-                                    full_name=profile_full_name,
-                                    email=profile_email,
-                                    phone=profile_phone,
-                                    position=profile_position,
-                                    bio=profile_department,  # Используем bio для хранения department
-                                )
-                                logger.info(
-                                    "[Perf][Login] step=db_create_profile ms=%d username=%s",
-                                    int((time.perf_counter() - t_profile0) * 1000),
-                                    username,
+                                    full_name=profile_full_name or None,
+                                    email=profile_email or None,
+                                    phone=profile_phone or None,
+                                    position=profile_position or None,
+                                    bio=profile_department or None,
                                 )
                             except Exception as profile_err:
                                 logger.warning(f"[LDAP] Could not create user profile: {profile_err}")
@@ -220,7 +309,7 @@ class LoginView(APIView):
                 user_email = user.email or f'{user.username}@example.com'
             
             # Check if profile is complete (required for first-time LDAP users)
-            requires_registration = self._check_profile_incomplete(user, profile)
+            requires_registration = not _profile_is_complete(user, profile)
             
             response_data = {
                 "token": access_token,
@@ -271,21 +360,7 @@ class LoginView(APIView):
     
     def _check_profile_incomplete(self, user: User, profile: UserProfile = None) -> bool:
         """Check if user profile is incomplete (missing required fields for registration)"""
-        # Required fields: full_name, phone, company (station), position
-        if profile:
-            # Check if all required fields are filled
-            has_full_name = bool(profile.full_name and profile.full_name.strip())
-            has_phone = bool(profile.phone and profile.phone.strip())
-            has_company = bool(profile.company and profile.company.strip())
-            has_position = bool(profile.position and profile.position.strip())
-            
-            # Profile is incomplete if any required field is missing
-            return not (has_full_name and has_phone and has_company and has_position)
-        else:
-            # No profile exists, check user model
-            has_full_name = bool(user.full_name and user.full_name.strip())
-            # User model doesn't have phone, company, position - so profile is incomplete
-            return True
+        return not _profile_is_complete(user, profile)
 
 
 class RefreshView(APIView):
@@ -443,9 +518,17 @@ class RegisterProfileView(APIView):
         position = profile.position if profile else ""
         # Department хранится в bio (так как в БД нет отдельного поля department)
         department = profile.bio if profile else ""
+        email = ""
+        if profile and profile.email:
+            email = profile.email
+        elif user.email:
+            email = user.email
+        
+        profile_complete = _profile_is_complete(user, profile)
         
         data = {
             "full_name": full_name,
+            "email": email,
             "phone": phone,
             "station_id": station_id,
             "position": position,
@@ -453,7 +536,7 @@ class RegisterProfileView(APIView):
         }
         
         logger.info(f"[Register] Returning profile data: {data}")
-        return JsonResponse({"data": data})
+        return JsonResponse({"data": data, "profile_complete": profile_complete})
 
     def post(self, request):
         """Save user profile with required fields (full_name, phone, station_id, position)"""
@@ -462,9 +545,11 @@ class RegisterProfileView(APIView):
         ser.is_valid(raise_exception=True)
         
         full_name = ser.validated_data["full_name"]
+        email = ser.validated_data["email"]
         phone = ser.validated_data["phone"]
         station_id = ser.validated_data["station_id"]
         position = ser.validated_data["position"]  # Job title
+        department = ser.validated_data["department"]
         
         # Get station name from database
         try:
@@ -481,16 +566,17 @@ class RegisterProfileView(APIView):
             # Update user table
             User.objects.filter(id=user.id).update(
                 full_name=full_name,
+                email=email,
                 updated_at=timezone.now()
             )
             
             # Create or update user profile
             profile_defaults = {
                 "full_name": full_name,
+                "email": email,
                 "phone": phone,
                 "company": company,  # Station name from database
                 "position": position,
-                "email": user.email or f'{user.username}@example.com',
                 "bio": department,  # Store department in bio field
             }
             

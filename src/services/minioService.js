@@ -98,11 +98,28 @@ export const formatFileSize = (bytes) => {
 }
 
 // Получение URL с кэшированием
+// Простая замена MinIO endpoint на /api/minio, сохраняя весь путь и query параметры
 const getFrontendUrl = (url) => {
   if (typeof window === 'undefined') return url
-  if (url && url.includes(MINIO_ENDPOINT)) {
+  if (!url || typeof url !== 'string') return url
+  
+  // Простая замена: заменяем MinIO endpoint на /api/minio
+  // Presigned URL от MinIO уже содержит bucket в пути (например: http://minio:9000/atgedu/stations/WKC1.jpg)
+  // Мы просто заменяем origin на /api/minio, сохраняя путь и query параметры
+  if (url.includes(MINIO_ENDPOINT)) {
     return url.replace(MINIO_ENDPOINT, '/api/minio')
   }
+  
+  // Если URL содержит localhost:9000 или другой MinIO endpoint
+  try {
+    const urlObj = new URL(url)
+    if (urlObj.port === '9000' || urlObj.hostname.includes('minio')) {
+      return `/api/minio${urlObj.pathname}${urlObj.search}`
+    }
+  } catch (e) {
+    // Игнорируем ошибки парсинга
+  }
+  
   return url
 }
 
@@ -138,7 +155,11 @@ export const getPresignedDownloadUrl = async (
 
     const data = await apiRequest(`/files/presign?${q.toString()}`)
     const url = data?.url
-    if (!url) throw new Error('Invalid presign response')
+    if (!url) {
+      console.warn(`[MinIO] Invalid presign response for ${normalizedObjectName}, returning fallback`)
+      // Return fallback URL instead of throwing
+      return getFileUrl(normalizedObjectName)
+    }
 
     const frontendUrl = getFrontendUrl(url)
     
@@ -150,8 +171,9 @@ export const getPresignedDownloadUrl = async (
     
     return frontendUrl
   } catch (error) {
-    console.error('Ошибка создания presigned URL:', error)
-    throw error
+    console.warn(`[MinIO] Error creating presigned URL for ${normalizedObjectName}:`, error.message || error)
+    // Return fallback URL instead of throwing to prevent breaking the UI
+    return getFileUrl(normalizedObjectName)
   }
 }
 
