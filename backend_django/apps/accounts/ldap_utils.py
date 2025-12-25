@@ -241,7 +241,10 @@ class LDAPAuthenticator:
         
         try:
             t_search0 = time.perf_counter()
-            search_filter = self.user_search_filter.replace('{username}', username)
+            # Extract username without domain for search (sAMAccountName doesn't include @domain)
+            search_username = username.split('@')[0] if '@' in username else username
+            search_username = search_username.split('\\')[-1]  # Remove domain\ prefix if present
+            search_filter = self.user_search_filter.replace('{username}', search_username)
             search_base = self.user_search_base or self.base_dn
             
             logger.debug(f"[LDAP] Searching for user attributes: base={search_base}, filter={search_filter}")
