@@ -12,6 +12,7 @@ import Login from '@/views/Login.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import StationList from '@/views/admin/StationList.vue'
 import StationEditor from '@/views/admin/StationEditor.vue'
+import RegisterProfile from '@/views/RegisterProfile.vue'
 import authService from '@/services/auth'
 
 const routes = [
@@ -75,7 +76,7 @@ const routes = [
   {
     path: '/register',
     name: 'RegisterProfile',
-    component: () => import('@/views/RegisterProfile.vue'),
+    component: RegisterProfile,
     meta: { requiresAuth: true }
   },
   // Admin Routes
