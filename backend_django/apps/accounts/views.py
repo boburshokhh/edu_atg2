@@ -545,11 +545,13 @@ class RegisterProfileView(APIView):
         ser.is_valid(raise_exception=True)
         
         full_name = ser.validated_data["full_name"]
-        email = ser.validated_data["email"]
         phone = ser.validated_data["phone"]
         station_id = ser.validated_data["station_id"]
         position = ser.validated_data["position"]  # Job title
         department = ser.validated_data["department"]
+        
+        # Get email from user (from LDAP/auth, not from form)
+        email = user.email or f'{user.username}@example.com'
         
         # Get station name from database
         try:
@@ -566,7 +568,6 @@ class RegisterProfileView(APIView):
             # Update user table
             User.objects.filter(id=user.id).update(
                 full_name=full_name,
-                email=email,
                 updated_at=timezone.now()
             )
             
