@@ -175,13 +175,19 @@ class LoginView(APIView):
 
             expires_at = timezone.now() + timedelta(seconds=settings.REFRESH_TTL_SEC)
             t_sess0 = time.perf_counter()
+            # Truncate values to fit database constraints
+            # session_token is VARCHAR(255) in database, but JWT tokens can be longer
+            session_token = refresh_token[:255] if refresh_token else ""
+            # user_agent is TEXT in schema but may have constraints in actual DB
+            user_agent = request.META.get("HTTP_USER_AGENT", "") or ""
+            user_agent = user_agent[:255] if user_agent else ""
             UserSession.objects.create(
                 id=_sid,
                 user=user,
-                session_token=refresh_token,
+                session_token=session_token,
                 expires_at=expires_at,
                 ip_address=request.META.get("REMOTE_ADDR"),
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                user_agent=user_agent,
             )
             logger.info(
                 "[Perf][Login] step=db_create_session ms=%d username=%s",
@@ -288,8 +294,10 @@ class RefreshView(APIView):
         except JwtError:
             return JsonResponse({"error": "Invalid token"}, status=401)
 
+        # Truncate token to 255 chars to match database constraint
+        session_token = refresh_token[:255] if refresh_token else ""
         session = (
-            UserSession.objects.filter(session_token=refresh_token, expires_at__gt=timezone.now())
+            UserSession.objects.filter(session_token=session_token, expires_at__gt=timezone.now())
             .select_related("user")
             .first()
         )
@@ -309,7 +317,9 @@ class LogoutView(APIView):
         ser = LogoutSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         refresh_token = ser.validated_data["refreshToken"]
-        UserSession.objects.filter(session_token=refresh_token).delete()
+        # Truncate token to 255 chars to match database constraint
+        session_token = refresh_token[:255] if refresh_token else ""
+        UserSession.objects.filter(session_token=session_token).delete()
         return JsonResponse({"success": True})
 
 
