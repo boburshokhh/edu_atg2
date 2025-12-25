@@ -68,10 +68,14 @@ class LoginView(APIView):
                             # Update user info from LDAP if needed
                             update_fields = []
                             if ldap_user_info.get('full_name') and not user.full_name:
-                                user.full_name = ldap_user_info['full_name']
+                                # Truncate to max 100 chars (User.full_name constraint)
+                                full_name = ldap_user_info['full_name'][:100]
+                                user.full_name = full_name
                                 update_fields.append('full_name')
                             if ldap_user_info.get('email') and not user.email:
-                                user.email = ldap_user_info['email']
+                                # Truncate to max 100 chars (User.email constraint)
+                                email = ldap_user_info['email'][:100]
+                                user.email = email
                                 update_fields.append('email')
                             if update_fields:
                                 update_fields.append('updated_at')
@@ -87,11 +91,19 @@ class LoginView(APIView):
                             logger.info(f"[LDAP] Creating new user from LDAP: {username}")
                             # Create new user from LDAP
                             t_create0 = time.perf_counter()
+                            # Truncate values to fit database constraints
+                            full_name = ldap_user_info.get('full_name', username) or username
+                            email = ldap_user_info.get('email', f'{username}@example.com') or f'{username}@example.com'
+                            # User model constraints: full_name max 100, email max 100, username max 50
+                            full_name = full_name[:100] if full_name else username[:50]
+                            email = email[:100] if email else f'{username[:47]}@example.com'
+                            username_truncated = username[:50]  # Username max 50 chars
+                            
                             user = User.objects.create(
-                                username=username,
+                                username=username_truncated,
                                 password=make_password(password),  # Store hashed password
-                                full_name=ldap_user_info.get('full_name', username),
-                                email=ldap_user_info.get('email', f'{username}@example.com'),
+                                full_name=full_name,
+                                email=email,
                                 role=self._determine_role_from_ldap(ldap_user_info),
                                 is_active=True
                             )
@@ -103,10 +115,13 @@ class LoginView(APIView):
                             # Create user profile
                             try:
                                 t_profile0 = time.perf_counter()
+                                # UserProfile allows up to 255 chars, but truncate to be safe
+                                profile_full_name = (ldap_user_info.get('full_name', username) or username)[:255]
+                                profile_email = (ldap_user_info.get('email', f'{username}@example.com') or f'{username}@example.com')[:255]
                                 UserProfile.objects.create(
                                     id=user,
-                                    full_name=ldap_user_info.get('full_name', username),
-                                    email=ldap_user_info.get('email', f'{username}@example.com'),
+                                    full_name=profile_full_name,
+                                    email=profile_email,
                                 )
                                 logger.info(
                                     "[Perf][Login] step=db_create_profile ms=%d username=%s",
