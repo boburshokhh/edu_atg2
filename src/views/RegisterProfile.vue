@@ -260,6 +260,46 @@ export default {
       }
     }
     
+    // Загрузка данных профиля из БД
+    const loadProfileData = async () => {
+      try {
+        const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development' || !import.meta.env.PROD
+        const API_BASE_URL = isDev 
+          ? '/api'  
+          : (import.meta.env.VITE_API_TARGET || import.meta.env.VITE_API_BASE_URL || '/api')
+        
+        const response = await fetch(`${API_BASE_URL}/auth/register-profile`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authService.accessToken || localStorage.getItem('auth_token')}`
+          }
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          if (result.data) {
+            // Заполняем форму данными из БД
+            if (result.data.full_name) {
+              form.full_name = result.data.full_name
+            }
+            if (result.data.phone) {
+              form.phone = result.data.phone
+            }
+            if (result.data.station_id) {
+              form.station_id = result.data.station_id
+            }
+            if (result.data.position) {
+              form.position = result.data.position
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile data:', error)
+        // Не показываем ошибку, так как это нормально, если профиля еще нет
+      }
+    }
+    
     const handleSubmit = async () => {
       if (!registerForm.value) return
       
@@ -326,9 +366,10 @@ export default {
       router.push('/login')
     }
     
-    // Загружаем станции при монтировании компонента
-    onMounted(() => {
-      loadStations()
+    // Загружаем станции и данные профиля при монтировании компонента
+    onMounted(async () => {
+      await loadStations()
+      await loadProfileData()
     })
     
     return {

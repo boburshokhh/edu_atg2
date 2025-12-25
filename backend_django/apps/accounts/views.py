@@ -396,6 +396,41 @@ class RegisterProfileView(APIView):
     """View for first-time user registration (completing profile)"""
     permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        """Get existing profile data for editing"""
+        user: User = request.user
+        profile = UserProfile.objects.filter(id=user.id).first()
+        
+        # Try to find station_id by company name
+        station_id = None
+        if profile and profile.company:
+            try:
+                from apps.stations.models import Station
+                # Try exact match first
+                station = Station.objects.filter(name=profile.company).first()
+                if not station:
+                    # Try case-insensitive match
+                    station = Station.objects.filter(name__iexact=profile.company).first()
+                if station:
+                    station_id = station.id
+            except Exception as e:
+                logger.warning(f"[Register] Could not find station by company name: {e}")
+        
+        # Get full_name from profile or user (user may have data from LDAP)
+        full_name = ""
+        if profile and profile.full_name:
+            full_name = profile.full_name
+        elif user.full_name:
+            full_name = user.full_name
+        
+        data = {
+            "full_name": full_name,
+            "phone": profile.phone if profile else "",
+            "station_id": station_id,
+            "position": profile.position if profile else "",
+        }
+        return JsonResponse({"data": data})
+
     def post(self, request):
         """Save user profile with required fields (full_name, phone, station_id, position)"""
         user: User = request.user
