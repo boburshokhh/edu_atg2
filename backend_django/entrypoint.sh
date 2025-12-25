@@ -35,8 +35,9 @@ PY
 echo "Migrations..."
 python manage.py migrate --noinput
 
-echo "Ensure MinIO bucket exists..."
+echo "Ensure MinIO bucket exists (wait for MinIO)..."
 python - <<'PY'
+import time
 from botocore.exceptions import ClientError
 from django.conf import settings
 import django
@@ -45,14 +46,28 @@ django.setup()
 
 from apps.files.minio_client import s3_client
 
-client = s3_client()
 bucket = settings.MINIO_BUCKET
-try:
-    client.head_bucket(Bucket=bucket)
-    print("Bucket exists:", bucket)
-except ClientError:
-    client.create_bucket(Bucket=bucket)
-    print("Bucket created:", bucket)
+
+last_err = None
+for i in range(60):
+    try:
+        client = s3_client()
+        try:
+            client.head_bucket(Bucket=bucket)
+            print("Bucket exists:", bucket)
+            last_err = None
+            break
+        except ClientError:
+            client.create_bucket(Bucket=bucket)
+            print("Bucket created:", bucket)
+            last_err = None
+            break
+    except Exception as e:
+        last_err = e
+        time.sleep(1)
+
+if last_err is not None:
+    raise last_err
 PY
 
 echo "Starting Gunicorn..."
