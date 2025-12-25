@@ -53,6 +53,7 @@ class AccessJWTAuthentication(BaseAuthentication):
                 def __init__(self, s: LdapTempSession):
                     self.id = s.id
                     self.username = s.ldap_username
+                    self.email = s.ldap_email  # Add email for compatibility
                     self.role = "user"
                     self.is_active = True
 

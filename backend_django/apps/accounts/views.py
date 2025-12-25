@@ -591,10 +591,7 @@ class RegisterProfileView(APIView):
         position = ser.validated_data["position"]  # Job title
         department = ser.validated_data["department"]
         
-        # Get email from user (from LDAP/auth, not from form)
-        email = user.email or f'{user.username}@example.com'
-        
-        # Get station name from database
+        # Get station name from database (before checking temp_session)
         try:
             from apps.stations.models import Station
             station = Station.objects.get(id=station_id)
@@ -603,16 +600,29 @@ class RegisterProfileView(APIView):
             logger.error(f"[Register] Station with id {station_id} not found")
             return JsonResponse({"error": "Station not found"}, status=400)
         
+        # Check if this is a temporary LDAP session (first-time registration)
+        temp_session = getattr(request, "ldap_temp_session", None)
+        
+        # Get email - from temp_session if available, otherwise from user
+        if temp_session is not None:
+            email = (temp_session.ldap_email or "").strip()[:100]
+            if not email:
+                return JsonResponse({"error": "LDAP email is missing"}, status=400)
+        else:
+            # Regular user - get email from user object (may not have email attribute if it's a mock)
+            email = getattr(user, "email", None) or f'{user.username}@example.com'
+        
         logger.info(f"[Register] Saving profile for user: {user.username}, station: {company}")
         
+        # Track if we created new tokens (for temp session -> real user conversion)
+        access_token = None
+        refresh_token = None
+        
         with transaction.atomic():
-            temp_session = getattr(request, "ldap_temp_session", None)
             if temp_session is not None:
                 # Create real user now (ONLY after registration).
                 # Enforce email uniqueness; DB has a unique index (lower(email)).
-                email = (temp_session.ldap_email or "").strip()[:100]
-                if not email:
-                    return JsonResponse({"error": "LDAP email is missing"}, status=400)
+                # Email already extracted above
 
                 # If user already exists by email, stop (no duplicates).
                 existing = User.objects.filter(email__iexact=email, is_active=True).first()
@@ -647,6 +657,7 @@ class RegisterProfileView(APIView):
                 payload = JwtUserPayload(sub=str(user.id), username=user.username, role=user.role)
                 access_token = sign_access(payload)
                 refresh_token, _sid = sign_refresh(payload)
+                # Tokens are now set in outer scope
                 expires_at = timezone.now() + timedelta(seconds=settings.REFRESH_TTL_SEC)
                 session_token = refresh_token[:255] if refresh_token else ""
                 user_agent = request.META.get("HTTP_USER_AGENT", "") or ""
@@ -683,7 +694,7 @@ class RegisterProfileView(APIView):
         
         logger.info(f"[Register] Profile saved successfully for user: {user.username}")
         # If temp session was used, return fresh tokens for the newly created user
-        if "access_token" in locals() and "refresh_token" in locals():
+        if access_token and refresh_token:
             return JsonResponse(
                 {
                     "success": True,
