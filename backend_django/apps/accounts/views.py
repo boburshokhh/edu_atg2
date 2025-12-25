@@ -118,10 +118,17 @@ class LoginView(APIView):
                                 # UserProfile allows up to 255 chars, but truncate to be safe
                                 profile_full_name = (ldap_user_info.get('full_name', username) or username)[:255]
                                 profile_email = (ldap_user_info.get('email', f'{username}@example.com') or f'{username}@example.com')[:255]
+                                profile_phone = (ldap_user_info.get('phone', '') or '')[:50]
+                                profile_department = (ldap_user_info.get('department', '') or '')[:255]
+                                profile_position = (ldap_user_info.get('position', '') or '')[:255]
+                                
                                 UserProfile.objects.create(
                                     id=user,
                                     full_name=profile_full_name,
                                     email=profile_email,
+                                    phone=profile_phone,
+                                    position=profile_position,
+                                    bio=profile_department,  # Используем bio для хранения department
                                 )
                                 logger.info(
                                     "[Perf][Login] step=db_create_profile ms=%d username=%s",
@@ -399,7 +406,10 @@ class RegisterProfileView(APIView):
     def get(self, request):
         """Get existing profile data for editing"""
         user: User = request.user
+        logger.info(f"[Register] Getting profile data for user: {user.username}")
+        
         profile = UserProfile.objects.filter(id=user.id).first()
+        logger.debug(f"[Register] Profile found: {profile is not None}")
         
         # Try to find station_id by company name
         station_id = None
@@ -413,6 +423,9 @@ class RegisterProfileView(APIView):
                     station = Station.objects.filter(name__iexact=profile.company).first()
                 if station:
                     station_id = station.id
+                    logger.info(f"[Register] Found station_id: {station_id} for company: {profile.company}")
+                else:
+                    logger.warning(f"[Register] Station not found for company: {profile.company}")
             except Exception as e:
                 logger.warning(f"[Register] Could not find station by company name: {e}")
         
@@ -420,15 +433,26 @@ class RegisterProfileView(APIView):
         full_name = ""
         if profile and profile.full_name:
             full_name = profile.full_name
+            logger.debug(f"[Register] Using full_name from profile: {full_name}")
         elif user.full_name:
             full_name = user.full_name
+            logger.debug(f"[Register] Using full_name from user: {full_name}")
+        
+        # Get phone, position, and department from profile
+        phone = profile.phone if profile else ""
+        position = profile.position if profile else ""
+        # Department хранится в bio (так как в БД нет отдельного поля department)
+        department = profile.bio if profile else ""
         
         data = {
             "full_name": full_name,
-            "phone": profile.phone if profile else "",
+            "phone": phone,
             "station_id": station_id,
-            "position": profile.position if profile else "",
+            "position": position,
+            "department": department,
         }
+        
+        logger.info(f"[Register] Returning profile data: {data}")
         return JsonResponse({"data": data})
 
     def post(self, request):
@@ -467,6 +491,7 @@ class RegisterProfileView(APIView):
                 "company": company,  # Station name from database
                 "position": position,
                 "email": user.email or f'{user.username}@example.com',
+                "bio": department,  # Store department in bio field
             }
             
             UserProfile.objects.update_or_create(id=user, defaults=profile_defaults)

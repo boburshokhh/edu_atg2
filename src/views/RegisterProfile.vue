@@ -145,7 +145,7 @@
             <!-- Должность -->
             <el-form-item
               prop="position"
-              class="mb-6"
+              class="mb-5"
             >
               <el-input
                 v-model="form.position"
@@ -157,6 +157,26 @@
                 <template #prefix>
                   <el-icon class="input-icon">
                     <Briefcase />
+                  </el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+
+            <!-- Департамент -->
+            <el-form-item
+              prop="department"
+              class="mb-6"
+            >
+              <el-input
+                v-model="form.department"
+                placeholder="Департамент"
+                size="large"
+                class="login-input"
+                @keyup.enter="handleSubmit"
+              >
+                <template #prefix>
+                  <el-icon class="input-icon">
+                    <OfficeBuilding />
                   </el-icon>
                 </template>
               </el-input>
@@ -201,7 +221,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Phone, OfficeBuilding, Briefcase } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -221,7 +241,8 @@ export default {
       full_name: '',
       phone: '',
       station_id: null,
-      position: ''
+      position: '',
+      department: ''
     })
     
     const rules = {
@@ -268,34 +289,86 @@ export default {
           ? '/api'  
           : (import.meta.env.VITE_API_TARGET || import.meta.env.VITE_API_BASE_URL || '/api')
         
+        // Получаем токен
+        const token = authService.accessToken || localStorage.getItem('auth_token')
+        if (!token) {
+          console.warn('[RegisterProfile] No auth token found, skipping profile load')
+          return
+        }
+        
+        console.log('[RegisterProfile] Loading profile data from:', `${API_BASE_URL}/auth/register-profile`)
+        
         const response = await fetch(`${API_BASE_URL}/auth/register-profile`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authService.accessToken || localStorage.getItem('auth_token')}`
+            'Authorization': `Bearer ${token}`
           }
         })
         
+        console.log('[RegisterProfile] Response status:', response.status, response.statusText)
+        
         if (response.ok) {
           const result = await response.json()
+          console.log('[RegisterProfile] Profile data received:', result)
+          
           if (result.data) {
-            // Заполняем форму данными из БД
+            // Заполняем форму данными из БД (реактивно)
             if (result.data.full_name) {
               form.full_name = result.data.full_name
+              console.log('[RegisterProfile] Set full_name:', result.data.full_name)
             }
             if (result.data.phone) {
               form.phone = result.data.phone
+              console.log('[RegisterProfile] Set phone:', result.data.phone)
             }
             if (result.data.station_id) {
-              form.station_id = result.data.station_id
+              // Убеждаемся, что станции уже загружены
+              if (stations.value.length > 0) {
+                form.station_id = result.data.station_id
+                console.log('[RegisterProfile] Set station_id:', result.data.station_id)
+              } else {
+                // Если станции еще не загружены, сохраняем ID и установим позже
+                console.log('[RegisterProfile] Stations not loaded yet, will set station_id after load')
+                setTimeout(() => {
+                  form.station_id = result.data.station_id
+                  console.log('[RegisterProfile] Set station_id (delayed):', result.data.station_id)
+                }, 500)
+              }
             }
             if (result.data.position) {
               form.position = result.data.position
+              console.log('[RegisterProfile] Set position:', result.data.position)
             }
+            if (result.data.department) {
+              form.department = result.data.department
+              console.log('[RegisterProfile] Set department:', result.data.department)
+            }
+            
+            console.log('[RegisterProfile] Form data after load:', {
+              full_name: form.full_name,
+              phone: form.phone,
+              station_id: form.station_id,
+              position: form.position,
+              department: form.department
+            })
+            
+            // Принудительно обновляем форму Element Plus
+            await nextTick()
+            if (registerForm.value) {
+              registerForm.value.clearValidate()
+              console.log('[RegisterProfile] Form cleared and validated')
+            }
+          } else {
+            console.log('[RegisterProfile] No data in response')
           }
+        } else {
+          const errorText = await response.text()
+          console.warn('[RegisterProfile] Failed to load profile:', response.status, errorText)
+          // Не показываем ошибку, так как это нормально, если профиля еще нет
         }
       } catch (error) {
-        console.error('Error loading profile data:', error)
+        console.error('[RegisterProfile] Error loading profile data:', error)
         // Не показываем ошибку, так как это нормально, если профиля еще нет
       }
     }
@@ -323,7 +396,8 @@ export default {
             full_name: form.full_name.trim(),
             phone: form.phone.trim(),
             station_id: form.station_id,
-            position: form.position.trim()
+            position: form.position.trim(),
+            department: form.department.trim()
           })
         })
         
@@ -368,8 +442,14 @@ export default {
     
     // Загружаем станции и данные профиля при монтировании компонента
     onMounted(async () => {
+      console.log('[RegisterProfile] Component mounted, loading data...')
+      // Сначала загружаем станции, потом профиль (чтобы station_id мог найтись)
       await loadStations()
+      console.log('[RegisterProfile] Stations loaded:', stations.value.length)
+      // Небольшая задержка, чтобы убедиться, что станции отрендерились
+      await new Promise(resolve => setTimeout(resolve, 100))
       await loadProfileData()
+      console.log('[RegisterProfile] Profile data loaded')
     })
     
     return {

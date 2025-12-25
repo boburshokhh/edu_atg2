@@ -35,6 +35,7 @@ class RegisterProfileSerializer(serializers.Serializer):
     phone = serializers.CharField(min_length=5, max_length=50, required=True)
     station_id = serializers.IntegerField(required=True)  # Station ID from database
     position = serializers.CharField(min_length=2, max_length=255, required=True)  # Job title
+    department = serializers.CharField(required=False, allow_blank=True, max_length=255)  # Department (stored in bio)
 
 
 

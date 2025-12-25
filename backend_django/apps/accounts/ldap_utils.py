@@ -266,7 +266,8 @@ class LDAPAuthenticator:
                 attributes=[
                     'cn', 'mail', 'uid', 'sAMAccountName', 
                     'givenName', 'sn', 'memberOf', 'displayName',
-                    'userPrincipalName', 'distinguishedName'
+                    'userPrincipalName', 'distinguishedName',
+                    'department', 'telephoneNumber', 'mobile', 'title'
                 ]
             )
             logger.info(
@@ -298,11 +299,19 @@ class LDAPAuthenticator:
                 return None
 
         # Build user info
+        # Get phone from telephoneNumber or mobile
+        phone = self._get_attr(user_attrs, 'telephoneNumber', '')
+        if not phone:
+            phone = self._get_attr(user_attrs, 'mobile', '')
+        
         user_info = {
             'username': username,
             'dn': user_dn or username,
             'email': self._get_attr(user_attrs, 'mail', f'{username}@{domain}' if domain else f'{username}@local'),
             'full_name': self._get_full_name(user_attrs, username),
+            'phone': phone,
+            'department': self._get_attr(user_attrs, 'department', ''),
+            'position': self._get_attr(user_attrs, 'title', ''),
             'groups': self._get_groups(user_attrs),
         }
 
