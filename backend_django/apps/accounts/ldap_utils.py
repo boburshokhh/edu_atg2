@@ -51,10 +51,19 @@ class LDAPAuthenticator:
         self.tls_ca_file = getattr(settings, 'LDAP_TLS_CA_FILE', '')
 
         # Timeouts (seconds) - tuned for UX; can be overridden via Django settings
-        # ldap3 expects int for timeouts, not float
-        self.connect_timeout = int(float(getattr(settings, 'LDAP_CONNECT_TIMEOUT_SEC', 3)))
-        self.receive_timeout = int(float(getattr(settings, 'LDAP_RECEIVE_TIMEOUT_SEC', 3)))
-        self.search_time_limit = int(getattr(settings, 'LDAP_SEARCH_TIME_LIMIT_SEC', 5))
+        # ldap3 expects int for timeouts, not float or string
+        def safe_int(value, default):
+            """Safely convert value to int"""
+            if value is None:
+                return default
+            try:
+                return int(float(str(value)))
+            except (ValueError, TypeError):
+                return default
+        
+        self.connect_timeout = safe_int(getattr(settings, 'LDAP_CONNECT_TIMEOUT_SEC', None), 3)
+        self.receive_timeout = safe_int(getattr(settings, 'LDAP_RECEIVE_TIMEOUT_SEC', None), 3)
+        self.search_time_limit = safe_int(getattr(settings, 'LDAP_SEARCH_TIME_LIMIT_SEC', None), 5)
         
         # Parse server URL
         self._parse_server_url()

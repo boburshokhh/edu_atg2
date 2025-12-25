@@ -156,5 +156,9 @@ LDAP_GROUP_SEARCH_BASE = env("LDAP_GROUP_SEARCH_BASE", "ou=groups,dc=example,dc=
 LDAP_REQUIRE_GROUP = env("LDAP_REQUIRE_GROUP", "")
 LDAP_USE_TLS = env("LDAP_USE_TLS", "false").lower() in ("true", "1", "yes")
 LDAP_TLS_CA_FILE = env("LDAP_TLS_CA_FILE", "")
+# LDAP Timeouts (in seconds, must be integers)
+LDAP_CONNECT_TIMEOUT_SEC = int(env("LDAP_CONNECT_TIMEOUT_SEC", "5"))
+LDAP_RECEIVE_TIMEOUT_SEC = int(env("LDAP_RECEIVE_TIMEOUT_SEC", "5"))
+LDAP_SEARCH_TIME_LIMIT_SEC = int(env("LDAP_SEARCH_TIME_LIMIT_SEC", "5"))
 
 
