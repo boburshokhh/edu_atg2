@@ -119,6 +119,22 @@ class CourseProgramTopic(models.Model):
         managed = False
 
 
+class CourseProgramLessonTest(models.Model):
+    id = models.AutoField(primary_key=True)
+    lesson = models.ForeignKey(
+        CourseProgramLesson, db_column="course_program_lesson_id", on_delete=models.CASCADE
+    )
+    title = models.CharField(max_length=500)
+    questions_count = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "course_program_lesson_tests"
+        managed = False
+
+
 class FinalTest(models.Model):
     id = models.AutoField(primary_key=True)
     course_program = models.ForeignKey(

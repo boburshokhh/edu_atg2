@@ -1,18 +1,43 @@
 -- ============================================================================
--- ИМПОРТ ПРОГРАММЫ КУРСА ДЛЯ СТАНЦИИ WKC-1
+-- ПОЛНЫЙ ИМПОРТ ПРОГРАММЫ КУРСА ДЛЯ СТАНЦИИ WKC-1
 -- ============================================================================
+-- Удаляет все старые данные и создает новую программу
 -- Модуль: 1. Компрессорная станция WKC-1
 -- ============================================================================
 
--- Проверяем, существует ли уже программа для WKC-1
 DO $$
 DECLARE
     v_station_id INTEGER := 1; -- WKC1
     v_program_id INTEGER;
     v_lesson_id INTEGER;
-    v_topic_id INTEGER;
 BEGIN
-    -- Создаем или обновляем программу курса
+    -- Находим существующую программу или создаем новую
+    SELECT id INTO v_program_id FROM course_programs 
+    WHERE station_id = v_station_id AND title = 'Компрессорная станция WKC-1' LIMIT 1;
+    
+    -- Удаляем ВСЕ старые данные программы (каскадное удаление)
+    IF v_program_id IS NOT NULL THEN
+        -- Удаляем в правильном порядке (из-за внешних ключей)
+        DELETE FROM course_program_topic_files WHERE course_program_topic_id IN (
+            SELECT id FROM course_program_topics WHERE course_program_lesson_id IN (
+                SELECT id FROM course_program_lessons WHERE course_program_id = v_program_id
+            )
+        );
+        DELETE FROM course_program_topics WHERE course_program_lesson_id IN (
+            SELECT id FROM course_program_lessons WHERE course_program_id = v_program_id
+        );
+        DELETE FROM course_program_lesson_tests WHERE course_program_lesson_id IN (
+            SELECT id FROM course_program_lessons WHERE course_program_id = v_program_id
+        );
+        DELETE FROM course_program_lessons WHERE course_program_id = v_program_id;
+        DELETE FROM course_program_learning_outcomes WHERE course_program_id = v_program_id;
+        DELETE FROM course_program_requirements WHERE course_program_id = v_program_id;
+        DELETE FROM course_program_target_audience WHERE course_program_id = v_program_id;
+        DELETE FROM final_tests WHERE course_program_id = v_program_id;
+        DELETE FROM course_programs WHERE id = v_program_id;
+    END IF;
+    
+    -- Создаем новую программу курса
     INSERT INTO course_programs (
         station_id,
         title,
@@ -29,31 +54,13 @@ BEGIN
         'Компрессорная станция WKC-1',
         'Программа обучения по компрессорной станции WKC-1',
         '40 часов',
-        38, -- Всего тем (4+20+10+4)
+        39, -- Всего тем (4+21+10+4)
         4,  -- Всего уроков
         4,  -- Тесты к каждому уроку
         'Онлайн',
         true,
         0
-    )
-    ON CONFLICT DO NOTHING
-    RETURNING id INTO v_program_id;
-    
-    -- Если программа уже существует, получаем её ID
-    IF v_program_id IS NULL THEN
-        SELECT id INTO v_program_id FROM course_programs 
-        WHERE station_id = v_station_id AND title = 'Компрессорная станция WKC-1' LIMIT 1;
-    END IF;
-    
-    -- Удаляем старые данные программы (если нужно обновить)
-    DELETE FROM course_program_topics WHERE course_program_lesson_id IN (
-        SELECT id FROM course_program_lessons WHERE course_program_id = v_program_id
-    );
-    DELETE FROM course_program_lesson_tests WHERE course_program_lesson_id IN (
-        SELECT id FROM course_program_lessons WHERE course_program_id = v_program_id
-    );
-    DELETE FROM course_program_lessons WHERE course_program_id = v_program_id;
-    DELETE FROM final_tests WHERE course_program_id = v_program_id;
+    ) RETURNING id INTO v_program_id;
     
     -- ========================================================================
     -- УРОК № 1: Зона замера газа
@@ -204,7 +211,9 @@ BEGIN
             SELECT id FROM course_program_lessons WHERE course_program_id = v_program_id
         )),
         lessons_count = (SELECT COUNT(*) FROM course_program_lessons WHERE course_program_id = v_program_id),
-        tests_count = (SELECT COUNT(*) FROM final_tests WHERE course_program_id = v_program_id),
+        tests_count = (SELECT COUNT(*) FROM course_program_lesson_tests WHERE course_program_lesson_id IN (
+            SELECT id FROM course_program_lessons WHERE course_program_id = v_program_id
+        )),
         updated_at = CURRENT_TIMESTAMP
     WHERE id = v_program_id;
     

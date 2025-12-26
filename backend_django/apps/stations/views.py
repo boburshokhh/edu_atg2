@@ -13,6 +13,7 @@ from apps.courses.models import (
     CourseProgramTargetAudience,
     CourseProgramLesson,
     CourseProgramTopic,
+    CourseProgramLessonTest,
     FinalTest,
 )
 from apps.stations.models import (
@@ -179,8 +180,23 @@ def _serialize_course_program(program: CourseProgram) -> dict:
             }
         )
 
+    # Get lesson tests
+    lesson_tests_by_lesson: dict[int, dict] = {}
+    if lesson_ids:
+        lesson_tests = list(
+            CourseProgramLessonTest.objects.filter(lesson__id__in=lesson_ids, is_active=True)
+            .order_by("lesson__id", "id")
+            .values("id", "lesson__id", "title", "questions_count")
+        )
+        for lt in lesson_tests:
+            lesson_tests_by_lesson[lt["lesson__id"]] = {
+                "title": lt["title"],
+                "questionsCount": lt["questions_count"],
+            }
+
     lessons_out = []
     for l in lessons:
+        lesson_test = lesson_tests_by_lesson.get(l["id"])
         lessons_out.append(
             {
                 "id": l["id"],
@@ -189,6 +205,7 @@ def _serialize_course_program(program: CourseProgram) -> dict:
                 "duration": l["duration"],
                 "orderIndex": l["order_index"],
                 "topics": topics_by_lesson.get(l["id"], []),
+                "test": lesson_test if lesson_test else None,
             }
         )
 
@@ -522,6 +539,21 @@ class StationCourseProgramUpdateView(APIView):
                             .exclude(topic_key__in=list(keep_topic_keys))
                             .update(is_active=False)
                         )
+
+                    # Lesson test
+                    if "test" in lesson_payload:
+                        test_data = lesson_payload.get("test")
+                        CourseProgramLessonTest.objects.filter(lesson=lesson_obj).delete()
+                        if isinstance(test_data, dict) and test_data.get("title"):
+                            CourseProgramLessonTest.objects.create(
+                                lesson=lesson_obj,
+                                title=str(test_data.get("title")),
+                                questions_count=int(test_data.get("questionsCount") or test_data.get("questions") or 0),
+                                is_active=bool(test_data.get("isActive", True)),
+                            )
+                    elif "test" in lesson_payload and lesson_payload.get("test") is None:
+                        # Explicitly remove test if test is null
+                        CourseProgramLessonTest.objects.filter(lesson=lesson_obj).delete()
 
                 # soft-deactivate removed lessons (and their topics via cascade? keep topics but inactive)
                 (
