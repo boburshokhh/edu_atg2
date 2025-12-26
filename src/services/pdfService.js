@@ -15,13 +15,30 @@ const pageObjectCache = new LRUCache(12)
 // Настройка worker (prefer bundled worker; fallback to CDN)
 if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.min.mjs',
-      import.meta.url
-    ).toString()
+    // Prefer non-module worker (.js) first: some servers mis-serve .mjs as octet-stream,
+    // which breaks strict module loading in browsers.
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+        'pdfjs-dist/legacy/build/pdf.worker.min.js',
+        import.meta.url
+      ).toString()
+    } catch (_e1) {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.js',
+          import.meta.url
+        ).toString()
+      } catch (_e2) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url
+        ).toString()
+      }
+    }
   } catch (e) {
     const version = pdfjsLib.version || '5.4.296'
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`
+    // CDN fallback: prefer .js for broader server compatibility; keep .mjs as a last resort.
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/legacy/build/pdf.worker.min.js`
   }
 }
 
