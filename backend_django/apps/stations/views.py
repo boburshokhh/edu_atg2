@@ -106,11 +106,15 @@ def _serialize_course_program(program: CourseProgram) -> dict:
 
     topics = []
     if lesson_ids:
+        # Use direct database column name since ForeignKey has custom db_column
         topics = list(
-            CourseProgramTopic.objects.filter(lesson_id__in=lesson_ids, is_active=True)
-            .order_by("lesson_id", "order_index", "id")
-            .values("id", "lesson_id", "topic_key", "code", "title", "duration", "order_index")
+            CourseProgramTopic.objects.filter(lesson__id__in=lesson_ids, is_active=True)
+            .order_by("lesson__id", "order_index", "id")
+            .values("id", "lesson__id", "topic_key", "code", "title", "duration", "order_index")
         )
+        # Rename lesson__id to lesson_id for compatibility with rest of code
+        for t in topics:
+            t["lesson_id"] = t.pop("lesson__id")
 
     topic_ids = [t["id"] for t in topics]
     files_by_topic: dict[int, list[dict]] = {}
@@ -472,7 +476,7 @@ class StationCourseProgramUpdateView(APIView):
                     if "topics" in lesson_payload:
                         incoming_topics = lesson_payload.get("topics") or []
                         existing_topics = list(
-                            CourseProgramTopic.objects.filter(lesson_id=lesson_obj.id)
+                            CourseProgramTopic.objects.filter(lesson=lesson_obj)
                         )
                         existing_topics_by_key = {t.topic_key: t for t in existing_topics if t.topic_key}
                         keep_topic_keys: set[str] = set()
@@ -489,7 +493,7 @@ class StationCourseProgramUpdateView(APIView):
 
                             if not topic_obj:
                                 CourseProgramTopic.objects.create(
-                                    lesson_id=lesson_obj.id,
+                                    lesson=lesson_obj,
                                     topic_key=topic_key,
                                     code=topic_payload.get("code") or None,
                                     title=str(topic_payload.get("title") or ""),
@@ -514,7 +518,7 @@ class StationCourseProgramUpdateView(APIView):
 
                         # soft-deactivate removed topics
                         (
-                            CourseProgramTopic.objects.filter(lesson_id=lesson_obj.id)
+                            CourseProgramTopic.objects.filter(lesson=lesson_obj)
                             .exclude(topic_key__in=list(keep_topic_keys))
                             .update(is_active=False)
                         )
