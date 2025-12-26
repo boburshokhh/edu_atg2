@@ -4,10 +4,6 @@
 import * as pdfjsLib from 'pdfjs-dist'
 import { LRUCache } from '@/utils/performance'
 
-// Vite-friendly worker URL: ensures the worker is emitted into /assets/ on build.
-// pdfjs-dist v5 ships workers as .mjs.
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
-
 // Кэш для загруженных PDF документов
 // Keep smaller caches to reduce memory pressure on low-end devices / long sessions.
 const documentCache = new LRUCache(6)
@@ -19,10 +15,30 @@ const pageObjectCache = new LRUCache(12)
 // Настройка worker (prefer bundled worker; fallback to CDN)
 if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
+    // Prefer non-module worker (.js) first: some servers mis-serve .mjs as octet-stream,
+    // which breaks strict module loading in browsers.
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+        'pdfjs-dist/legacy/build/pdf.worker.min.js',
+        import.meta.url
+      ).toString()
+    } catch (_e1) {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.js',
+          import.meta.url
+        ).toString()
+      } catch (_e2) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url
+        ).toString()
+      }
+    }
   } catch (e) {
     const version = pdfjsLib.version || '5.4.296'
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`
+    // CDN fallback: prefer .js for broader server compatibility; keep .mjs as a last resort.
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/legacy/build/pdf.worker.min.js`
   }
 }
 
