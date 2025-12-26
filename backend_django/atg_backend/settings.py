@@ -130,6 +130,11 @@ REST_FRAMEWORK = {
     ],
 }
 
+# File upload settings
+DATA_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
 # JWT
 JWT_ACCESS_SECRET = env("JWT_ACCESS_SECRET", "dev-access-secret-change-me")
 JWT_REFRESH_SECRET = env("JWT_REFRESH_SECRET", "dev-refresh-secret-change-me")

@@ -189,6 +189,48 @@ CREATE TABLE IF NOT EXISTS station_safety_system_features (
 -- Индексы для station_safety_system_features
 CREATE INDEX IF NOT EXISTS idx_features_safety ON station_safety_system_features(safety_system_id);
 
+-- Таблица фотографий станций
+CREATE TABLE IF NOT EXISTS station_photos (
+    id SERIAL PRIMARY KEY,
+    station_id INTEGER NOT NULL REFERENCES stations(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    view VARCHAR(100),
+    image_url VARCHAR(500) NOT NULL,
+    order_index INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы для station_photos
+CREATE INDEX IF NOT EXISTS idx_photos_station ON station_photos(station_id);
+CREATE INDEX IF NOT EXISTS idx_photos_order ON station_photos(station_id, order_index);
+
+-- Таблица нормативных документов станций
+CREATE TABLE IF NOT EXISTS station_normative_docs (
+    id SERIAL PRIMARY KEY,
+    station_id INTEGER NOT NULL REFERENCES stations(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    file_url VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы для station_normative_docs
+CREATE INDEX IF NOT EXISTS idx_normative_docs_station ON station_normative_docs(station_id);
+
+-- Таблица промо-видео станций
+CREATE TABLE IF NOT EXISTS station_promo_videos (
+    id SERIAL PRIMARY KEY,
+    station_id INTEGER NOT NULL REFERENCES stations(id) ON DELETE CASCADE,
+    title VARCHAR(255),
+    object_key VARCHAR(1000) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы для station_promo_videos
+CREATE INDEX IF NOT EXISTS idx_promo_videos_station ON station_promo_videos(station_id);
+CREATE INDEX IF NOT EXISTS idx_promo_videos_active ON station_promo_videos(station_id, is_active);
+
 -- ============================================================================
 -- 3. ТАБЛИЦЫ КУРСОВ И ПРОГРАММ ОБУЧЕНИЯ
 -- ============================================================================
@@ -255,6 +297,49 @@ CREATE TABLE IF NOT EXISTS course_program_target_audience (
 
 -- Индексы для course_program_target_audience
 CREATE INDEX IF NOT EXISTS idx_audience_course ON course_program_target_audience(course_program_id);
+
+-- Таблица уроков программы курса (для структуры программы станции)
+CREATE TABLE IF NOT EXISTS course_program_lessons (
+    id SERIAL PRIMARY KEY,
+    course_program_id INTEGER NOT NULL REFERENCES course_programs(id) ON DELETE CASCADE,
+    lesson_key TEXT NOT NULL,
+    title VARCHAR(500) NOT NULL,
+    duration VARCHAR(100),
+    order_index INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы для course_program_lessons
+CREATE UNIQUE INDEX IF NOT EXISTS uq_course_program_lessons_lesson_key
+ON course_program_lessons(lesson_key);
+CREATE INDEX IF NOT EXISTS idx_course_program_lessons_program
+ON course_program_lessons(course_program_id);
+CREATE INDEX IF NOT EXISTS idx_course_program_lessons_order
+ON course_program_lessons(course_program_id, order_index);
+
+-- Таблица тем программы курса (для структуры программы станции)
+CREATE TABLE IF NOT EXISTS course_program_topics (
+    id SERIAL PRIMARY KEY,
+    course_program_lesson_id INTEGER NOT NULL REFERENCES course_program_lessons(id) ON DELETE CASCADE,
+    topic_key TEXT NOT NULL,
+    code VARCHAR(50),
+    title VARCHAR(500) NOT NULL,
+    duration VARCHAR(50),
+    order_index INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы для course_program_topics
+CREATE UNIQUE INDEX IF NOT EXISTS uq_course_program_topics_topic_key
+ON course_program_topics(topic_key);
+CREATE INDEX IF NOT EXISTS idx_course_program_topics_lesson
+ON course_program_topics(course_program_lesson_id);
+CREATE INDEX IF NOT EXISTS idx_course_program_topics_order
+ON course_program_topics(course_program_lesson_id, order_index);
 
 -- ============================================================================
 -- 4. ТАБЛИЦЫ УРОКОВ И ТЕМ
