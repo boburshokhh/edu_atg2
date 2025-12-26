@@ -288,10 +288,10 @@ export default {
     // Загрузка данных профиля из БД
     const loadProfileData = async () => {
       try {
-        const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development' || !import.meta.env.PROD
-        const API_BASE_URL = isDev 
-          ? '/api'  
-          : (import.meta.env.VITE_API_TARGET || import.meta.env.VITE_API_BASE_URL || '/api')
+        // Always use /api proxy (works in both dev and prod)
+        // In dev: Vite proxy handles /api -> http://localhost:8000
+        // In prod: nginx proxy handles /api -> http://backend:8000
+        const API_BASE_URL = '/api'
         
         // Получаем токен
         const token = authService.accessToken || localStorage.getItem('auth_token')
@@ -384,11 +384,10 @@ export default {
         await registerForm.value.validate()
         loading.value = true
         
-        // Отправляем данные на сервер
-        const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development' || !import.meta.env.PROD
-        const API_BASE_URL = isDev 
-          ? '/api'  
-          : (import.meta.env.VITE_API_TARGET || import.meta.env.VITE_API_BASE_URL || '/api')
+        // Always use /api proxy (works in both dev and prod)
+        // In dev: Vite proxy handles /api -> http://localhost:8000
+        // In prod: nginx proxy handles /api -> http://backend:8000
+        const API_BASE_URL = '/api'
         
         const response = await fetch(`${API_BASE_URL}/auth/register-profile`, {
           method: 'POST',
