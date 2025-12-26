@@ -344,7 +344,8 @@ class StationCourseProgramView(APIView):
     def get(self, _request, id: int):
         program = (
             CourseProgram.objects.filter(station_id=id, is_active=True)
-            .order_by("order_index", "id")
+            # Prefer the newest active program (avoid older empty duplicates)
+            .order_by("-updated_at", "-id")
             .first()
         )
         if not program:
@@ -374,7 +375,7 @@ class StationCourseProgramUpdateView(APIView):
                 # pick any program for station (prefer active)
                 program = (
                     CourseProgram.objects.filter(station_id=id, is_active=True)
-                    .order_by("order_index", "id")
+                    .order_by("-updated_at", "-id")
                     .first()
                 ) or CourseProgram.objects.filter(station_id=id).order_by("id").first()
 
@@ -403,6 +404,12 @@ class StationCourseProgramUpdateView(APIView):
                 if "orderIndex" in data:
                     program.order_index = int(data.get("orderIndex") or 0)
                 program.save()
+
+            # Ensure only one active program per station (prevents duplicates)
+            if getattr(program, "is_active", False):
+                CourseProgram.objects.filter(station_id=id, is_active=True).exclude(id=program.id).update(
+                    is_active=False
+                )
 
             # Replace learning outcomes / requirements / target audience lists
             if "learningOutcomes" in data:

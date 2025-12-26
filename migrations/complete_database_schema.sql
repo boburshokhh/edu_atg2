@@ -261,6 +261,10 @@ COMMENT ON COLUMN course_programs.tests_count IS 'Количество тест�
 -- Индексы для course_programs
 CREATE INDEX IF NOT EXISTS idx_courses_station ON course_programs(station_id);
 CREATE INDEX IF NOT EXISTS idx_courses_active ON course_programs(is_active);
+-- Ограничение: только одна активная программа на станцию (разрешает несколько неактивных)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_course_programs_one_active_per_station
+ON course_programs (station_id)
+WHERE is_active = true;
 
 -- Таблица результатов обучения
 CREATE TABLE IF NOT EXISTS course_program_learning_outcomes (
