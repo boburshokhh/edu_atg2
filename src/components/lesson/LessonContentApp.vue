@@ -220,7 +220,6 @@ import LessonHeader from '@/components/lesson/LessonHeader.vue'
 import LessonSidebar from '@/components/lesson/LessonSidebar.vue'
 import TestQuiz from '@/components/lesson/TestQuiz.vue'
 import CourseMaterialsPanel from '@/components/lesson/CourseMaterialsPanel.vue'
-import courseMaterials from '@/data/courseMaterials.json'
 import testsData from '@/data/testsData.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'
@@ -241,26 +240,6 @@ const isTestMode = ref(false)
 const station = ref(null)
 const courseProgram = ref(null)
 const lessons = computed(() => courseProgram.value?.lessons || [])
-
-// Fast lookup for materials by stable topicKey (preferred over title/code matching)
-const materialsByTopicKey = computed(() => {
-  const m = new Map()
-  try {
-    const lessons = courseMaterials?.lessons || []
-    for (const l of lessons) {
-      for (const t of l.topics || []) {
-        if (t?.topicKey) {
-          m.set(t.topicKey, t)
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('[LessonContentApp] Failed to build materialsByTopicKey index', e)
-  }
-  return m
-})
-
-const fallbackWarned = ref(new Set())
 
 const loadStationAndProgram = async () => {
   try {
@@ -464,141 +443,64 @@ const hasNextLesson = computed(() => {
 const loadTopicMaterials = async () => {
   try {
     if (!currentLesson.value || !currentTopic.value) {
+      // Очищаем материалы если нет урока/темы
+      mainMaterials.value = []
+      additionalMaterials.value = []
+      currentFile.value = null
       return
     }
 
-    // 1) Prefer DB-backed topic files (course_program_topic_files)
+    // Загружаем материалы только из БД (course_program_topic_files)
     const dbFiles = Array.isArray(currentTopic.value?.files) ? currentTopic.value.files : []
-    if (dbFiles.length > 0) {
-      const filePromises = dbFiles.map(async (f) => {
-        try {
-          const fileType = f.fileType || f.file_type
-          const objectKey = f.objectKey || f.object_key || f.objectName || f.object_name
-          const originalName = f.originalName || f.original_name || f.fileName || f.file_name || f.title || 'file'
-          const fileSize = f.fileSize ?? f.file_size ?? null
-          const mimeType = f.mimeType || f.mime_type || null
-          const isMain = f.isMain ?? f.is_main ?? false
+    
+    if (dbFiles.length === 0) {
+      // Нет файлов в БД - показываем пустое состояние
+      console.info('[LessonContentApp] No files found in DB for topic:', {
+        lessonIndex: currentLessonIndex.value,
+        topicIndex: currentTopicIndex.value,
+        topicCode: currentTopic.value?.code
+      })
+      mainMaterials.value = []
+      additionalMaterials.value = []
+      currentFile.value = null
+      return
+    }
 
-          const nameForDetect = String(originalName || objectKey || '').toLowerCase()
-          const contentType =
-            mimeType ||
-            (fileType === 'pdf' || nameForDetect.endsWith('.pdf')
-              ? 'application/pdf'
-              : fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
-                ? (nameForDetect.endsWith('.webm')
-                  ? 'video/webm'
-                  : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
-                    ? 'video/ogg'
-                    : nameForDetect.endsWith('.mov')
-                      ? 'video/quicktime'
-                      : 'video/mp4')
-                : 'application/octet-stream')
+    // ✅ ПАРАЛЛЕЛЬНАЯ загрузка всех файлов из БД
+    const filePromises = dbFiles.map(async (f) => {
+      try {
+        const fileType = f.fileType || f.file_type
+        const objectKey = f.objectKey || f.object_key || f.objectName || f.object_name
+        const originalName = f.originalName || f.original_name || f.fileName || f.file_name || f.title || 'file'
+        const fileSize = f.fileSize ?? f.file_size ?? null
+        const mimeType = f.mimeType || f.mime_type || null
+        const isMain = f.isMain ?? f.is_main ?? false
 
-          if (!objectKey) {
-            console.warn('[LessonContentApp] Topic file missing objectKey:', f)
-            return null
-          }
-
-          // Безопасность: для PDF используем streaming endpoint, для других - presigned URLs с коротким TTL
-          const isPdf = fileType === 'pdf' || contentType.includes('pdf') || nameForDetect.endsWith('.pdf')
-          
-          let fileUrl = null
-          if (isPdf) {
-            // PDF: используем streaming endpoint (безопаснее, нет прямого доступа)
-            // URL будет формироваться в SecurePDFViewer компоненте
-            fileUrl = null // Не нужен presigned URL для PDF
-          } else {
-            // Для видео и других файлов: presigned URL с коротким TTL (1 час вместо 7 дней)
-            fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
-          }
-
-          return {
-            id: f.id,
-            objectName: objectKey,
-            fileName: originalName,
-            original_name: originalName,
-            originalName: originalName,
-            file_size: fileSize,
-            url: fileUrl,
-            file_url: fileUrl,
-            type: contentType,
-            is_main_file: !!(isMain && (fileType === 'pdf' || contentType.includes('pdf')))
-          }
-        } catch (e) {
-          console.error('[LessonContentApp] Failed to presign topic file:', f, e)
+        if (!objectKey) {
+          console.warn('[LessonContentApp] Topic file missing objectKey:', f)
           return null
         }
-      })
 
-      const results = await Promise.allSettled(filePromises)
-      const allFiles = results
-        .filter(r => r.status === 'fulfilled' && r.value !== null)
-        .map(r => r.value)
-
-      const mainFiles = allFiles.filter(f => f.is_main_file)
-      const additionals = allFiles.filter(f => !f.is_main_file)
-
-      mainMaterials.value = mainFiles
-      additionalMaterials.value = additionals
-
-      if (mainFiles.length > 0) {
-        currentFile.value = mainFiles[0]
-      } else if (additionals.length > 0) {
-        currentFile.value = additionals[0]
-      } else {
-        currentFile.value = null
-      }
-      return
-    }
-
-    // Prefer stable topicKey mapping
-    let topicData = null
-    const stableKey = currentTopic.value?.topicKey || currentTopic.value?.topic_key
-    if (stableKey && materialsByTopicKey.value.has(stableKey)) {
-      topicData = materialsByTopicKey.value.get(stableKey)
-    } else {
-      // Fallback legacy lookup by lesson title + topic code
-      const lessonData = courseMaterials.lessons.find(l => 
-        l.lessonTitle === currentLesson.value.title ||
-        l.lessonTitle.replace(':', '.') === currentLesson.value.title.replace(':', '.')
-      )
-
-      if (!lessonData) {
-        console.warn('[LessonContentApp] DB topic files empty; fallback lesson not found in courseMaterials.json')
-        return
-      }
-
-      topicData = lessonData.topics.find(t => {
-        const topicCodeNormalized = (t.topicCode || '').replace(/\.$/, '').trim()
-        const topicCodeFromData = (currentTopic.value.code || '').replace(/\.$/, '').trim()
-        return topicCodeNormalized === topicCodeFromData
-      })
-    }
-
-    if (!topicData || !topicData.files) {
-      console.warn('[LessonContentApp] DB topic files empty; fallback topic not found in courseMaterials.json')
-      return
-    }
-
-    // Warn once per topic when using legacy JSON fallback
-    if (stableKey && !fallbackWarned.value.has(stableKey)) {
-      fallbackWarned.value.add(stableKey)
-      ElMessage.warning('Материалы загружены из legacy JSON (в БД нет файлов для этой темы)')
-    }
-
-    // ✅ ПАРАЛЛЕЛЬНАЯ загрузка файлов (PDF через streaming, остальные через presigned URLs)
-    const filePromises = topicData.files.map(async (fileConfig) => {
-      try {
-        const contentType = fileConfig.fileType === 'pdf' 
-          ? 'application/pdf' 
-          : fileConfig.fileType === 'video' 
-            ? 'video/mp4' 
-            : 'application/octet-stream'
+        const nameForDetect = String(originalName || objectKey || '').toLowerCase()
         
-        const fileName = (fileConfig.fileName || '').toLowerCase()
-        const isPdf = fileConfig.fileType === 'pdf' || contentType.includes('pdf') || fileName.endsWith('.pdf')
-        
+        // Определяем Content-Type: приоритет у mimeType из БД, затем по типу/расширению
+        const contentType =
+          mimeType ||
+          (fileType === 'pdf' || nameForDetect.endsWith('.pdf')
+            ? 'application/pdf'
+            : fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
+              ? (nameForDetect.endsWith('.webm')
+                ? 'video/webm'
+                : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
+                  ? 'video/ogg'
+                  : nameForDetect.endsWith('.mov')
+                    ? 'video/quicktime'
+                    : 'video/mp4')
+              : 'application/octet-stream')
+
         // Безопасность: для PDF используем streaming endpoint, для других - presigned URLs с коротким TTL
+        const isPdf = fileType === 'pdf' || contentType.includes('pdf') || nameForDetect.endsWith('.pdf')
+        
         let fileUrl = null
         if (isPdf) {
           // PDF: используем streaming endpoint (безопаснее, нет прямого доступа)
@@ -606,34 +508,31 @@ const loadTopicMaterials = async () => {
           fileUrl = null // Не нужен presigned URL для PDF
         } else {
           // Для видео и других файлов: presigned URL с коротким TTL (1 час вместо 7 дней)
-          fileUrl = await minioService.getPresignedDownloadUrl(
-            fileConfig.objectName,
-            60 * 60, // 1 час вместо 7 дней
-            contentType
-          )
+          fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
         }
 
         return {
-          objectName: fileConfig.objectName,
-          fileName: fileConfig.fileName,
-          original_name: fileConfig.fileName,
-          originalName: fileConfig.fileName,
-          file_size: fileConfig.fileSize,
-          sizeFormatted: fileConfig.sizeFormatted,
+          id: f.id,
+          objectName: objectKey,
+          fileName: originalName,
+          original_name: originalName,
+          originalName: originalName,
+          file_size: fileSize,
           url: fileUrl,
           file_url: fileUrl,
           type: contentType,
-          is_main_file: fileConfig.is_main_file
+          // is_main_file определяется только из БД (isMain), независимо от типа файла
+          is_main_file: !!isMain
         }
-      } catch (error) {
-        console.error('Error loading file:', error)
+      } catch (e) {
+        console.error('[LessonContentApp] Failed to process topic file:', f, e)
         return null
       }
     })
 
     // ✅ Ждем все файлы параллельно
-    const fileResults = await Promise.allSettled(filePromises)
-    const allFiles = fileResults
+    const results = await Promise.allSettled(filePromises)
+    const allFiles = results
       .filter(r => r.status === 'fulfilled' && r.value !== null)
       .map(r => r.value)
 
@@ -644,6 +543,7 @@ const loadTopicMaterials = async () => {
     mainMaterials.value = mainFiles
     additionalMaterials.value = additionals
 
+    // Устанавливаем текущий файл (приоритет у основных файлов)
     if (mainFiles.length > 0) {
       currentFile.value = mainFiles[0]
     } else if (additionals.length > 0) {
@@ -651,9 +551,20 @@ const loadTopicMaterials = async () => {
     } else {
       currentFile.value = null
     }
+
+    console.log('[LessonContentApp] Materials loaded from DB:', {
+      total: allFiles.length,
+      main: mainFiles.length,
+      additional: additionals.length,
+      topicCode: currentTopic.value?.code
+    })
   } catch (error) {
-    console.error('Error loading topic materials:', error)
+    console.error('[LessonContentApp] Error loading topic materials:', error)
     ElMessage.error('Не удалось загрузить материалы урока')
+    // Очищаем состояние при ошибке
+    mainMaterials.value = []
+    additionalMaterials.value = []
+    currentFile.value = null
   }
 }
 
