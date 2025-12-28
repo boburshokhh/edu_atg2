@@ -149,9 +149,22 @@ const loadPdf = async () => {
       throw new Error('Не указан ключ объекта для загрузки')
     }
 
-    // Кодируем ключ для URL (заменяем пробелы и специальные символы)
-    const encodedKey = encodeURIComponent(objectKey)
+    // Нормализуем ключ: убираем ведущие слэши
+    const normalizedKey = String(objectKey).replace(/^\/+/, '')
+    
+    if (!normalizedKey) {
+      throw new Error('Некорректный ключ объекта')
+    }
+
+    // Кодируем ключ для URL (encodeURIComponent правильно обрабатывает все специальные символы)
+    const encodedKey = encodeURIComponent(normalizedKey)
     const streamUrl = `/api/files/stream/${encodedKey}`
+    
+    console.log('[SecurePDFViewer] Loading PDF:', {
+      originalKey: objectKey,
+      normalizedKey: normalizedKey,
+      streamUrl: streamUrl
+    })
 
     // Получаем токен авторизации из localStorage
     const getAuthToken = () => {
@@ -185,11 +198,27 @@ const loadPdf = async () => {
     totalPages.value = pdfDoc.value.numPages
     currentPage.value = 1
 
+    console.log('[SecurePDFViewer] PDF loaded successfully:', {
+      pages: totalPages.value,
+      file: props.file.fileName || props.file.originalName
+    })
+
     await renderPage(1)
     loading.value = false
   } catch (err) {
     console.error('[SecurePDFViewer] Error loading PDF:', err)
-    error.value = err.message || 'Не удалось загрузить документ'
+    
+    // Детальная обработка ошибок
+    let errorMessage = 'Не удалось загрузить документ'
+    if (err.name === 'MissingPDFException') {
+      errorMessage = 'PDF файл поврежден или не найден'
+    } else if (err.name === 'UnexpectedResponseException') {
+      errorMessage = 'Ошибка сервера при загрузке документа. Проверьте авторизацию.'
+    } else if (err.message) {
+      errorMessage = err.message
+    }
+    
+    error.value = errorMessage
     loading.value = false
   }
 }
@@ -382,7 +411,6 @@ onUnmounted(() => {
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
-  user-drag: none;
 }
 
 .pdf-controls {

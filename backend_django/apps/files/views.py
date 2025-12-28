@@ -145,10 +145,40 @@ class FolderContentsView(APIView):
 
 
 class StreamObjectView(APIView):
+    """
+    Secure streaming endpoint for PDF and other files from MinIO.
+    Requires authentication and supports Range requests for efficient PDF.js loading.
+    """
     permission_classes = [IsAuthenticated]
 
+    def options(self, request, key: str):
+        """Handle CORS preflight requests"""
+        response = JsonResponse({})
+        response["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+        response["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Range, Authorization, Content-Type"
+        response["Access-Control-Max-Age"] = "86400"
+        return response
+
     def get(self, request, key: str):
-        key = key.lstrip("/")
+        import logging
+        import urllib.parse
+        logger = logging.getLogger(__name__)
+        
+        # Декодируем ключ из URL (frontend использует encodeURIComponent)
+        try:
+            # Django автоматически декодирует URL, но нужно обработать специальные случаи
+            key = urllib.parse.unquote(key)
+            key = key.lstrip("/")
+        except Exception as e:
+            logger.error(f"[StreamObjectView] Error decoding key: {e}")
+            return JsonResponse({"error": "Invalid key format"}, status=400)
+        
+        if not key:
+            return JsonResponse({"error": "Missing key"}, status=400)
+        
+        logger.debug(f"[StreamObjectView] Streaming file: {key}")
+        
         client = s3_client()
         range_header = request.headers.get("Range")
 
@@ -156,6 +186,7 @@ class StreamObjectView(APIView):
         status_code = 200
         content_range = None
 
+        # Поддержка Range requests для PDF.js (partial content)
         if range_header:
             m = _RANGE_RE.match(range_header)
             if m:
@@ -163,26 +194,45 @@ class StreamObjectView(APIView):
                 end = int(m.group(2)) if m.group(2) is not None else None
                 extra["Range"] = f"bytes={start}-{'' if end is None else end}"
                 status_code = 206
+                logger.debug(f"[StreamObjectView] Range request: {start}-{end}")
 
         try:
+            # Получаем объект из MinIO
             obj = client.get_object(Bucket=settings.MINIO_BUCKET, Key=key, **extra)
         except ClientError as e:
             code = (e.response.get("Error") or {}).get("Code")
+            logger.error(f"[StreamObjectView] MinIO error for key {key}: {code}")
             if code in ("NoSuchKey", "404", "NotFound"):
-                return JsonResponse({"error": "Not found"}, status=404)
-            return JsonResponse({"error": "Not found"}, status=404)
+                return JsonResponse({"error": "File not found"}, status=404)
+            return JsonResponse({"error": "Failed to retrieve file"}, status=500)
+        except Exception as e:
+            logger.exception(f"[StreamObjectView] Unexpected error for key {key}: {e}")
+            return JsonResponse({"error": "Internal server error"}, status=500)
 
         body = obj["Body"]
-        content_type = obj.get("ContentType") or "application/octet-stream"
+        
+        # Определяем Content-Type: приоритет у метаданных MinIO, затем по расширению
+        content_type = obj.get("ContentType")
+        if not content_type or content_type == "binary/octet-stream":
+            # Определяем по расширению файла
+            guessed_type, _ = mimetypes.guess_type(key)
+            if guessed_type:
+                content_type = guessed_type
+            elif key.lower().endswith('.pdf'):
+                content_type = "application/pdf"
+            else:
+                content_type = "application/octet-stream"
+        
         content_length = obj.get("ContentLength")
 
-        # Botocore may not expose ContentRange; compute it if we have range and Total size
+        # Вычисляем Content-Range для partial content responses
         total_size = None
-        try:
-            head = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
-            total_size = head.get("ContentLength")
-        except Exception:
-            total_size = None
+        if status_code == 206:
+            try:
+                head = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
+                total_size = head.get("ContentLength")
+            except Exception:
+                total_size = content_length
 
         if status_code == 206 and total_size is not None and range_header:
             m = _RANGE_RE.match(range_header)
@@ -191,12 +241,31 @@ class StreamObjectView(APIView):
                 end = int(m.group(2)) if m.group(2) is not None else (total_size - 1)
                 content_range = f"bytes {start}-{end}/{total_size}"
 
+        # Создаем streaming response
         resp = StreamingHttpResponse(body, status=status_code, content_type=content_type)
+        
+        # Заголовки для поддержки Range requests и кэширования
         resp["Accept-Ranges"] = "bytes"
         if content_length is not None:
             resp["Content-Length"] = str(content_length)
         if content_range:
             resp["Content-Range"] = content_range
+        
+        # CORS заголовки для streaming responses (важно для PDF.js)
+        resp["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+        resp["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        resp["Access-Control-Allow-Headers"] = "Range, Authorization, Content-Type"
+        resp["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges"
+        
+        # Кэширование для оптимизации (не кэшируем PDF для безопасности)
+        if content_type == "application/pdf":
+            resp["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
+            resp["Pragma"] = "no-cache"
+            resp["Expires"] = "0"
+        else:
+            resp["Cache-Control"] = "public, max-age=3600"
+        
+        logger.debug(f"[StreamObjectView] Streaming {content_type} file: {key}, size: {content_length}")
         return resp
 
 
