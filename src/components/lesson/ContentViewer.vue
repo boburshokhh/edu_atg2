@@ -42,6 +42,16 @@
       </div>
     </div>
 
+    <!-- PDF Viewer -->
+    <SecurePDFViewer
+      v-else-if="currentFile && currentFileType === 'pdf'"
+      :file="currentFile"
+      :zoom="currentZoom"
+      :is-fullscreen="isFullscreen"
+      @zoom-in="$emit('zoom-in')"
+      @zoom-out="$emit('zoom-out')"
+    />
+
     <!-- Video Player -->
     <OptimizedVideoPlayer
       v-else-if="currentFile && currentFileType === 'video'"
@@ -68,12 +78,24 @@
       <p class="text-sm text-gray-500 mb-4">
         {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
       </p>
+      <!-- Скачивание запрещено для конфиденциальных документов -->
       <el-button 
+        v-if="currentFileType !== 'pdf'"
         type="primary" 
         @click="$emit('download-file', currentFile)"
       >
         Скачать файл
       </el-button>
+      <el-alert
+        v-else
+        type="info"
+        :closable="false"
+        show-icon
+      >
+        <template #title>
+          <span>Скачивание конфиденциальных документов запрещено</span>
+        </template>
+      </el-alert>
     </div>
 
     <!-- No Content Placeholder -->
@@ -95,6 +117,7 @@ import { defineAsyncComponent } from 'vue'
 import { ZoomIn, ZoomOut, FullScreen, Document } from '@element-plus/icons-vue'
 
 // Lazy load viewers
+const SecurePDFViewer = defineAsyncComponent(() => import('./SecurePDFViewer.vue'))
 const OptimizedVideoPlayer = defineAsyncComponent(() => import('./OptimizedVideoPlayer.vue'))
 
 const props = defineProps({

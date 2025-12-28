@@ -325,6 +325,17 @@ const currentFileType = computed(() => {
   if (!f) return 'unknown'
   const t = (f.type || '').toLowerCase()
   const name = (f.original_name || f.originalName || '').toLowerCase()
+  
+  // Определение PDF (приоритет)
+  if (
+    t.includes('pdf') ||
+    t === 'application/pdf' ||
+    name.endsWith('.pdf')
+  ) {
+    return 'pdf'
+  }
+  
+  // Определение видео
   if (
     t.includes('video') ||
     name.endsWith('.mp4') ||
@@ -334,11 +345,24 @@ const currentFileType = computed(() => {
   ) {
     return 'video'
   }
+  
   return 'unknown'
 })
 
 const downloadFile = async (file) => {
   if (!file) return
+  
+  // Безопасность: запрещаем скачивание PDF документов
+  const fileType = (file.type || '').toLowerCase()
+  const fileName = (file.original_name || file.originalName || '').toLowerCase()
+  const isPdf = fileType.includes('pdf') || fileType === 'application/pdf' || fileName.endsWith('.pdf')
+  
+  if (isPdf) {
+    ElMessage.warning('Скачивание конфиденциальных PDF документов запрещено')
+    return
+  }
+  
+  // Для других типов файлов разрешаем скачивание (видео, изображения и т.д.)
   const direct = file.url || file.file_url
   if (direct) {
     window.open(direct, '_blank')
@@ -350,7 +374,8 @@ const downloadFile = async (file) => {
     return
   }
   try {
-    const url = await minioService.getPresignedDownloadUrl(key, 7 * 24 * 60 * 60, file.type || null)
+    // Уменьшенный TTL для временных ссылок (1 час вместо 7 дней)
+    const url = await minioService.getPresignedDownloadUrl(key, 60 * 60, file.type || null)
     window.open(url, '_blank')
   } catch (e) {
     ElMessage.error('Не удалось открыть файл')
@@ -474,7 +499,18 @@ const loadTopicMaterials = async () => {
             return null
           }
 
-          const fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 7 * 24 * 60 * 60, contentType)
+          // Безопасность: для PDF используем streaming endpoint, для других - presigned URLs с коротким TTL
+          const isPdf = fileType === 'pdf' || contentType.includes('pdf') || nameForDetect.endsWith('.pdf')
+          
+          let fileUrl = null
+          if (isPdf) {
+            // PDF: используем streaming endpoint (безопаснее, нет прямого доступа)
+            // URL будет формироваться в SecurePDFViewer компоненте
+            fileUrl = null // Не нужен presigned URL для PDF
+          } else {
+            // Для видео и других файлов: presigned URL с коротким TTL (1 час вместо 7 дней)
+            fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
+          }
 
           return {
             id: f.id,
@@ -550,7 +586,7 @@ const loadTopicMaterials = async () => {
       ElMessage.warning('Материалы загружены из legacy JSON (в БД нет файлов для этой темы)')
     }
 
-    // ✅ ПАРАЛЛЕЛЬНАЯ загрузка всех presigned URL
+    // ✅ ПАРАЛЛЕЛЬНАЯ загрузка файлов (PDF через streaming, остальные через presigned URLs)
     const filePromises = topicData.files.map(async (fileConfig) => {
       try {
         const contentType = fileConfig.fileType === 'pdf' 
@@ -558,12 +594,24 @@ const loadTopicMaterials = async () => {
           : fileConfig.fileType === 'video' 
             ? 'video/mp4' 
             : 'application/octet-stream'
-            
-        const fileUrl = await minioService.getPresignedDownloadUrl(
-          fileConfig.objectName,
-          7 * 24 * 60 * 60,
-          contentType
-        )
+        
+        const fileName = (fileConfig.fileName || '').toLowerCase()
+        const isPdf = fileConfig.fileType === 'pdf' || contentType.includes('pdf') || fileName.endsWith('.pdf')
+        
+        // Безопасность: для PDF используем streaming endpoint, для других - presigned URLs с коротким TTL
+        let fileUrl = null
+        if (isPdf) {
+          // PDF: используем streaming endpoint (безопаснее, нет прямого доступа)
+          // URL будет формироваться в SecurePDFViewer компоненте
+          fileUrl = null // Не нужен presigned URL для PDF
+        } else {
+          // Для видео и других файлов: presigned URL с коротким TTL (1 час вместо 7 дней)
+          fileUrl = await minioService.getPresignedDownloadUrl(
+            fileConfig.objectName,
+            60 * 60, // 1 час вместо 7 дней
+            contentType
+          )
+        }
 
         return {
           objectName: fileConfig.objectName,
