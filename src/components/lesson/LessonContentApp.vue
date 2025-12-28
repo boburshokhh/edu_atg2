@@ -43,9 +43,9 @@
         @click="showMaterialsSidebar = false"
       />
 
-      <!-- Expand Left Sidebar Button (when sidebar is hidden) -->
+      <!-- Expand Left Sidebar Button (desktop only, when sidebar is hidden) -->
       <el-button
-        v-if="!showSidebar && !isMobile"
+        v-if="!showSidebar && !isMobile && !isTablet"
         class="sidebar-expand-btn sidebar-expand-btn-left"
         type="primary"
         circle
@@ -160,20 +160,21 @@
         />
       </transition>
 
-      <!-- Expand Right Sidebar Button (when sidebar is hidden) -->
+      <!-- Expand Right Sidebar Button (desktop only, when sidebar is hidden) -->
       <el-button
-        v-if="!showMaterialsSidebar && !isMobile"
+        v-if="!showMaterialsSidebar && !isMobile && !isTablet"
         class="sidebar-expand-btn sidebar-expand-btn-right"
         type="primary"
         circle
-        :icon="Menu"
+        :icon="Folder"
         title="Показать материалы"
         @click="showMaterialsSidebar = true"
       />
     </el-container>
 
-    <!-- Mobile Menu Buttons -->
+    <!-- Mobile Menu Buttons (only on mobile/tablet) -->
     <el-button
+      v-if="isMobile || isTablet"
       class="mobile-menu-btn mobile-menu-btn-left"
       type="primary"
       circle
@@ -185,8 +186,9 @@
       </el-icon>
     </el-button>
 
-    <!-- Mobile Materials Button -->
+    <!-- Mobile Materials Button (only on mobile/tablet) -->
     <el-button
+      v-if="isMobile || isTablet"
       class="mobile-menu-btn mobile-menu-btn-right"
       type="primary"
       circle
@@ -1219,11 +1221,18 @@ onUnmounted(() => {
   }
 }
 
-/* Hide mobile menu on desktop */
+/* Hide mobile menu on desktop (уже контролируется через v-if, но оставляем для надежности) */
 @media (min-width: 1025px) {
   .mobile-menu-btn {
-    display: none;
+    display: none !important;
+  }
 }
+
+/* Hide desktop expand buttons on mobile/tablet */
+@media (max-width: 1024px) {
+  .sidebar-expand-btn {
+    display: none !important;
+  }
 }
 
 /* Mobile phones - adjust button positions */
