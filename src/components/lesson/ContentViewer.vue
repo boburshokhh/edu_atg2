@@ -42,61 +42,64 @@
       </div>
     </div>
 
-    <!-- PDF Viewer -->
-    <SecurePDFViewer
-      v-else-if="currentFile && currentFileType === 'pdf'"
-      :file="currentFile"
-      :zoom="currentZoom"
-      :is-fullscreen="isFullscreen"
-      @zoom-in="$emit('zoom-in')"
-      @zoom-out="$emit('zoom-out')"
-    />
+    <!-- Content Area (separate chain; must NOT be tied to Controls Bar v-if) -->
+    <template v-if="currentFile">
+      <!-- PDF Viewer -->
+      <SecurePDFViewer
+        v-if="currentFileType === 'pdf'"
+        :file="currentFile"
+        :zoom="currentZoom"
+        :is-fullscreen="isFullscreen"
+        @zoom-in="$emit('zoom-in')"
+        @zoom-out="$emit('zoom-out')"
+      />
 
-    <!-- Video Player -->
-    <OptimizedVideoPlayer
-      v-else-if="currentFile && currentFileType === 'video'"
-      :source="currentFile"
-      :zoom="currentZoom"
-      :is-fullscreen="isFullscreen"
-      @fullscreen-change="handleFullscreenChange"
-    />
+      <!-- Video Player -->
+      <OptimizedVideoPlayer
+        v-else-if="currentFileType === 'video'"
+        :source="currentFile"
+        :zoom="currentZoom"
+        :is-fullscreen="isFullscreen"
+        @fullscreen-change="handleFullscreenChange"
+      />
 
-    <!-- Unsupported File Type -->
-    <div 
-      v-else-if="currentFile && currentFileType === 'unknown'"
-      class="flex flex-col items-center justify-center min-h-[400px] p-8"
-    >
-      <el-icon
-        :size="64"
-        class="text-gray-400 mb-4"
-      >
-        <Document />
-      </el-icon>
-      <h3 class="text-lg font-semibold text-gray-700 mb-2">
-        Неподдерживаемый формат файла
-      </h3>
-      <p class="text-sm text-gray-500 mb-4">
-        {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
-      </p>
-      <!-- Скачивание запрещено для конфиденциальных документов -->
-      <el-button 
-        v-if="currentFileType !== 'pdf'"
-        type="primary" 
-        @click="$emit('download-file', currentFile)"
-      >
-        Скачать файл
-      </el-button>
-      <el-alert
+      <!-- Unsupported File Type -->
+      <div 
         v-else
-        type="info"
-        :closable="false"
-        show-icon
+        class="flex flex-col items-center justify-center min-h-[400px] p-8"
       >
-        <template #title>
-          <span>Скачивание конфиденциальных документов запрещено</span>
-        </template>
-      </el-alert>
-    </div>
+        <el-icon
+          :size="64"
+          class="text-gray-400 mb-4"
+        >
+          <Document />
+        </el-icon>
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">
+          Неподдерживаемый формат файла
+        </h3>
+        <p class="text-sm text-gray-500 mb-4">
+          {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
+        </p>
+        <!-- Скачивание запрещено для конфиденциальных документов -->
+        <el-button 
+          v-if="currentFileType !== 'pdf'"
+          type="primary" 
+          @click="$emit('download-file', currentFile)"
+        >
+          Скачать файл
+        </el-button>
+        <el-alert
+          v-else
+          type="info"
+          :closable="false"
+          show-icon
+        >
+          <template #title>
+            <span>Скачивание конфиденциальных документов запрещено</span>
+          </template>
+        </el-alert>
+      </div>
+    </template>
 
     <!-- No Content Placeholder -->
     <div
@@ -112,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { defineAsyncComponent } from 'vue'
 import { ZoomIn, ZoomOut, FullScreen, Document } from '@element-plus/icons-vue'
 
@@ -139,6 +142,15 @@ const emit = defineEmits(['zoom-in', 'zoom-out', 'toggle-fullscreen', 'download-
 
 const fullscreenContainer = ref(null)
 const isFullscreen = ref(false)
+
+watch(
+  () => [props.currentFileType, props.currentFile?.objectName || props.currentFile?.object_key || props.currentFile?.objectKey],
+  ([type, key]) => {
+    if (!props.currentFile) return
+    console.log('[ContentViewer] Render target:', { type, key })
+  },
+  { immediate: true }
+)
 
 const toggleFullscreen = async () => {
   if (!fullscreenContainer.value) return

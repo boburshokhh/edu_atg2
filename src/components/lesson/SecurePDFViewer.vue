@@ -92,7 +92,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, Document, Refresh } from '@element-plus/icons-vue'
 import * as pdfjsLib from 'pdfjs-dist'
 
@@ -290,12 +290,18 @@ watch(() => props.zoom, async (newZoom) => {
   }
 })
 
-// Перерисовка при изменении файла
-watch(() => props.file, () => {
-  if (props.file) {
+// Перезагрузка при изменении objectKey (устойчивее, чем watch на весь объект)
+watch(
+  () => props.file?.objectName || props.file?.object_key || props.file?.objectKey,
+  (newKey, oldKey) => {
+    if (!newKey) return
+    if (newKey !== oldKey) {
+      console.log('[SecurePDFViewer] objectKey changed:', { oldKey, newKey })
+    }
     loadPdf()
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+)
 
 // Защита от контекстного меню и горячих клавиш
 const preventContextMenu = (e) => {

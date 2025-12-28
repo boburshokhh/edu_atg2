@@ -304,8 +304,14 @@ const additionalMaterials = ref([])
 const currentFileType = computed(() => {
   const f = currentFile.value
   if (!f) return 'unknown'
-  const t = (f.type || '').toLowerCase()
-  const name = (f.original_name || f.originalName || '').toLowerCase()
+  const t = String(f.type || f.mimeType || f.mime_type || '').toLowerCase()
+  const name = String(
+    f.original_name ||
+      f.originalName ||
+      f.fileName ||
+      f.file_name ||
+      ''
+  ).toLowerCase()
   
   // Определение PDF (приоритет)
   if (
@@ -654,6 +660,11 @@ const handleFullscreenChange = () => {
 
 const openMaterial = (material) => {
   currentFile.value = material
+  console.log('[LessonContentApp] Material selected:', {
+    objectName: material?.objectName || material?.object_key || material?.objectKey,
+    name: material?.original_name || material?.originalName || material?.fileName || material?.file_name,
+    type: material?.type || material?.mimeType || material?.mime_type,
+  })
 }
 
 const markAsCompleted = () => {
