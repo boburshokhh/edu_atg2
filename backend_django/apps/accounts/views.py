@@ -97,7 +97,7 @@ class LoginView(APIView):
                         logger.info(f"[LDAP] Authentication successful for user: {username}")
                         # LDAP authentication successful
                         # Try to get or create user in database
-                            t_db0 = time.perf_counter()
+                        t_db0 = time.perf_counter()
 
                         ldap_email_raw = (ldap_user_info.get("email") or "").strip()
                         ldap_email = ldap_email_raw[:100] if ldap_email_raw else ""
@@ -114,10 +114,10 @@ class LoginView(APIView):
                         if not user and canonical_username and canonical_username != provided_username:
                             user = User.objects.filter(username=canonical_username, is_active=True).first()
 
-                            logger.info(
+                        logger.info(
                             "[Perf][Login] step=db_find_user ms=%d username=%s found=%s",
-                                int((time.perf_counter() - t_db0) * 1000),
-                                username,
+                            int((time.perf_counter() - t_db0) * 1000),
+                            username,
                             bool(user),
                         )
 
@@ -162,8 +162,8 @@ class LoginView(APIView):
                                 ldap_position = (ldap_user_info.get("position") or "")[:255]
                                 
                                 if not profile:
-                                UserProfile.objects.create(
-                                    id=user,
+                                    UserProfile.objects.create(
+                                        id=user,
                                         full_name=ldap_full_name or None,
                                         email=ldap_profile_email or None,
                                         phone=ldap_phone or None,
