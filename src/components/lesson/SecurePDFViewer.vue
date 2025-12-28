@@ -97,9 +97,16 @@ import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, Document, Refresh } from '@elem
 import * as pdfjsLib from 'pdfjs-dist'
 
 // Настройка worker для PDF.js
-// Используем CDN для worker (можно также использовать локальный файл)
+// Используем worker из public папки (скопирован из node_modules при установке)
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+  // Worker скопирован в public/pdf.worker.min.js
+  // Vite автоматически скопирует его в dist при сборке
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+  
+  console.log('[SecurePDFViewer] PDF.js worker configured:', {
+    version: pdfjsLib.version,
+    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc
+  })
 }
 
 const props = defineProps({
