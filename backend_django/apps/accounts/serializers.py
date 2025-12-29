@@ -33,7 +33,7 @@ class RegisterProfileSerializer(serializers.Serializer):
     """Serializer for first-time user registration (required fields)"""
     full_name = serializers.CharField(min_length=2, max_length=255, required=True)
     phone = serializers.CharField(min_length=5, max_length=50, required=True)
-    station_id = serializers.IntegerField(required=True)  # Station ID from database
+    station_id = serializers.IntegerField(required=False, allow_null=True)  # Station ID from database (optional)
     position = serializers.CharField(min_length=2, max_length=255, required=True)  # Job title
     department = serializers.CharField(required=False, allow_blank=True, max_length=255)  # Department (stored in bio)
 

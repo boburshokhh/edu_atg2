@@ -439,10 +439,7 @@
         </el-form-item>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <el-form-item 
-            v-if="!user.station"
-            class="sm:col-span-2"
-          >
+          <el-form-item label="Станция (необязательно)">
             <el-select 
               v-model="editForm.station" 
               placeholder="Выберите станцию (необязательно)" 

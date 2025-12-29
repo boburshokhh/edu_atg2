@@ -587,18 +587,20 @@ class RegisterProfileView(APIView):
         
         full_name = ser.validated_data["full_name"]
         phone = ser.validated_data["phone"]
-        station_id = ser.validated_data["station_id"]
+        station_id = ser.validated_data.get("station_id")  # Optional field
         position = ser.validated_data["position"]  # Job title
         department = ser.validated_data["department"]
         
         # Get station name from database (before checking temp_session)
-        try:
-            from apps.stations.models import Station
-            station = Station.objects.get(id=station_id)
-            company = station.name  # Use station name as company
-        except Station.DoesNotExist:
-            logger.error(f"[Register] Station with id {station_id} not found")
-            return JsonResponse({"error": "Station not found"}, status=400)
+        company = None
+        if station_id is not None:
+            try:
+                from apps.stations.models import Station
+                station = Station.objects.get(id=station_id)
+                company = station.name  # Use station name as company
+            except Station.DoesNotExist:
+                logger.error(f"[Register] Station with id {station_id} not found")
+                return JsonResponse({"error": "Station not found"}, status=400)
         
         # Check if this is a temporary LDAP session (first-time registration)
         temp_session = getattr(request, "ldap_temp_session", None)
@@ -612,7 +614,7 @@ class RegisterProfileView(APIView):
             # Regular user - get email from user object (may not have email attribute if it's a mock)
             email = getattr(user, "email", None) or f'{user.username}@example.com'
         
-        logger.info(f"[Register] Saving profile for user: {user.username}, station: {company}")
+        logger.info(f"[Register] Saving profile for user: {user.username}, station: {company or 'Not selected'}")
         
         # Track if we created new tokens (for temp session -> real user conversion)
         access_token = None
