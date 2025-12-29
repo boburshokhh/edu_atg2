@@ -127,11 +127,12 @@
             >
               <el-select
                 v-model="form.station_id"
-                placeholder="Выберите станцию"
+                placeholder="Выберите станцию (необязательно)"
                 size="large"
                 class="login-input w-full"
                 :loading="loadingStations"
                 filterable
+                clearable
               >
                 <el-option
                   v-for="station in stations"
@@ -213,7 +214,7 @@
 
         <!-- Footer -->
         <div class="mt-12 text-center text-xs text-gray-400">
-          <p>Все поля обязательны для заполнения</p>
+          <p>Станция необязательна для заполнения</p>
         </div>
       </div>
     </div>
@@ -255,7 +256,7 @@ export default {
         { min: 5, message: 'Номер телефона должен содержать минимум 5 символов', trigger: 'blur' }
       ],
       station_id: [
-        { required: true, message: 'Необходимо выбрать станцию', trigger: 'change' }
+        // Станция опциональна
       ],
       position: [
         { required: true, message: 'Должность обязательна для заполнения', trigger: 'blur' },

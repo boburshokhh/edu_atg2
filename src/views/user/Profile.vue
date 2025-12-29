@@ -116,9 +116,6 @@
                   <p class="text-blue-600 font-medium mb-1 text-sm sm:text-base">
                     {{ user.position || 'Должность не указана' }}
                   </p>
-                  <p class="text-gray-500 text-sm">
-                    {{ user.station || 'Станция не выбрана' }}
-                  </p>
                 </div>
 
                 <el-divider class="!my-6" />
@@ -139,19 +136,6 @@
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-3 sm:gap-4 group">
-                    <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors shrink-0">
-                      <el-icon><OfficeBuilding /></el-icon>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
-                        Станция
-                      </p>
-                      <p class="text-gray-900 font-medium truncate">
-                        {{ user.station || 'Не выбрана' }}
-                      </p>
-                    </div>
-                  </div>
 
                   <div class="flex items-center gap-3 sm:gap-4 group">
                     <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-100 transition-colors shrink-0">
@@ -202,25 +186,25 @@
                   label="Мои курсы"
                   name="courses"
                 >
-                  <div class="p-6">
+                  <div class="p-4 sm:p-6">
                     <div
                       v-if="userCourses.length"
-                      class="space-y-4"
+                      class="space-y-3 sm:space-y-4"
                     >
                       <div 
                         v-for="course in userCourses" 
                         :key="course.id"
-                        class="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all cursor-pointer"
+                        class="group flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all cursor-pointer"
                         @click="$router.push(`/course/${course.course_id || course.id}`)"
                       >
-                        <div class="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform">
-                          <el-icon size="28">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform">
+                          <el-icon :size="isMobile ? 24 : 28">
                             <component :is="course.course?.icon || 'Monitor'" />
                           </el-icon>
                         </div>
                         <div class="flex-1 min-w-0 w-full">
                           <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
-                            <h3 class="font-bold text-gray-900 text-lg leading-tight group-hover:text-blue-600 transition-colors">
+                            <h3 class="font-bold text-gray-900 text-base sm:text-lg leading-tight group-hover:text-blue-600 transition-colors">
                               {{ course.course?.title || course.title }}
                             </h3>
                             <span 
@@ -244,7 +228,7 @@
                                 :color="customColors"
                               />
                             </div>
-                            <div class="text-xs text-gray-400 shrink-0 flex items-center gap-1">
+                            <div class="hidden sm:flex text-xs text-gray-400 shrink-0 items-center gap-1">
                               <el-icon><Clock /></el-icon>
                               <span>Обновлено: {{ formatDate(course.last_activity) }}</span>
                             </div>
@@ -286,7 +270,7 @@
                   label="Детальная статистика"
                   name="stats"
                 >
-                  <div class="p-6">
+                  <div class="p-4 sm:p-6">
                     <UserStatistics :detailed="true" />
                   </div>
                 </el-tab-pane>
@@ -455,13 +439,17 @@
         </el-form-item>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <el-form-item label="Станция">
+          <el-form-item 
+            v-if="!user.station"
+            class="sm:col-span-2"
+          >
             <el-select 
               v-model="editForm.station" 
-              placeholder="Выберите станцию" 
+              placeholder="Выберите станцию (необязательно)" 
               class="w-full"
               :loading="loadingStations"
               filterable
+              clearable
             >
               <el-option
                 v-for="station in stations"
