@@ -92,24 +92,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick, toRaw } from 'vue'
 import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, Document, Refresh } from '@element-plus/icons-vue'
 import * as pdfjsLib from 'pdfjs-dist'
 
 // Настройка worker для PDF.js
 // КРИТИЧЕСКИ ВАЖНО: Worker должен точно соответствовать версии библиотеки
 if (typeof window !== 'undefined') {
-  const pdfjsVersion = pdfjsLib.version || '5.4.449'
+  const pdfjsVersion = pdfjsLib.version || '4.10.38'
   
   // Используем локальный worker из public папки (самый надежный способ)
   // Файл скопирован из node_modules/pdfjs-dist/build/pdf.worker.min.mjs
-  // в public/pdf.worker.min.mjs и соответствует версии библиотеки 5.4.449
+  // в public/pdf.worker.min.mjs и соответствует версии библиотеки 4.10.38
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
   
   console.log('[SecurePDFViewer] PDF.js worker configured:', {
     version: pdfjsVersion,
     workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
-    note: 'Using local worker from public folder (matches library version)'
+    note: 'Using local worker from public folder (matches library version 4.10.38)'
   })
 }
 
@@ -139,6 +139,7 @@ const totalPages = ref(0)
 const pdfContainer = ref(null)
 const pdfCanvasContainer = ref(null)
 const pdfCanvas = ref(null)
+const isLoadingPdf = ref(false) // Защита от двойной загрузки
 
 // Загрузка PDF через streaming endpoint
 const loadPdf = async () => {
@@ -148,8 +149,25 @@ const loadPdf = async () => {
     return
   }
 
+  // Защита от двойной загрузки
+  if (isLoadingPdf.value) {
+    console.warn('[SecurePDFViewer] PDF is already loading, skipping duplicate request')
+    return
+  }
+
+  isLoadingPdf.value = true
   loading.value = true
   error.value = null
+  
+  // Очищаем предыдущий документ
+  if (pdfDoc.value) {
+    try {
+      await pdfDoc.value.destroy()
+    } catch (e) {
+      console.warn('[SecurePDFViewer] Error destroying previous PDF:', e)
+    }
+    pdfDoc.value = null
+  }
 
   try {
     // Используем streaming endpoint вместо presigned URL
@@ -248,7 +266,9 @@ const loadPdf = async () => {
       throw new Error('PDF document is not properly loaded')
     }
 
-    pdfDoc.value = pdfDocument
+    // КРИТИЧЕСКИ ВАЖНО: Используем toRaw() чтобы избежать проблем с реактивностью Vue 3
+    // PDF.js объекты не должны быть реактивными, иначе возникают проблемы с приватными полями
+    pdfDoc.value = toRaw(pdfDocument)
     totalPages.value = pdfDocument.numPages
     currentPage.value = 1
 
@@ -256,7 +276,8 @@ const loadPdf = async () => {
       pages: totalPages.value,
       file: props.file.fileName || props.file.originalName,
       documentReady: !!pdfDocument,
-      hasGetPage: typeof pdfDocument.getPage === 'function'
+      hasGetPage: typeof pdfDocument.getPage === 'function',
+      isRaw: pdfDoc.value === pdfDocument
     })
 
     // Ждем следующего тика для гарантии, что canvas готов
@@ -273,6 +294,7 @@ const loadPdf = async () => {
     // Рендерим первую страницу
     await renderPage(1)
     loading.value = false
+    isLoadingPdf.value = false
   } catch (err) {
     console.error('[SecurePDFViewer] Error loading PDF:', err)
     
@@ -288,6 +310,12 @@ const loadPdf = async () => {
     
     error.value = errorMessage
     loading.value = false
+    isLoadingPdf.value = false
+    
+    // Очищаем состояние при ошибке
+    pdfDoc.value = null
+    totalPages.value = 0
+    currentPage.value = 0
   }
 }
 
@@ -305,15 +333,19 @@ const renderPage = async (pageNum) => {
     }
 
     // Получаем страницу с дополнительной проверкой
+    // КРИТИЧЕСКИ ВАЖНО: Используем toRaw() для получения нереактивной версии документа
     let page
     try {
+      // Получаем нереактивную версию документа
+      const rawDoc = toRaw(pdfDoc.value)
+      
       // Проверяем, что метод getPage доступен
-      if (typeof pdfDoc.value.getPage !== 'function') {
+      if (!rawDoc || typeof rawDoc.getPage !== 'function') {
         throw new Error('getPage method is not available on PDF document')
       }
       
-      // Получаем страницу
-      const pagePromise = pdfDoc.value.getPage(pageNum)
+      // Получаем страницу из нереактивного документа
+      const pagePromise = rawDoc.getPage(pageNum)
       if (!pagePromise || typeof pagePromise.then !== 'function') {
         throw new Error('getPage did not return a promise')
       }
