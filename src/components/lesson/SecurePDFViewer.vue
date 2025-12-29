@@ -103,10 +103,17 @@ if (typeof window !== 'undefined') {
   // Vite автоматически скопирует его в dist при сборке
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
   
+  // Проверяем версию PDF.js для совместимости
+  const pdfjsVersion = pdfjsLib.version || 'unknown'
   console.log('[SecurePDFViewer] PDF.js worker configured:', {
-    version: pdfjsLib.version,
+    version: pdfjsVersion,
     workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc
   })
+  
+  // Предупреждение о возможных проблемах с версией
+  if (pdfjsVersion.startsWith('5.')) {
+    console.log('[SecurePDFViewer] Using PDF.js 5.x - ensure worker version matches')
+  }
 }
 
 const props = defineProps({
@@ -198,6 +205,9 @@ const loadPdf = async () => {
       // Оптимизация для больших файлов
       cMapUrl: `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/cmaps/`,
       cMapPacked: true,
+      // Дополнительные настройки для совместимости
+      verbosity: 0, // Уменьшаем логирование
+      stopAtErrors: false, // Продолжаем при ошибках
     })
 
     // Ждем полной загрузки документа
@@ -219,6 +229,9 @@ const loadPdf = async () => {
 
     // Ждем следующего тика для гарантии, что canvas готов
     await nextTick()
+    
+    // Дополнительная задержка для гарантии, что DOM полностью готов
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     // Рендерим первую страницу
     await renderPage(1)
@@ -249,16 +262,65 @@ const renderPage = async (pageNum) => {
   }
 
   try {
-    // Получаем страницу напрямую (документ уже загружен)
-    const page = await pdfDoc.value.getPage(pageNum)
+    // Проверяем, что документ полностью загружен
+    if (!pdfDoc.value || typeof pdfDoc.value.getPage !== 'function') {
+      throw new Error('PDF document is not ready')
+    }
+
+    // Получаем страницу с дополнительной проверкой
+    let page
+    try {
+      // Проверяем, что метод getPage доступен
+      if (typeof pdfDoc.value.getPage !== 'function') {
+        throw new Error('getPage method is not available on PDF document')
+      }
+      
+      // Получаем страницу
+      const pagePromise = pdfDoc.value.getPage(pageNum)
+      if (!pagePromise || typeof pagePromise.then !== 'function') {
+        throw new Error('getPage did not return a promise')
+      }
+      
+      page = await pagePromise
+      
+      // Дополнительная проверка после получения страницы
+      if (!page) {
+        throw new Error(`Page ${pageNum} returned null`)
+      }
+      
+      // Проверяем, что страница имеет необходимые методы
+      if (typeof page.getViewport !== 'function') {
+        throw new Error('Page object is missing getViewport method')
+      }
+    } catch (getPageError) {
+      // Если ошибка при получении страницы, пробуем перезагрузить документ
+      console.error('[SecurePDFViewer] Error getting page:', getPageError)
+      console.error('[SecurePDFViewer] PDF document state:', {
+        hasPdfDoc: !!pdfDoc.value,
+        numPages: pdfDoc.value?.numPages,
+        getPageType: typeof pdfDoc.value?.getPage
+      })
+      throw new Error(`Не удалось получить страницу ${pageNum}: ${getPageError.message || 'Неизвестная ошибка'}`)
+    }
     
     if (!page) {
       throw new Error(`Page ${pageNum} not found`)
     }
 
+    // Проверяем, что страница валидна
+    if (typeof page.getViewport !== 'function') {
+      throw new Error('Page object is invalid')
+    }
+
     // Вычисляем viewport с учетом zoom
     const scale = props.zoom / 100
-    const viewport = page.getViewport({ scale })
+    let viewport
+    try {
+      viewport = page.getViewport({ scale })
+    } catch (viewportError) {
+      console.error('[SecurePDFViewer] Error getting viewport:', viewportError)
+      throw new Error('Не удалось создать viewport для страницы')
+    }
     
     const canvas = pdfCanvas.value
     if (!canvas) {
@@ -283,9 +345,26 @@ const renderPage = async (pageNum) => {
       viewport: viewport,
     }
 
-    // Рендерим страницу
-    const renderTask = page.render(renderContext)
-    await renderTask.promise
+    // Рендерим страницу с обработкой ошибок
+    let renderTask
+    try {
+      renderTask = page.render(renderContext)
+      if (!renderTask || typeof renderTask.promise !== 'function') {
+        throw new Error('Render task is invalid')
+      }
+      await renderTask.promise
+    } catch (renderError) {
+      console.error('[SecurePDFViewer] Error during render:', renderError)
+      // Если ошибка рендеринга, пробуем отменить задачу
+      if (renderTask && typeof renderTask.cancel === 'function') {
+        try {
+          renderTask.cancel()
+        } catch (cancelError) {
+          console.warn('[SecurePDFViewer] Error canceling render task:', cancelError)
+        }
+      }
+      throw new Error(`Ошибка рендеринга страницы: ${renderError.message || 'Неизвестная ошибка'}`)
+    }
     
     currentPage.value = pageNum
     
@@ -301,11 +380,37 @@ const renderPage = async (pageNum) => {
       pageNum,
       hasPdfDoc: !!pdfDoc.value,
       hasCanvas: !!pdfCanvas.value,
+      pdfDocType: pdfDoc.value ? typeof pdfDoc.value : 'null',
+      hasGetPage: pdfDoc.value ? typeof pdfDoc.value.getPage : 'null',
       errorName: err.name,
       errorMessage: err.message,
       errorStack: err.stack
     })
-    error.value = `Ошибка отображения страницы: ${err.message || 'Неизвестная ошибка'}`
+    
+    // Более понятное сообщение об ошибке
+    let errorMessage = 'Ошибка отображения страницы'
+    if (err.message && (err.message.includes('private field') || err.message.includes('Cannot read'))) {
+      errorMessage = 'Ошибка совместимости с PDF.js. Попробуйте перезагрузить документ.'
+      // Не устанавливаем error.value, чтобы не блокировать интерфейс
+      // Вместо этого просто логируем и пробуем перезагрузить
+      console.warn('[SecurePDFViewer] Private field error detected, attempting recovery...')
+      
+      // Пробуем перезагрузить документ через небольшую задержку
+      setTimeout(() => {
+        if (pdfDoc.value && pdfCanvas.value) {
+          console.log('[SecurePDFViewer] Retrying page render after error...')
+          renderPage(pageNum).catch(retryError => {
+            console.error('[SecurePDFViewer] Retry failed:', retryError)
+            error.value = 'Не удалось отобразить страницу. Попробуйте перезагрузить документ.'
+          })
+        }
+      }, 500)
+      return // Выходим, не устанавливая error, чтобы дать возможность повторить
+    } else if (err.message) {
+      errorMessage = err.message
+    }
+    
+    error.value = errorMessage
   }
 }
 
