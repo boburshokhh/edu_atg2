@@ -1,14 +1,14 @@
 <template>
   <AppLayout>
-    <div class="section-padding bg-gray-50 min-h-screen">
+    <div class="bg-gray-50 min-h-screen py-8 sm:py-12 lg:py-20">
       <div class="page-container">
         <!-- Header -->
-        <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <h1 class="text-[clamp(1.5rem,4.5vw,1.875rem)] sm:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2 leading-tight">
               Профиль сотрудника
             </h1>
-            <p class="text-gray-600">
+            <p class="text-gray-600 text-sm sm:text-base">
               Персональная информация и настройки
             </p>
           </div>
@@ -16,6 +16,7 @@
             type="primary"
             :icon="Edit"
             :disabled="loading"
+            class="w-full md:w-auto justify-center"
             @click="openEditModal"
           >
             Редактировать
@@ -25,7 +26,7 @@
         <!-- Loading State -->
         <div
           v-if="loading"
-          class="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8"
         >
           <div class="lg:col-span-1">
             <el-skeleton animated>
@@ -48,7 +49,7 @@
         <!-- Content -->
         <div
           v-else
-          class="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8"
         >
           <!-- Карточка профиля (Левая колонка) -->
           <div class="lg:col-span-1">
@@ -59,11 +60,11 @@
               </div>
               
               <!-- Аватар и основная инфо -->
-              <div class="px-6 pb-6 relative">
+              <div class="px-4 sm:px-6 pb-5 sm:pb-6 relative">
                 <div class="relative -mt-16 mb-4 flex justify-center">
                   <div class="relative group">
                     <el-avatar 
-                      :size="128" 
+                      :size="avatarSize" 
                       :src="user.avatar" 
                       class="border-4 border-white shadow-lg bg-white text-4xl font-bold text-gray-400 flex items-center justify-center"
                     >
@@ -108,11 +109,11 @@
                   </div>
                 </div>
 
-                <div class="text-center mb-6">
-                  <h2 class="text-2xl font-bold text-gray-900 mb-1 break-words">
+                <div class="text-center mb-5 sm:mb-6">
+                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1 break-words leading-tight">
                     {{ user.name || 'Пользователь' }}
                   </h2>
-                  <p class="text-blue-600 font-medium mb-1">
+                  <p class="text-blue-600 font-medium mb-1 text-sm sm:text-base">
                     {{ user.position || 'Должность не указана' }}
                   </p>
                   <p class="text-gray-500 text-sm">
@@ -123,26 +124,23 @@
                 <el-divider class="!my-6" />
 
                 <!-- Детальная информация -->
-                <div class="space-y-5">
-                  <div class="flex items-center gap-4 group">
-                    <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition-colors">
+                <div class="space-y-4 sm:space-y-5">
+                  <div class="flex items-center gap-3 sm:gap-4 group">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition-colors shrink-0">
                       <el-icon><Message /></el-icon>
                     </div>
                     <div class="flex-1 min-w-0">
                       <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
                         Email
                       </p>
-                      <p
-                        class="text-gray-900 font-medium truncate"
-                        :title="user.email"
-                      >
+                      <p class="text-gray-900 font-medium truncate" :title="user.email">
                         {{ user.email || 'Не указан' }}
                       </p>
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-4 group">
-                    <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors">
+                  <div class="flex items-center gap-3 sm:gap-4 group">
+                    <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors shrink-0">
                       <el-icon><OfficeBuilding /></el-icon>
                     </div>
                     <div class="flex-1 min-w-0">
@@ -155,8 +153,8 @@
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-4 group">
-                    <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-100 transition-colors">
+                  <div class="flex items-center gap-3 sm:gap-4 group">
+                    <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-100 transition-colors shrink-0">
                       <el-icon><Suitcase /></el-icon>
                     </div>
                     <div class="flex-1 min-w-0">
@@ -173,17 +171,17 @@
             </div>
 
             <!-- Краткая статистика -->
-            <div class="grid grid-cols-2 gap-4 mt-6">
-              <div class="card bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-                <p class="text-3xl font-bold text-blue-600 mb-1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+              <div class="card bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+                <p class="text-2xl sm:text-3xl font-bold text-blue-600 mb-1 leading-tight">
                   {{ userStats.completedCourses }}
                 </p>
                 <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">
                   Курсов пройдено
                 </p>
               </div>
-              <div class="card bg-white p-5 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-                <p class="text-3xl font-bold text-orange-600 mb-1">
+              <div class="card bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+                <p class="text-2xl sm:text-3xl font-bold text-orange-600 mb-1 leading-tight">
                   {{ userStats.hoursStudied }}
                 </p>
                 <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">
@@ -503,7 +501,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import UserStatistics from '@/components/user/UserStatistics.vue'
 import { ElMessage } from 'element-plus'
@@ -531,8 +529,17 @@ export default {
     const loading = ref(true)
     const loadingStations = ref(false)
     const stations = ref([])
+    const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+    let resizeHandler = null
     
     const currentUser = authService.getCurrentUser()
+
+    const isMobile = computed(() => viewportWidth.value < 640)
+    const avatarSize = computed(() => {
+      if (viewportWidth.value < 640) return 96
+      if (viewportWidth.value < 1024) return 112
+      return 128
+    })
     
     const user = ref({
       id: currentUser?.id,
@@ -818,6 +825,14 @@ export default {
     onMounted(() => {
       loadUserData()
       loadStations()
+      resizeHandler = () => {
+        viewportWidth.value = window.innerWidth
+      }
+      window.addEventListener('resize', resizeHandler, { passive: true })
+    })
+
+    onBeforeUnmount(() => {
+      if (resizeHandler) window.removeEventListener('resize', resizeHandler)
     })
     
     return {
@@ -834,6 +849,8 @@ export default {
       settingsForm,
       editForm,
       customColors,
+      isMobile,
+      avatarSize,
       Edit, Camera, Message, OfficeBuilding, Suitcase, ArrowRight, Lock, Monitor, Bell, User,
       openEditModal,
       handleAvatarChange,
