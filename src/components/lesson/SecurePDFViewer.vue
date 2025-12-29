@@ -99,30 +99,17 @@ import * as pdfjsLib from 'pdfjs-dist'
 // Настройка worker для PDF.js
 // КРИТИЧЕСКИ ВАЖНО: Worker должен точно соответствовать версии библиотеки
 if (typeof window !== 'undefined') {
-  // Для PDF.js 5.x используем worker из node_modules через правильный путь
-  // Это гарантирует совместимость версий и решает проблему с приватными полями
-  try {
-    // Пробуем использовать worker из node_modules (правильный путь для Vite)
-    // В production Vite соберет worker правильно
-    const workerPath = `pdfjs-dist/build/pdf.worker.min.mjs`
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      workerPath,
-      import.meta.url
-    ).toString()
-    
-    console.log('[SecurePDFViewer] Using worker from node_modules:', pdfjsLib.GlobalWorkerOptions.workerSrc)
-  } catch (e) {
-    // Fallback: используем CDN worker с той же версией
-    const pdfjsVersion = pdfjsLib.version || '5.4.449'
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.mjs`
-    console.warn('[SecurePDFViewer] Using CDN worker as fallback:', pdfjsLib.GlobalWorkerOptions.workerSrc)
-  }
+  const pdfjsVersion = pdfjsLib.version || '5.4.449'
   
-  // Проверяем версию PDF.js для совместимости
-  const pdfjsVersion = pdfjsLib.version || 'unknown'
-  console.log('[SecurePDFViewer] PDF.js configured:', {
+  // Используем локальный worker из public папки (самый надежный способ)
+  // Файл скопирован из node_modules/pdfjs-dist/build/pdf.worker.min.mjs
+  // в public/pdf.worker.min.mjs и соответствует версии библиотеки 5.4.449
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+  
+  console.log('[SecurePDFViewer] PDF.js worker configured:', {
     version: pdfjsVersion,
-    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc
+    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
+    note: 'Using local worker from public folder (matches library version)'
   })
 }
 
