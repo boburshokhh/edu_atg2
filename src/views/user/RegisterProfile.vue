@@ -433,7 +433,8 @@ export default {
         if (user && user.role === 'instructor') {
           router.push('/dashboard')
         } else {
-          router.push('/station/1/lesson/0/0')
+          // Админы и обычные пользователи попадают в личный кабинет
+          router.push('/profile')
         }
         
       } catch (error) {
