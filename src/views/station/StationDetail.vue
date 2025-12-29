@@ -16,7 +16,7 @@
       <!-- Контент хедера -->
       <div class="relative h-full page-container flex flex-col justify-between">
         <!-- Навигация в верхней части -->
-        <div class="pt-20">
+        <div>
           <button 
             class="inline-flex items-center bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300 group px-4 py-2 rounded-lg border border-white/30 hover:border-white/50"
             @click="$router.push('/stations')"

@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="bg-gray-50 min-h-screen pt-24 sm:pt-28 lg:pt-32 pb-8 sm:pb-12 lg:pb-20">
+    <div class="bg-gray-50 min-h-screen py-8 sm:py-12 lg:py-20">
       <div class="page-container">
         <!-- Header -->
         <div class="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -4,7 +4,7 @@
     <Header />
 
     <!-- Main Content -->
-    <main>
+    <main class="pt-24 sm:pt-28 lg:pt-32">
       <slot />
     </main>
 
