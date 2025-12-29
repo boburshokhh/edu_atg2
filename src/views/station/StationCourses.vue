@@ -16,7 +16,7 @@
       </div>
 
       <!-- Контент хедера -->
-      <div class="relative h-full page-container flex flex-col gap-6 md:gap-10 pb-16">
+      <div class="relative h-full page-container flex flex-col gap-6 md:gap-10 pt-28 pb-16">
         <!-- Навигация -->
         <div>
           <button 
