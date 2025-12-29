@@ -97,11 +97,22 @@ import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, Document, Refresh } from '@elem
 import * as pdfjsLib from 'pdfjs-dist'
 
 // Настройка worker для PDF.js
-// Используем worker из public папки (скопирован из node_modules при установке)
+// Используем worker из node_modules для гарантии совместимости версий
 if (typeof window !== 'undefined') {
-  // Worker скопирован в public/pdf.worker.min.js
-  // Vite автоматически скопирует его в dist при сборке
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+  // Пробуем использовать worker из node_modules через import.meta.url
+  // Это гарантирует совместимость версий
+  try {
+    // Используем worker из node_modules/pdfjs-dist/build/pdf.worker.min.mjs
+    // Vite автоматически обработает этот путь
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url
+    ).toString()
+  } catch (e) {
+    // Fallback на worker из public папки
+    console.warn('[SecurePDFViewer] Failed to load worker from node_modules, using public worker:', e)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+  }
   
   // Проверяем версию PDF.js для совместимости
   const pdfjsVersion = pdfjsLib.version || 'unknown'
@@ -208,6 +219,9 @@ const loadPdf = async () => {
       // Дополнительные настройки для совместимости
       verbosity: 0, // Уменьшаем логирование
       stopAtErrors: false, // Продолжаем при ошибках
+      // Важно: не используем disableAutoFetch и disableStream для совместимости
+      disableAutoFetch: false,
+      disableStream: false,
     })
 
     // Ждем полной загрузки документа
@@ -217,6 +231,11 @@ const loadPdf = async () => {
       throw new Error('Failed to load PDF document')
     }
 
+    // Проверяем, что документ полностью готов
+    if (typeof pdfDocument.numPages !== 'number' || pdfDocument.numPages <= 0) {
+      throw new Error('PDF document is not properly loaded')
+    }
+
     pdfDoc.value = pdfDocument
     totalPages.value = pdfDocument.numPages
     currentPage.value = 1
@@ -224,14 +243,20 @@ const loadPdf = async () => {
     console.log('[SecurePDFViewer] PDF loaded successfully:', {
       pages: totalPages.value,
       file: props.file.fileName || props.file.originalName,
-      documentReady: !!pdfDocument
+      documentReady: !!pdfDocument,
+      hasGetPage: typeof pdfDocument.getPage === 'function'
     })
 
     // Ждем следующего тика для гарантии, что canvas готов
     await nextTick()
     
-    // Дополнительная задержка для гарантии, что DOM полностью готов
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Дополнительная задержка для гарантии, что DOM и worker полностью готовы
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    // Проверяем готовность перед рендерингом
+    if (!pdfDoc.value || typeof pdfDoc.value.getPage !== 'function') {
+      throw new Error('PDF document is not ready for rendering')
+    }
     
     // Рендерим первую страницу
     await renderPage(1)
@@ -390,22 +415,19 @@ const renderPage = async (pageNum) => {
     // Более понятное сообщение об ошибке
     let errorMessage = 'Ошибка отображения страницы'
     if (err.message && (err.message.includes('private field') || err.message.includes('Cannot read'))) {
-      errorMessage = 'Ошибка совместимости с PDF.js. Попробуйте перезагрузить документ.'
-      // Не устанавливаем error.value, чтобы не блокировать интерфейс
-      // Вместо этого просто логируем и пробуем перезагрузить
-      console.warn('[SecurePDFViewer] Private field error detected, attempting recovery...')
+      errorMessage = 'Ошибка совместимости с PDF.js. Требуется полная перезагрузка документа.'
+      console.error('[SecurePDFViewer] Private field error detected - document needs to be reloaded')
       
-      // Пробуем перезагрузить документ через небольшую задержку
-      setTimeout(() => {
-        if (pdfDoc.value && pdfCanvas.value) {
-          console.log('[SecurePDFViewer] Retrying page render after error...')
-          renderPage(pageNum).catch(retryError => {
-            console.error('[SecurePDFViewer] Retry failed:', retryError)
-            error.value = 'Не удалось отобразить страницу. Попробуйте перезагрузить документ.'
-          })
-        }
-      }, 500)
-      return // Выходим, не устанавливая error, чтобы дать возможность повторить
+      // Очищаем состояние документа для полной перезагрузки
+      pdfDoc.value = null
+      totalPages.value = 0
+      currentPage.value = 0
+      
+      // Устанавливаем ошибку и предлагаем перезагрузить
+      error.value = errorMessage
+      loading.value = false
+      
+      return
     } else if (err.message) {
       errorMessage = err.message
     }
