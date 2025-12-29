@@ -68,26 +68,6 @@
             <p class="text-gray-500 text-sm sm:text-base">
               {{ $t('login.subtitle') }}
             </p>
-            <!-- LDAP Indicator -->
-            <div
-              v-if="isLdapEnabled"
-              class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg animate-fade-in"
-            >
-              <svg
-                class="w-4 h-4 text-blue-600 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-              <span class="text-xs font-medium text-blue-700">Аутентификация через Active Directory (LDAP)</span>
-            </div>
           </div>
         </div>
 
@@ -107,7 +87,7 @@
             >
               <el-input
                 v-model="form.username"
-                :placeholder="isLdapEnabled ? 'LDAP Username (sAMAccountName)' : $t('login.username')"
+                :placeholder="$t('login.username')"
                 size="large"
                 class="login-input"
                 @keyup.enter="handleLogin"
@@ -118,12 +98,6 @@
                   </el-icon>
                 </template>
               </el-input>
-              <div
-                v-if="isLdapEnabled"
-                class="mt-1 text-xs text-gray-500"
-              >
-                Используйте ваше имя пользователя Active Directory
-              </div>
             </el-form-item>
 
             <!-- Password -->
@@ -224,12 +198,6 @@ export default {
     const loginForm = ref(null)
     const loading = ref(false)
     
-    // Проверка включен ли LDAP
-    const isLdapEnabled = computed(() => {
-      return import.meta.env.VITE_LDAP_ENABLED === 'true' || 
-             import.meta.env.VITE_LDAP_ENABLED === true
-    })
-    
     const form = reactive({
       username: '',
       password: ''
@@ -253,7 +221,7 @@ export default {
         await loginForm.value.validate()
         loading.value = true
         
-        // Авторизация через LDAP или обычную аутентификацию
+        // Авторизация
         const result = await authService.login(form.username, form.password)
         
         if (result.success) {
@@ -265,7 +233,6 @@ export default {
           }
           
           // Успешная авторизация
-          const authMethod = isLdapEnabled.value ? 'LDAP' : 'Database'
           ElMessage.success({
             message: t('login.messages.loginSuccess'),
             duration: 3000,
@@ -281,18 +248,7 @@ export default {
           }
         } else {
           // Обработка ошибок аутентификации
-          let errorMessage = result.error || t('login.messages.loginError')
-          
-          // Улучшенные сообщения об ошибках для LDAP
-          if (isLdapEnabled.value) {
-            if (errorMessage.toLowerCase().includes('invalid credentials') || 
-                errorMessage.toLowerCase().includes('неверные учетные данные')) {
-              errorMessage = 'Неверное имя пользователя или пароль. Проверьте учетные данные LDAP.'
-            } else if (errorMessage.toLowerCase().includes('connection') || 
-                       errorMessage.toLowerCase().includes('соединение')) {
-              errorMessage = 'Ошибка подключения к LDAP серверу. Обратитесь к администратору.'
-            }
-          }
+          const errorMessage = result.error || t('login.messages.loginError')
           
           ElMessage.error({
             message: errorMessage,
@@ -334,7 +290,6 @@ export default {
       rules,
       loading,
       handleLogin,
-      isLdapEnabled,
       User,
       Lock
     }
