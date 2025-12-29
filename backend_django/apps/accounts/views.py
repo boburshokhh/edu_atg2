@@ -614,7 +614,15 @@ class RegisterProfileView(APIView):
             # Regular user - get email from user object (may not have email attribute if it's a mock)
             email = getattr(user, "email", None) or f'{user.username}@example.com'
         
-        logger.info(f"[Register] Saving profile for user: {user.username}, station: {company or 'Not selected'}")
+        # Если станция не выбрана и есть LDAP сессия, используем отдел из LDAP
+        # Если пользователь ввел отдел вручную, используем его, иначе берем из LDAP
+        final_department = department
+        # Если отдел не указан (пустая строка или None) и есть LDAP сессия, используем отдел из LDAP
+        if (not final_department or not final_department.strip()) and temp_session and temp_session.ldap_department:
+            final_department = temp_session.ldap_department
+            logger.info(f"[Register] Using LDAP department: {final_department} (station not selected or department not provided)")
+        
+        logger.info(f"[Register] Saving profile for user: {user.username}, station: {company or 'Not selected'}, department: {final_department or 'Not provided'}")
         
         # Track if we created new tokens (for temp session -> real user conversion)
         access_token = None
@@ -687,9 +695,9 @@ class RegisterProfileView(APIView):
                 "full_name": full_name,
                 "email": email,
                 "phone": phone,
-                "company": company,  # Station name from database
+                "company": company,  # Station name from database (None if not selected)
                 "position": position,
-                "bio": department,  # Store department in bio field
+                "bio": final_department,  # Store department in bio field (from LDAP if station not selected)
             }
             
             UserProfile.objects.update_or_create(id=user, defaults=profile_defaults)

@@ -136,6 +136,23 @@
                     </div>
                   </div>
 
+                  <!-- Отдел (показываем только если станция не выбрана) -->
+                  <div 
+                    v-if="!user.station && user.department"
+                    class="flex items-center gap-3 sm:gap-4 group"
+                  >
+                    <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors shrink-0">
+                      <el-icon><OfficeBuilding /></el-icon>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-gray-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
+                        Отдел
+                      </p>
+                      <p class="text-gray-900 font-medium truncate">
+                        {{ user.department }}
+                      </p>
+                    </div>
+                  </div>
 
                   <div class="flex items-center gap-3 sm:gap-4 group">
                     <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-100 transition-colors shrink-0">
@@ -532,7 +549,8 @@ export default {
       email: '',
       avatar: '',
       station: '',
-      position: ''
+      position: '',
+      department: '' // Отдел из LDAP (хранится в bio)
     })
     
     const userStats = ref({
@@ -686,7 +704,8 @@ export default {
           email: 'demo@tamex.uz',
           avatar: '',
           station: 'WKC1',
-          position: 'Гость'
+          position: 'Гость',
+          department: null
         }
         loading.value = false
         return
@@ -718,7 +737,8 @@ export default {
             email: data.email || currentUser.email || '',
             avatar: data.avatar_url || data.avatar || null,
             station: data.station || data.company || null, // Маппинг company -> station
-            position: data.position || null
+            position: data.position || null,
+            department: data.bio || null // Отдел из LDAP (хранится в bio)
           }
           
           // Синхронизируем с глобальным стейтом
@@ -737,7 +757,8 @@ export default {
               email: currentUser.email,
               avatar: currentUser.avatar_url || currentUser.avatar,
               station: currentUser.station || currentUser.company,
-              position: currentUser.position
+              position: currentUser.position,
+              department: currentUser.bio || null // Отдел из LDAP (хранится в bio)
             }
         }
         
