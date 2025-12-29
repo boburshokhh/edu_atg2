@@ -97,34 +97,33 @@ import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, Document, Refresh } from '@elem
 import * as pdfjsLib from 'pdfjs-dist'
 
 // Настройка worker для PDF.js
-// Используем worker из node_modules для гарантии совместимости версий
+// КРИТИЧЕСКИ ВАЖНО: Worker должен точно соответствовать версии библиотеки
 if (typeof window !== 'undefined') {
-  // Пробуем использовать worker из node_modules через import.meta.url
-  // Это гарантирует совместимость версий
+  // Для PDF.js 5.x используем worker из node_modules через правильный путь
+  // Это гарантирует совместимость версий и решает проблему с приватными полями
   try {
-    // Используем worker из node_modules/pdfjs-dist/build/pdf.worker.min.mjs
-    // Vite автоматически обработает этот путь
+    // Пробуем использовать worker из node_modules (правильный путь для Vite)
+    // В production Vite соберет worker правильно
+    const workerPath = `pdfjs-dist/build/pdf.worker.min.mjs`
     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.min.mjs',
+      workerPath,
       import.meta.url
     ).toString()
+    
+    console.log('[SecurePDFViewer] Using worker from node_modules:', pdfjsLib.GlobalWorkerOptions.workerSrc)
   } catch (e) {
-    // Fallback на worker из public папки
-    console.warn('[SecurePDFViewer] Failed to load worker from node_modules, using public worker:', e)
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+    // Fallback: используем CDN worker с той же версией
+    const pdfjsVersion = pdfjsLib.version || '5.4.449'
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.mjs`
+    console.warn('[SecurePDFViewer] Using CDN worker as fallback:', pdfjsLib.GlobalWorkerOptions.workerSrc)
   }
   
   // Проверяем версию PDF.js для совместимости
   const pdfjsVersion = pdfjsLib.version || 'unknown'
-  console.log('[SecurePDFViewer] PDF.js worker configured:', {
+  console.log('[SecurePDFViewer] PDF.js configured:', {
     version: pdfjsVersion,
     workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc
   })
-  
-  // Предупреждение о возможных проблемах с версией
-  if (pdfjsVersion.startsWith('5.')) {
-    console.log('[SecurePDFViewer] Using PDF.js 5.x - ensure worker version matches')
-  }
 }
 
 const props = defineProps({
@@ -201,16 +200,45 @@ const loadPdf = async () => {
     }
 
     const authToken = getAuthToken()
-    const httpHeaders = {}
+    
+    // РЕШЕНИЕ: Загружаем PDF как ArrayBuffer вместо streaming URL
+    // Это решает проблему "Cannot read from private field" в PDF.js 5.x
+    console.log('[SecurePDFViewer] Fetching PDF as ArrayBuffer...')
+    
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/pdf',
+      },
+      credentials: 'include',
+    }
+    
     if (authToken) {
-      httpHeaders['Authorization'] = authToken
+      fetchOptions.headers['Authorization'] = authToken
     }
 
-    // Загружаем PDF через streaming endpoint с поддержкой Range requests
+    // Загружаем весь PDF файл как ArrayBuffer
+    const response = await fetch(streamUrl, fetchOptions)
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`)
+    }
+
+    // Преобразуем ответ в ArrayBuffer
+    const arrayBuffer = await response.arrayBuffer()
+    
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      throw new Error('PDF file is empty')
+    }
+
+    console.log('[SecurePDFViewer] PDF fetched as ArrayBuffer:', {
+      size: arrayBuffer.byteLength,
+      sizeMB: (arrayBuffer.byteLength / 1024 / 1024).toFixed(2)
+    })
+
+    // Загружаем PDF из ArrayBuffer (это решает проблему с приватными полями)
     const loadingTask = pdfjsLib.getDocument({
-      url: streamUrl,
-      httpHeaders: httpHeaders,
-      withCredentials: true,
+      data: arrayBuffer, // Используем data вместо url
       // Используем стандартные настройки для стабильности
       useSystemFonts: false,
       // Оптимизация для больших файлов
@@ -219,9 +247,6 @@ const loadPdf = async () => {
       // Дополнительные настройки для совместимости
       verbosity: 0, // Уменьшаем логирование
       stopAtErrors: false, // Продолжаем при ошибках
-      // Важно: не используем disableAutoFetch и disableStream для совместимости
-      disableAutoFetch: false,
-      disableStream: false,
     })
 
     // Ждем полной загрузки документа
