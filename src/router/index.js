@@ -139,7 +139,7 @@ router.beforeEach(async (to, from, next) => {
             if (authService.isInstructor()) {
               next('/dashboard')
             } else {
-              next('/station/1/lesson/0/0')
+              next('/profile')
             }
             return
           }
@@ -158,8 +158,8 @@ router.beforeEach(async (to, from, next) => {
     if (authService.isInstructor()) {
       next('/dashboard')
     } else {
-      // Обычные пользователи попадают сразу на первый урок первой станции
-      next('/station/1/lesson/0/0')
+      // Обычные пользователи попадают в личный кабинет
+      next('/profile')
     }
   } else {
     next()

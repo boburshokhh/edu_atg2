@@ -92,7 +92,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, Document, Refresh } from '@element-plus/icons-vue'
 import * as pdfjsLib from 'pdfjs-dist'
 
@@ -193,23 +193,34 @@ const loadPdf = async () => {
       url: streamUrl,
       httpHeaders: httpHeaders,
       withCredentials: true,
-      // Отключаем автоматическое скачивание всего файла
-      disableAutoFetch: false,
-      disableStream: false,
+      // Используем стандартные настройки для стабильности
+      useSystemFonts: false,
       // Оптимизация для больших файлов
       cMapUrl: `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/cmaps/`,
       cMapPacked: true,
     })
 
-    pdfDoc.value = await loadingTask.promise
-    totalPages.value = pdfDoc.value.numPages
+    // Ждем полной загрузки документа
+    const pdfDocument = await loadingTask.promise
+    
+    if (!pdfDocument) {
+      throw new Error('Failed to load PDF document')
+    }
+
+    pdfDoc.value = pdfDocument
+    totalPages.value = pdfDocument.numPages
     currentPage.value = 1
 
     console.log('[SecurePDFViewer] PDF loaded successfully:', {
       pages: totalPages.value,
-      file: props.file.fileName || props.file.originalName
+      file: props.file.fileName || props.file.originalName,
+      documentReady: !!pdfDocument
     })
 
+    // Ждем следующего тика для гарантии, что canvas готов
+    await nextTick()
+    
+    // Рендерим первую страницу
     await renderPage(1)
     loading.value = false
   } catch (err) {
@@ -232,31 +243,69 @@ const loadPdf = async () => {
 
 // Рендеринг страницы
 const renderPage = async (pageNum) => {
-  if (!pdfDoc.value || !pdfCanvas.value) return
+  if (!pdfDoc.value || !pdfCanvas.value) {
+    console.warn('[SecurePDFViewer] Cannot render: missing pdfDoc or canvas')
+    return
+  }
 
   try {
+    // Получаем страницу напрямую (документ уже загружен)
     const page = await pdfDoc.value.getPage(pageNum)
-    const viewport = page.getViewport({ scale: props.zoom / 100 })
+    
+    if (!page) {
+      throw new Error(`Page ${pageNum} not found`)
+    }
+
+    // Вычисляем viewport с учетом zoom
+    const scale = props.zoom / 100
+    const viewport = page.getViewport({ scale })
     
     const canvas = pdfCanvas.value
+    if (!canvas) {
+      throw new Error('Canvas element not found')
+    }
+
     const context = canvas.getContext('2d')
+    if (!context) {
+      throw new Error('Canvas context not available')
+    }
     
+    // Устанавливаем размеры canvas
     canvas.height = viewport.height
     canvas.width = viewport.width
 
+    // Очищаем canvas перед рендерингом
+    context.clearRect(0, 0, canvas.width, canvas.height)
+
+    // Создаем контекст рендеринга
     const renderContext = {
       canvasContext: context,
       viewport: viewport,
-      // Отключаем текстовый слой для дополнительной защиты
-      // (можно включить для поиска, но это упрощает копирование)
-      textLayer: null,
     }
 
-    await page.render(renderContext).promise
+    // Рендерим страницу
+    const renderTask = page.render(renderContext)
+    await renderTask.promise
+    
     currentPage.value = pageNum
+    
+    console.log('[SecurePDFViewer] Page rendered successfully:', {
+      page: pageNum,
+      width: canvas.width,
+      height: canvas.height,
+      zoom: props.zoom
+    })
   } catch (err) {
     console.error('[SecurePDFViewer] Error rendering page:', err)
-    error.value = 'Ошибка отображения страницы'
+    console.error('[SecurePDFViewer] Error details:', {
+      pageNum,
+      hasPdfDoc: !!pdfDoc.value,
+      hasCanvas: !!pdfCanvas.value,
+      errorName: err.name,
+      errorMessage: err.message,
+      errorStack: err.stack
+    })
+    error.value = `Ошибка отображения страницы: ${err.message || 'Неизвестная ошибка'}`
   }
 }
 

@@ -276,8 +276,8 @@ export default {
           if (result.user.role === 'instructor') {
             router.push('/dashboard')
           } else {
-            // Админы и обычные пользователи попадают сразу на первый урок первой станции
-            router.push('/station/1/lesson/0/0')
+            // Админы и обычные пользователи попадают в личный кабинет
+            router.push('/profile')
           }
         } else {
           // Обработка ошибок аутентификации
@@ -322,8 +322,8 @@ export default {
         if (user && user.role === 'instructor') {
           router.push('/dashboard')
         } else {
-          // Админы и обычные пользователи попадают сразу на первый урок первой станции
-          router.push('/station/1/lesson/0/0')
+          // Админы и обычные пользователи попадают в личный кабинет
+          router.push('/profile')
         }
       }
     })
