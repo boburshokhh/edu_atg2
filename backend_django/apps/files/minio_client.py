@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+import uuid
 from urllib.parse import urlparse
 
 import boto3
@@ -39,7 +41,7 @@ def presign_get(key: str, expires_in: int = 60 * 60 * 24 * 7, response_content_t
         response_content_type: Optional content type override
         
     Returns:
-        Presigned URL string
+        Presigned URL string (with public endpoint if configured)
         
     Raises:
         ClientError: If MinIO operation fails
@@ -66,7 +68,96 @@ def presign_get(key: str, expires_in: int = 60 * 60 * 24 * 7, response_content_t
             expires_in = 60 * 60 * 24 * 7
         
         client = s3_client()
+        
+        # #region agent log
+        import json
+        try:
+            with open(r'c:\Users\user\Desktop\edu_atg\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({
+                    "id": f"log_{int(time.time())}_{uuid.uuid4().hex[:8]}",
+                    "timestamp": int(time.time() * 1000),
+                    "location": "minio_client.py:presign_get",
+                    "message": "Before generating presigned URL",
+                    "data": {
+                        "key": key,
+                        "minio_endpoint": getattr(settings, 'MINIO_ENDPOINT', 'NOT_SET'),
+                        "minio_public_endpoint": getattr(settings, 'MINIO_PUBLIC_ENDPOINT', 'NOT_SET'),
+                        "hypothesisId": "A"
+                    },
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }) + '\n')
+        except Exception as log_err:
+            pass
+        # #endregion
+        
         url = client.generate_presigned_url("get_object", Params=params, ExpiresIn=expires_in)
+        
+        # #region agent log
+        try:
+            with open(r'c:\Users\user\Desktop\edu_atg\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({
+                    "id": f"log_{int(time.time())}_{uuid.uuid4().hex[:8]}",
+                    "timestamp": int(time.time() * 1000),
+                    "location": "minio_client.py:presign_get",
+                    "message": "After generating presigned URL (before replacement)",
+                    "data": {
+                        "original_url": url[:200] if url else None,
+                        "hypothesisId": "A"
+                    },
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }) + '\n')
+        except Exception as log_err:
+            pass
+        # #endregion
+        
+        # Replace internal endpoint with public endpoint if configured
+        # This is needed because presigned URLs are used by browsers which cannot
+        # resolve internal Docker hostnames like "minio:9000"
+        minio_public_endpoint = getattr(settings, 'MINIO_PUBLIC_ENDPOINT', None)
+        if minio_public_endpoint and url:
+            from urllib.parse import urlparse, urlunparse
+            parsed_internal = urlparse(settings.MINIO_ENDPOINT)
+            parsed_public = urlparse(minio_public_endpoint)
+            parsed_url = urlparse(url)
+            
+            # Replace hostname and scheme if public endpoint is configured
+            if parsed_internal.netloc != parsed_public.netloc:
+                new_netloc = parsed_public.netloc
+                new_scheme = parsed_public.scheme
+                url = urlunparse((
+                    new_scheme,
+                    new_netloc,
+                    parsed_url.path,
+                    parsed_url.params,
+                    parsed_url.query,
+                    parsed_url.fragment
+                ))
+                
+                # #region agent log
+                try:
+                    with open(r'c:\Users\user\Desktop\edu_atg\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                        f.write(json.dumps({
+                            "id": f"log_{int(time.time())}_{uuid.uuid4().hex[:8]}",
+                            "timestamp": int(time.time() * 1000),
+                            "location": "minio_client.py:presign_get",
+                            "message": "After replacing endpoint with public URL",
+                            "data": {
+                                "final_url": url[:200] if url else None,
+                                "replaced_from": parsed_internal.netloc,
+                                "replaced_to": new_netloc,
+                                "hypothesisId": "C"
+                            },
+                            "sessionId": "debug-session",
+                            "runId": "run1",
+                            "hypothesisId": "C"
+                        }) + '\n')
+                except Exception as log_err:
+                    pass
+                # #endregion
         
         if not url:
             logger.error(f"[presign_get] Failed to generate URL for key: {key}")

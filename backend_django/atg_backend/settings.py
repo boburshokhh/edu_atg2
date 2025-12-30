@@ -148,6 +148,11 @@ MINIO_ENDPOINT = env("MINIO_ENDPOINT", "http://192.168.32.100:9000")
 MINIO_BUCKET = env("MINIO_BUCKET", "atgedu")
 MINIO_ACCESS_KEY = env("MINIO_ACCESS_KEY", "minioadmin")
 MINIO_SECRET_KEY = env("MINIO_SECRET_KEY", "minioadmin")
+# MINIO_PUBLIC_ENDPOINT: Public URL for presigned URLs (used by browsers)
+# If not set, uses MINIO_ENDPOINT. Should be accessible from client browsers.
+# Example: "http://192.168.32.100:9000" or "https://minio.example.com"
+# IMPORTANT: Set this to the public IP/hostname if MINIO_ENDPOINT uses internal Docker hostname like "minio:9000"
+MINIO_PUBLIC_ENDPOINT = env("MINIO_PUBLIC_ENDPOINT", MINIO_ENDPOINT)
 
 # LDAP
 LDAP_ENABLED = env("LDAP_ENABLED", "false").lower() in ("true", "1", "yes")
