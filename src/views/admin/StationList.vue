@@ -1,7 +1,13 @@
 <template>
   <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">
+    <div class="flex items-center mb-6">
+      <el-button
+        class="mr-4"
+        @click="$router.push('/admin')"
+      >
+        <el-icon><ArrowLeft /></el-icon>
+      </el-button>
+      <h1 class="text-2xl font-bold text-gray-800 flex-1">
         Управление станциями
       </h1>
       <el-button
@@ -86,7 +92,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import stationService from '@/services/stationService'
 
