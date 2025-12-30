@@ -223,42 +223,88 @@ class HeroSliderView(APIView):
                 return JsonResponse({"error": f"Key must start with 'hero/': {key_str}"}, status=400)
             validated_keys.append(key_str)
 
+        # Ensure table exists
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1 FROM hero_slider_images LIMIT 1")
+        except Exception:
+            # Table doesn't exist, create it
+            try:
+                from pathlib import Path
+                sql_path = Path(__file__).resolve().parents[1] / "management" / "hero_slider_schema.sql"
+                if sql_path.exists():
+                    sql = sql_path.read_text(encoding="utf-8")
+                    with connection.cursor() as cursor:
+                        cursor.execute(sql)
+                else:
+                    # Fallback: create table directly
+                    with connection.cursor() as cursor:
+                        cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS hero_slider_images (
+                                id SERIAL PRIMARY KEY,
+                                key VARCHAR(500) NOT NULL,
+                                order_index INTEGER DEFAULT 0,
+                                is_active BOOLEAN DEFAULT TRUE,
+                                created_at TIMESTAMP DEFAULT NOW(),
+                                updated_at TIMESTAMP DEFAULT NOW()
+                            );
+                            CREATE INDEX IF NOT EXISTS idx_hero_slider_order ON hero_slider_images(order_index, is_active);
+                        """)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to create hero_slider_images table: {e}")
+                return JsonResponse({"error": "Database table not initialized. Please run: python manage.py apply_hero_slider_schema"}, status=500)
+
         # Atomic replace: delete all, then insert new ones
-        with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM hero_slider_images;")
-            for idx, key in enumerate(validated_keys):
-                cursor.execute(
-                    """
-                    INSERT INTO hero_slider_images (key, order_index, is_active, created_at, updated_at)
-                    VALUES (%s, %s, TRUE, NOW(), NOW())
-                    """,
-                    [key, idx],
-                )
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM hero_slider_images;")
+                for idx, key in enumerate(validated_keys):
+                    cursor.execute(
+                        """
+                        INSERT INTO hero_slider_images (key, order_index, is_active, created_at, updated_at)
+                        VALUES (%s, %s, TRUE, NOW(), NOW())
+                        """,
+                        [key, idx],
+                    )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error updating hero slider: {e}")
+            return JsonResponse({"error": "Database error"}, status=500)
 
         # Return updated list
-        items = list(
-            HeroSliderImage.objects.filter(is_active=True)
-            .order_by("order_index", "id")
-            .values("id", "key", "order_index")
-        )
-        result = []
-        for item in items:
-            key = (item["key"] or "").lstrip("/")
-            if not key:
-                continue
-            try:
-                url = presign_get(key, expires_in=60 * 60 * 24 * 7)
-            except ClientError:
-                url = None
-            result.append(
-                {
-                    "id": item["id"],
-                    "key": key,
-                    "url": url,
-                    "orderIndex": item["order_index"],
-                }
+        try:
+            items = list(
+                HeroSliderImage.objects.filter(is_active=True)
+                .order_by("order_index", "id")
+                .values("id", "key", "order_index")
             )
-        return JsonResponse({"ok": True, "items": result})
+            result = []
+            for item in items:
+                key = (item["key"] or "").lstrip("/")
+                if not key:
+                    continue
+                try:
+                    url = presign_get(key, expires_in=60 * 60 * 24 * 7)
+                except (ClientError, Exception):
+                    url = None
+                result.append(
+                    {
+                        "id": item["id"],
+                        "key": key,
+                        "url": url,
+                        "orderIndex": item["order_index"],
+                    }
+                )
+            return JsonResponse({"ok": True, "items": result})
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error returning hero slider list after update: {e}")
+            # Return success with empty list if we can't fetch
+            return JsonResponse({"ok": True, "items": []})
 
 
 class HeroSliderUploadView(APIView):
