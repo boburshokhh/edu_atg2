@@ -131,29 +131,36 @@ export default {
       return ''
     }
 
-    // Загрузить все URL изображений из MinIO
+    // Загрузить все URL изображений из MinIO последовательно (по одному)
+    // Это позволяет показывать изображения по мере загрузки, улучшая UX
     const loadStationImages = async () => {
       loadingImages.value = true
       try {
-        const promises = stations.value.map(async (station) => {
+        // Загружаем изображения последовательно, чтобы показывать их по одному
+        for (const station of stations.value) {
           const cacheKey = String(station?.id ?? station?.image ?? '')
-          const resolved = resolveStationMedia(station?.image, { defaultFolder: 'stations' })
-          if (!cacheKey) return
+          if (!cacheKey) continue
 
+          const resolved = resolveStationMedia(station?.image, { defaultFolder: 'stations' })
+
+          // Если это публичный URL, сразу устанавливаем
           if (resolved.kind === 'url' || resolved.kind === 'public') {
             stationImageUrls.value[cacheKey] = resolved.url
-            return
+            continue
           }
 
-          if (resolved.kind !== 'minio') return
+          // Если не MinIO, пропускаем
+          if (resolved.kind !== 'minio') continue
 
           try {
             // Получаем presigned URL (действителен 7 дней)
+            // Загружаем по одному, чтобы первое изображение появилось быстрее
             const url = await minioService.getPresignedDownloadUrl(
               resolved.objectKey, 
               7 * 24 * 60 * 60, // 7 дней в секундах
               resolved.contentType
             )
+            // Обновляем URL - Vue реактивность покажет изображение сразу
             stationImageUrls.value[cacheKey] = url
           } catch (error) {
             console.error(`Ошибка загрузки изображения станции ${station?.id}:`, error)
@@ -161,9 +168,7 @@ export default {
             stationImageUrls.value[cacheKey] =
               resolved.fallbackPublicPath || minioService.getFileUrl(resolved.objectKey)
           }
-        })
-        
-        await Promise.all(promises)
+        }
       } catch (error) {
         console.error('Ошибка загрузки изображений станций:', error)
       } finally {
