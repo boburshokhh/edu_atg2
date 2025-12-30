@@ -138,13 +138,12 @@
 </template>
 
 <script>
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, EffectFade } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/effect-fade'
 import 'swiper/css/autoplay'
-import siteSettingsService from '@/services/siteSettingsService'
 
 export default {
   name: 'HeroSection',
@@ -154,19 +153,18 @@ export default {
   },
   setup() {
     const fallbackImageUrl = ref('/slider/photo_2025-10-16_14-31-39.jpg')
-    const sliderItems = ref([])
-
-    const loadHeroSlider = async () => {
-      try {
-        const data = await siteSettingsService.getHeroSlider()
-        // Filter out items without URL (broken presigned URLs)
-        sliderItems.value = (data?.items || []).filter(item => item.url)
-      } catch (error) {
-        console.error('Error loading hero slider:', error)
-        // On error, use empty array (fallback will show default image)
-        sliderItems.value = []
-      }
-    }
+    
+    // Список изображений из папки public/slider
+    const sliderItems = ref([
+      { id: 1, url: '/slider/GCS_6_11zon.webp', name: 'GCS_6_11zon.webp' },
+      { id: 2, url: '/slider/MS_2_11zon.webp', name: 'MS_2_11zon.webp' },
+      { id: 3, url: '/slider/UCS1_4_11zon.webp', name: 'UCS1_4_11zon.webp' },
+      { id: 4, url: '/slider/UCS3_7_11zon.webp', name: 'UCS3_7_11zon.webp' },
+      { id: 5, url: '/slider/UKMS_1_11zon.webp', name: 'UKMS_1_11zon.webp' },
+      { id: 6, url: '/slider/WKC1_8_11zon.webp', name: 'WKC1_8_11zon.webp' },
+      { id: 7, url: '/slider/WKC2_5_11zon.webp', name: 'WKC2_5_11zon.webp' },
+      { id: 8, url: '/slider/WKC3_3_11zon.webp', name: 'WKC3_3_11zon.webp' },
+    ])
 
     const scrollToAbout = () => {
       const aboutSection = document.getElementById('about')
@@ -174,10 +172,6 @@ export default {
         aboutSection.scrollIntoView({ behavior: 'smooth' })
       }
     }
-
-    onMounted(() => {
-      loadHeroSlider()
-    })
 
     return {
       modules: [Autoplay, EffectFade],
