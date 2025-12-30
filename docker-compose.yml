@@ -60,6 +60,8 @@ services:
       - minio
     ports:
       - "8000:8000"
+    volumes:
+      - ./public:/app/public:ro  # Mount public folder as read-only
     # LDAP server DNS resolution (replace XXX.XXX.XXX.XXX with actual IP of DC03.atg.uz)
     extra_hosts:
       - "DC03.atg.uz:192.168.2.7"  # TODO: Replace XXX with actual LDAP server IP

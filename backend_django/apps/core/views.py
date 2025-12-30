@@ -356,3 +356,94 @@ class HeroSliderUploadView(APIView):
         return JsonResponse({"uploaded": uploaded})
 
 
+class HeroSliderLoadFromPublicView(APIView):
+    """
+    POST /site/hero-slider/load-from-public  (IsAdmin) -> Load images from public/slider folder
+    Returns: { uploaded: [{ key, url }], count: int }
+    """
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        from pathlib import Path
+        import os
+        from django.conf import settings
+
+        # Try to find public/slider folder
+        # Path could be relative to project root or absolute
+        possible_paths = [
+            Path("/app/public/slider"),  # Docker container path (mounted volume)
+            Path(__file__).resolve().parents[3] / "public" / "slider",  # From backend_django/apps/core/views.py -> edu_atg/public/slider
+            Path(__file__).resolve().parents[4] / "public" / "slider",  # Alternative depth
+            Path("/app/../public/slider"),  # Alternative Docker path
+        ]
+
+        slider_path = None
+        for path in possible_paths:
+            if path.exists() and path.is_dir():
+                slider_path = path
+                break
+
+        if not slider_path:
+            return JsonResponse({"error": "public/slider folder not found"}, status=404)
+
+        # Find all image files
+        image_extensions = {".webp", ".jpg", ".jpeg", ".png", ".gif"}
+        image_files = []
+        for file_path in slider_path.iterdir():
+            if file_path.is_file() and file_path.suffix.lower() in image_extensions:
+                image_files.append(file_path)
+
+        if not image_files:
+            return JsonResponse({"error": "No image files found in public/slider"}, status=404)
+
+        # Upload to MinIO
+        client = s3_client()
+        uploaded = []
+        max_size = 20 * 1024 * 1024  # 20MB
+
+        for file_path in image_files:
+            try:
+                file_size = file_path.stat().st_size
+                if file_size > max_size:
+                    continue  # Skip too large files
+
+                # Determine content type
+                ext = file_path.suffix.lower()
+                content_type_map = {
+                    ".webp": "image/webp",
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".png": "image/png",
+                    ".gif": "image/gif",
+                }
+                content_type = content_type_map.get(ext, "image/webp")
+
+                # Create key
+                safe_name = _sanitize_filename(file_path.name)
+                key = f"hero/{int(time.time())}_{safe_name}"
+
+                # Upload file
+                with open(file_path, "rb") as f:
+                    client.upload_fileobj(
+                        f,
+                        settings.MINIO_BUCKET,
+                        key,
+                        ExtraArgs={"ContentType": content_type},
+                    )
+
+                url = presign_get(key, expires_in=60 * 60 * 24 * 7, response_content_type=content_type)
+                uploaded.append({"key": key, "url": url})
+
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error uploading {file_path.name}: {e}")
+                continue
+
+        if not uploaded:
+            return JsonResponse({"error": "No files were uploaded"}, status=400)
+
+        return JsonResponse({"uploaded": uploaded, "count": len(uploaded)})
+
+

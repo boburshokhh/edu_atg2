@@ -26,25 +26,37 @@
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
               Загрузить новые изображения
             </h2>
-            <input
-              ref="fileInputRef"
-              type="file"
-              accept="image/*"
-              multiple
-              class="hidden"
-              @change="handleFileInputChange"
-            >
-            <el-button
-              type="primary"
-              size="large"
-              class="w-full sm:w-auto"
-              @click="$refs.fileInputRef.click()"
-            >
-              <el-icon class="mr-2">
-                <Upload />
-              </el-icon>
-              Выбрать файлы (можно несколько)
-            </el-button>
+            <div class="flex flex-wrap gap-3 mb-4">
+              <input
+                ref="fileInputRef"
+                type="file"
+                accept="image/*"
+                multiple
+                class="hidden"
+                @change="handleFileInputChange"
+              >
+              <el-button
+                type="primary"
+                size="large"
+                @click="$refs.fileInputRef.click()"
+              >
+                <el-icon class="mr-2">
+                  <Upload />
+                </el-icon>
+                Выбрать файлы (можно несколько)
+              </el-button>
+              <el-button
+                type="success"
+                size="large"
+                :loading="loadingFromPublic"
+                @click="loadFromPublicFolder"
+              >
+                <el-icon class="mr-2">
+                  <FolderOpened />
+                </el-icon>
+                Загрузить из public/slider
+              </el-button>
+            </div>
 
             <div v-if="previewFiles.length > 0" class="mt-4">
               <p class="text-sm text-gray-600 mb-3">
@@ -205,12 +217,13 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Upload, Delete, Picture, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
+import { ArrowLeft, Upload, Delete, Picture, ArrowUp, ArrowDown, FolderOpened } from '@element-plus/icons-vue'
 import siteSettingsService from '@/services/siteSettingsService'
 
 const loading = ref(false)
 const uploading = ref(false)
 const saving = ref(false)
+const loadingFromPublic = ref(false)
 
 const sliderItems = ref([])
 const originalOrder = ref([])
@@ -371,6 +384,41 @@ const saveSlider = async () => {
     ElMessage.error(e.message || 'Ошибка сохранения слайдера')
   } finally {
     saving.value = false
+  }
+}
+
+const loadFromPublicFolder = async () => {
+  loadingFromPublic.value = true
+  try {
+    const result = await siteSettingsService.loadHeroSlidesFromPublic()
+    
+    if (result.uploaded && result.uploaded.length > 0) {
+      ElMessage.success(`Загружено ${result.count} файлов из public/slider`)
+      
+      // Add to slider items
+      const newItems = result.uploaded.map((item, idx) => ({
+        id: null, // Will be assigned by backend after save
+        key: item.key,
+        url: item.url,
+        orderIndex: sliderItems.value.length + idx
+      }))
+      sliderItems.value.push(...newItems)
+      
+      // Immediately save the entire list to backend
+      const keys = sliderItems.value.map(item => item.key)
+      await siteSettingsService.setHeroSliderKeys(keys)
+      
+      // Reload to get proper IDs from backend
+      await loadSlider()
+      
+      ElMessage.success('Слайдер обновлен')
+    } else {
+      ElMessage.warning('Не удалось загрузить файлы из public/slider')
+    }
+  } catch (e) {
+    ElMessage.error(e.message || 'Ошибка загрузки файлов из public/slider')
+  } finally {
+    loadingFromPublic.value = false
   }
 }
 

@@ -142,6 +142,17 @@ class SiteSettingsService {
     })
     return data
   }
+
+  /**
+   * Admin: load hero slider images from public/slider folder
+   * @returns {Promise<{uploaded: Array<{key: string, url: string}>, count: number}>}
+   */
+  async loadHeroSlidesFromPublic() {
+    const data = await apiRequest('/site/hero-slider/load-from-public', {
+      method: 'POST',
+    })
+    return data
+  }
 }
 
 const siteSettingsService = new SiteSettingsService()
