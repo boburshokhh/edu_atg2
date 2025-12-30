@@ -149,10 +149,24 @@ MINIO_BUCKET = env("MINIO_BUCKET", "atgedu")
 MINIO_ACCESS_KEY = env("MINIO_ACCESS_KEY", "minioadmin")
 MINIO_SECRET_KEY = env("MINIO_SECRET_KEY", "minioadmin")
 # MINIO_PUBLIC_ENDPOINT: Public URL for presigned URLs (used by browsers)
-# If not set, uses MINIO_ENDPOINT. Should be accessible from client browsers.
-# Example: "http://192.168.32.100:9000" or "https://minio.example.com"
+# If not set explicitly, auto-detect: if MINIO_ENDPOINT contains "minio" (Docker service),
+# use default public IP, otherwise use MINIO_ENDPOINT
 # IMPORTANT: Set this to the public IP/hostname if MINIO_ENDPOINT uses internal Docker hostname like "minio:9000"
-MINIO_PUBLIC_ENDPOINT = env("MINIO_PUBLIC_ENDPOINT", MINIO_ENDPOINT)
+_minio_endpoint_parsed = urlparse(MINIO_ENDPOINT)
+if 'minio' in _minio_endpoint_parsed.netloc.lower():
+    # Internal Docker hostname detected, use public endpoint from env or default
+    _public_from_env = env("MINIO_PUBLIC_ENDPOINT", None)
+    if _public_from_env:
+        MINIO_PUBLIC_ENDPOINT = _public_from_env
+    else:
+        MINIO_PUBLIC_ENDPOINT = "http://192.168.32.100:9000"
+    import logging
+    _logger = logging.getLogger(__name__)
+    _logger.info(f"[Settings] Detected internal MinIO endpoint: {MINIO_ENDPOINT}")
+    _logger.info(f"[Settings] Using public endpoint: {MINIO_PUBLIC_ENDPOINT}")
+else:
+    # Public endpoint already, use as-is or from env
+    MINIO_PUBLIC_ENDPOINT = env("MINIO_PUBLIC_ENDPOINT", MINIO_ENDPOINT)
 
 # LDAP
 LDAP_ENABLED = env("LDAP_ENABLED", "false").lower() in ("true", "1", "yes")
