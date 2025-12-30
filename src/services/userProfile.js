@@ -62,6 +62,12 @@ class UserProfileService {
       const data = await apiRequest('/users/me')
       
       if (data.data) {
+        // Import getFrontendUrl for avatar URL conversion
+        const { getFrontendUrl } = await import('@/services/minioService')
+        
+        // Convert avatar URL to use /api/minio/ proxy if needed
+        const avatarUrl = data.data.avatar_url ? getFrontendUrl(data.data.avatar_url) : null
+        
         // Маппинг данных из Django API
         return {
           success: true,
@@ -71,7 +77,7 @@ class UserProfileService {
             role: data.data.role,
             full_name: data.data.full_name,
             email: data.data.email,
-            avatar_url: data.data.avatar_url,
+            avatar_url: avatarUrl,
             company: data.data.company, // Station name
             position: data.data.position,
             phone: data.data.phone,
@@ -82,7 +88,7 @@ class UserProfileService {
             weekly_report: data.data.weekly_report || false,
             // Для совместимости с фронтендом
             station: data.data.company, // Маппинг company -> station
-            avatar: data.data.avatar_url,
+            avatar: avatarUrl,
             name: data.data.full_name
           }
         }
@@ -192,9 +198,16 @@ class UserProfileService {
       
       if (data.success && data.url) {
         console.log('[userProfileService] Avatar uploaded successfully:', data.key)
+        
+        // Import getFrontendUrl for avatar URL conversion
+        const { getFrontendUrl } = await import('@/services/minioService')
+        
+        // Convert avatar URL to use /api/minio/ proxy if needed
+        const frontendUrl = getFrontendUrl(data.url)
+        
         return {
           success: true,
-          url: data.url,
+          url: frontendUrl,
           key: data.key
         }
       }

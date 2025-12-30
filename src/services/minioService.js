@@ -101,7 +101,7 @@ export const formatFileSize = (bytes) => {
 // Простая замена MinIO endpoint на /api/minio, сохраняя весь путь и query параметры
 // IMPORTANT: Presigned URLs are signed with hostname, so we must preserve the signature
 // by using /api/minio/ proxy which sets Host header correctly (minio:9000)
-const getFrontendUrl = (url) => {
+export const getFrontendUrl = (url) => {
   if (typeof window === 'undefined') return url
   if (!url || typeof url !== 'string') return url
   
@@ -449,6 +449,7 @@ export default {
   uploadFile,
   getFileUrl,
   getSecureFileUrl,
+  getFrontendUrl,  // ✅ Экспорт функции для конвертации URL
   listFiles,
   getFolderStructure,
   getFolderContents,
