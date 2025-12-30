@@ -1,0 +1,158 @@
+from __future__ import annotations
+
+import re
+import time
+
+from botocore.exceptions import ClientError
+from django.conf import settings
+from django.db import connection
+from django.http import JsonResponse
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.views import APIView
+
+from apps.core.models import SiteSettings
+from apps.files.minio_client import presign_get, s3_client
+
+
+class IsAdmin(IsAuthenticated):
+    """Permission class to check if user is admin (duplicated to avoid cross-app imports)."""
+
+    def has_permission(self, request, view):
+        from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+
+        if not request.user or not hasattr(request.user, "id"):
+            raise AuthenticationFailed("Учетные данные не были предоставлены.")
+        if not hasattr(request.user, "role"):
+            raise PermissionDenied("Пользователь не имеет роли.")
+        if request.user.role != "admin":
+            raise PermissionDenied("Требуется роль администратора.")
+        return True
+
+
+def _ensure_site_settings_row() -> SiteSettings | None:
+    """
+    Ensure singleton row exists. Returns SiteSettings or None if table doesn't exist yet.
+    """
+    try:
+        row = SiteSettings.objects.filter(id=1).first()
+        if row:
+            return row
+        return SiteSettings.objects.create(id=1)
+    except Exception:
+        # likely table doesn't exist yet
+        return None
+
+
+def _create_table_if_missing():
+    """
+    Best-effort schema bootstrap. This repo often uses managed=False models and
+    management commands instead of migrations.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS site_settings (
+                id INTEGER PRIMARY KEY,
+                hero_background_image VARCHAR(500),
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            );
+            """
+        )
+        cursor.execute("INSERT INTO site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;")
+
+
+def _sanitize_filename(name: str) -> str:
+    name = (name or "image").strip()
+    name = name.replace("\\", "_").replace("/", "_")
+    name = re.sub(r"[^a-zA-Z0-9.\-_]+", "_", name)
+    name = re.sub(r"_+", "_", name)
+    return name[:120] or "image"
+
+
+class HeroImageView(APIView):
+    """
+    GET  /site/hero-image     (AllowAny) -> { image_key, url }
+    PUT  /site/hero-image     (IsAdmin)  -> accepts either:
+      - multipart/form-data with file
+      - JSON { key: "hero/..." } to bind already uploaded object
+    """
+
+    def get(self, _request):
+        row = _ensure_site_settings_row()
+        if not row:
+            # Table not created yet: return fallback
+            return JsonResponse({"image_key": None, "url": None})
+
+        key = (row.hero_background_image or "").lstrip("/") or None
+        if not key:
+            return JsonResponse({"image_key": None, "url": None})
+
+        try:
+            url = presign_get(key, expires_in=60 * 60 * 24 * 7)
+            return JsonResponse({"image_key": key, "url": url})
+        except ClientError:
+            # If object missing or minio issue, do not break public page
+            return JsonResponse({"image_key": key, "url": None})
+
+    def put(self, request):
+        self.permission_classes = [IsAdmin]
+        for permission in self.get_permissions():
+            if not permission.has_permission(request, self):
+                return JsonResponse({"error": "Forbidden"}, status=403)
+
+        # Ensure schema exists (best-effort)
+        _create_table_if_missing()
+        row = _ensure_site_settings_row()
+        if not row:
+            return JsonResponse({"error": "Site settings not initialized"}, status=500)
+
+        file_obj = request.FILES.get("file")
+        key_from_body = request.data.get("key")
+
+        if file_obj is None and not key_from_body:
+            return JsonResponse({"error": "Missing file or key"}, status=400)
+
+        # Case A: file upload via backend
+        if file_obj is not None:
+            content_type = getattr(file_obj, "content_type", None) or "application/octet-stream"
+            if not content_type.startswith("image/"):
+                return JsonResponse({"error": "Only image uploads are allowed"}, status=400)
+
+            max_size = 20 * 1024 * 1024  # 20MB
+            if getattr(file_obj, "size", 0) > max_size:
+                return JsonResponse({"error": "File is too large (max 20MB)"}, status=400)
+
+            safe_name = _sanitize_filename(getattr(file_obj, "name", "image"))
+            key = f"hero/{int(time.time())}_{safe_name}"
+
+            client = s3_client()
+            try:
+                client.upload_fileobj(
+                    file_obj,
+                    settings.MINIO_BUCKET,
+                    key,
+                    ExtraArgs={"ContentType": content_type},
+                )
+            except ClientError as e:
+                code = (e.response.get("Error") or {}).get("Code")
+                message = (e.response.get("Error") or {}).get("Message", "Upload failed")
+                return JsonResponse({"error": f"Upload failed: {code} - {message}"}, status=500)
+
+            row.hero_background_image = key
+            row.save(update_fields=["hero_background_image"])
+
+            url = presign_get(key, expires_in=60 * 60 * 24 * 7, response_content_type=content_type)
+            return JsonResponse({"ok": True, "image_key": key, "url": url})
+
+        # Case B: bind existing MinIO object key
+        key = str(key_from_body).lstrip("/")
+        if not key.startswith("hero/"):
+            return JsonResponse({"error": "Key must start with 'hero/'"}, status=400)
+
+        row.hero_background_image = key
+        row.save(update_fields=["hero_background_image"])
+        url = presign_get(key, expires_in=60 * 60 * 24 * 7)
+        return JsonResponse({"ok": True, "image_key": key, "url": url})
+
+
