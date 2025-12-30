@@ -24,27 +24,9 @@
           <!-- Upload Section -->
           <div>
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
-              Загрузить новые изображения
+              Загрузить изображения из папки public/slider
             </h2>
-            <div class="flex flex-wrap gap-3 mb-4">
-              <input
-                ref="fileInputRef"
-                type="file"
-                accept="image/*"
-                multiple
-                class="hidden"
-                @change="handleFileInputChange"
-              >
-              <el-button
-                type="primary"
-                size="large"
-                @click="$refs.fileInputRef.click()"
-              >
-                <el-icon class="mr-2">
-                  <Upload />
-                </el-icon>
-                Выбрать файлы (можно несколько)
-              </el-button>
+            <div class="mb-4">
               <el-button
                 type="success"
                 size="large"
@@ -56,56 +38,9 @@
                 </el-icon>
                 Загрузить из public/slider
               </el-button>
-            </div>
-
-            <div v-if="previewFiles.length > 0" class="mt-4">
-              <p class="text-sm text-gray-600 mb-3">
-                Предпросмотр новых файлов ({{ previewFiles.length }})
+              <p class="text-sm text-gray-500 mt-2">
+                Загрузит все изображения из папки public/slider в слайдер
               </p>
-              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <div
-                  v-for="(file, index) in previewFiles"
-                  :key="`preview-${index}`"
-                  class="relative group border rounded-lg overflow-hidden bg-gray-50"
-                >
-                  <img
-                    :src="file.preview"
-                    alt="Preview"
-                    class="w-full h-32 object-cover"
-                  >
-                  <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <el-button
-                      type="danger"
-                      size="small"
-                      circle
-                      @click="removePreviewFile(index)"
-                    >
-                      <el-icon>
-                        <Delete />
-                      </el-icon>
-                    </el-button>
-                  </div>
-                  <div class="p-2 text-xs text-gray-600 truncate">
-                    {{ file.name }}
-                  </div>
-                </div>
-              </div>
-              <div class="mt-4 flex gap-3">
-                <el-button
-                  type="success"
-                  :loading="uploading"
-                  :disabled="previewFiles.length === 0"
-                  @click="uploadFiles"
-                >
-                  Загрузить выбранные файлы
-                </el-button>
-                <el-button
-                  :disabled="uploading"
-                  @click="clearPreviewFiles"
-                >
-                  Очистить
-                </el-button>
-              </div>
             </div>
           </div>
 
@@ -215,20 +150,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Upload, Delete, Picture, ArrowUp, ArrowDown, FolderOpened } from '@element-plus/icons-vue'
+import { ArrowLeft, Delete, Picture, ArrowUp, ArrowDown, FolderOpened } from '@element-plus/icons-vue'
 import siteSettingsService from '@/services/siteSettingsService'
 
 const loading = ref(false)
-const uploading = ref(false)
 const saving = ref(false)
 const loadingFromPublic = ref(false)
 
 const sliderItems = ref([])
 const originalOrder = ref([])
-
-const previewFiles = ref([])
 
 const hasChanges = computed(() => {
   if (sliderItems.value.length !== originalOrder.value.length) return true
@@ -248,95 +180,6 @@ const loadSlider = async () => {
   }
 }
 
-const fileInputRef = ref(null)
-
-const handleFileInputChange = (event) => {
-  const files = Array.from(event.target.files || [])
-  if (files.length === 0) return
-  
-  // Track existing file names to avoid duplicates
-  const existingNames = new Set(previewFiles.value.map(pf => pf.name))
-  
-  // Add only new files (not already in preview)
-  files.forEach(file => {
-    // Skip if already in preview
-    if (existingNames.has(file.name)) {
-      return
-    }
-    
-    if (!String(file.type || '').startsWith('image/')) {
-      ElMessage.warning(`Файл ${file.name} не является изображением, пропущен`)
-      return
-    }
-    if (file.size > 20 * 1024 * 1024) {
-      ElMessage.warning(`Файл ${file.name} слишком большой (макс 20MB), пропущен`)
-      return
-    }
-    
-    previewFiles.value.push({
-      file,
-      name: file.name,
-      preview: URL.createObjectURL(file)
-    })
-    existingNames.add(file.name)
-  })
-  
-  // Reset input to allow selecting same files again if needed
-  event.target.value = ''
-}
-
-const removePreviewFile = (index) => {
-  if (previewFiles.value[index]?.preview) {
-    URL.revokeObjectURL(previewFiles.value[index].preview)
-  }
-  previewFiles.value.splice(index, 1)
-}
-
-const clearPreviewFiles = () => {
-  previewFiles.value.forEach(pf => {
-    if (pf.preview) URL.revokeObjectURL(pf.preview)
-  })
-  previewFiles.value = []
-}
-
-const uploadFiles = async () => {
-  if (previewFiles.value.length === 0) return
-
-  uploading.value = true
-  try {
-    const files = previewFiles.value.map(pf => pf.file)
-    const result = await siteSettingsService.uploadHeroSlides(files)
-
-    if (result.uploaded && result.uploaded.length > 0) {
-      ElMessage.success(`Загружено ${result.uploaded.length} файлов`)
-      
-      // Add to slider items (only new ones, not existing)
-      const newItems = result.uploaded.map((item, idx) => ({
-        id: null, // Will be assigned by backend after save
-        key: item.key,
-        url: item.url,
-        orderIndex: sliderItems.value.length + idx
-      }))
-      sliderItems.value.push(...newItems)
-      
-      // Immediately save the entire list to backend to persist changes
-      const keys = sliderItems.value.map(item => item.key)
-      await siteSettingsService.setHeroSliderKeys(keys)
-      
-      // Reload to get proper IDs from backend
-      await loadSlider()
-      
-      clearPreviewFiles()
-      ElMessage.success('Слайдер обновлен')
-    } else {
-      ElMessage.warning('Не удалось загрузить файлы')
-    }
-  } catch (e) {
-    ElMessage.error(e.message || 'Ошибка загрузки файлов')
-  } finally {
-    uploading.value = false
-  }
-}
 
 const moveUp = (index) => {
   if (index === 0) return
@@ -424,12 +267,6 @@ const loadFromPublicFolder = async () => {
 
 onMounted(() => {
   loadSlider()
-})
-
-onUnmounted(() => {
-  previewFiles.value.forEach(pf => {
-    if (pf.preview) URL.revokeObjectURL(pf.preview)
-  })
 })
 </script>
 
