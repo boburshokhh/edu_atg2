@@ -6,7 +6,7 @@
         :modules="modules"
         :slides-per-view="1"
         :space-between="0"
-        :loop="true"
+        :loop="sliderItems.length > 1"
         :autoplay="{
           delay: 5000,
           disableOnInteraction: false,
@@ -15,10 +15,32 @@
         :fade-effect="{ crossFade: true }"
         class="w-full h-full"
       >
-        <swiper-slide>
+        <swiper-slide
+          v-for="(item, index) in sliderItems"
+          :key="item.id || `slide-${index}`"
+        >
           <div class="w-full h-full relative">
             <img 
-              :src="heroImageUrl || fallbackImageUrl" 
+              v-if="item.url"
+              :src="item.url" 
+              alt="ATG Education Platform"
+              class="w-full h-full object-cover"
+            >
+            <img 
+              v-else
+              :src="fallbackImageUrl" 
+              alt="ATG Education Platform"
+              class="w-full h-full object-cover"
+            >
+            <!-- Градиентный оверлей как в StationDetail -->
+            <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-gray-900/90" />
+          </div>
+        </swiper-slide>
+        <!-- Fallback if no slider items -->
+        <swiper-slide v-if="sliderItems.length === 0">
+          <div class="w-full h-full relative">
+            <img 
+              :src="fallbackImageUrl" 
               alt="ATG Education Platform"
               class="w-full h-full object-cover"
             >
@@ -132,14 +154,16 @@ export default {
   },
   setup() {
     const fallbackImageUrl = ref('/slider/photo_2025-10-16_14-31-39.jpg')
-    const heroImageUrl = ref(null)
+    const sliderItems = ref([])
 
-    const loadHeroBackground = async () => {
+    const loadHeroSlider = async () => {
       try {
-        const data = await siteSettingsService.getHeroImage()
-        heroImageUrl.value = data?.url || null
-      } catch {
-        heroImageUrl.value = null
+        const data = await siteSettingsService.getHeroSlider()
+        // Filter out items without URL (broken presigned URLs)
+        sliderItems.value = (data?.items || []).filter(item => item.url)
+      } catch (error) {
+        console.error('Error loading hero slider:', error)
+        sliderItems.value = []
       }
     }
 
@@ -151,13 +175,13 @@ export default {
     }
 
     onMounted(() => {
-      loadHeroBackground()
+      loadHeroSlider()
     })
 
     return {
       modules: [Autoplay, EffectFade],
       fallbackImageUrl,
-      heroImageUrl,
+      sliderItems,
       scrollToAbout
     }
   }

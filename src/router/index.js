@@ -13,6 +13,7 @@ import Dashboard from '@/views/user/Dashboard.vue'
 import StationList from '@/views/admin/StationList.vue'
 import StationEditor from '@/views/admin/StationEditor.vue'
 import HeroSettings from '@/views/admin/HeroSettings.vue'
+import AdminHome from '@/views/admin/AdminHome.vue'
 import RegisterProfile from '@/views/user/RegisterProfile.vue'
 import authService from '@/services/auth'
 
@@ -81,6 +82,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   // Admin Routes
+  {
+    path: '/admin',
+    name: 'AdminHome',
+    component: AdminHome,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
   {
     path: '/admin/stations',
     name: 'AdminStations',

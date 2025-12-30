@@ -75,6 +75,73 @@ class SiteSettingsService {
     const key = await stationService.uploadFile(file, 'hero')
     return await this.setHeroImageKey(key)
   }
+
+  /**
+   * Public: get hero slider images
+   * @returns {Promise<{items: Array<{id: number, key: string, url: string, orderIndex: number}>}>}
+   */
+  async getHeroSlider() {
+    const data = await apiRequest('/site/hero-slider', { method: 'GET' })
+    return {
+      items: data?.items || [],
+    }
+  }
+
+  /**
+   * Admin: upload multiple files for hero slider
+   * @param {File[]} files - Array of File objects
+   * @returns {Promise<{uploaded: Array<{key: string, url: string}>}>}
+   */
+  async uploadHeroSlides(files) {
+    if (!files || files.length === 0) {
+      throw new Error('No files provided')
+    }
+
+    const token = getAuthToken()
+    const formData = new FormData()
+    files.forEach((file) => {
+      formData.append('files[]', file)
+    })
+
+    const headers = {}
+    if (token) headers['Authorization'] = token
+
+    const response = await fetch(`${API_BASE_URL}/site/hero-slider/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch {
+        errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
+      }
+      const msg = errorData.error || errorData.message || errorData.detail || `HTTP ${response.status}`
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  }
+
+  /**
+   * Admin: set hero slider keys (replace all)
+   * @param {string[]} keys - Array of MinIO object keys (must start with hero/)
+   * @returns {Promise<{ok: boolean, items: Array}>}
+   */
+  async setHeroSliderKeys(keys) {
+    if (!Array.isArray(keys)) {
+      throw new Error('keys must be an array')
+    }
+
+    const data = await apiRequest('/site/hero-slider', {
+      method: 'PUT',
+      body: JSON.stringify({ keys }),
+    })
+    return data
+  }
 }
 
 const siteSettingsService = new SiteSettingsService()

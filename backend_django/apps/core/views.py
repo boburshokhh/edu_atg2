@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
-from apps.core.models import SiteSettings
+from apps.core.models import HeroSliderImage, SiteSettings
 from apps.files.minio_client import presign_get, s3_client
 
 
@@ -154,5 +154,147 @@ class HeroImageView(APIView):
         row.save(update_fields=["hero_background_image"])
         url = presign_get(key, expires_in=60 * 60 * 24 * 7)
         return JsonResponse({"ok": True, "image_key": key, "url": url})
+
+
+class HeroSliderView(APIView):
+    """
+    GET  /site/hero-slider     (AllowAny) -> { items: [{ id, key, url, orderIndex }] }
+    PUT  /site/hero-slider     (IsAdmin)  -> { keys: ["hero/...", ...] } replace all
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, _request):
+        try:
+            items = list(
+                HeroSliderImage.objects.filter(is_active=True)
+                .order_by("order_index", "id")
+                .values("id", "key", "order_index")
+            )
+            result = []
+            for item in items:
+                key = (item["key"] or "").lstrip("/")
+                if not key:
+                    continue
+                try:
+                    url = presign_get(key, expires_in=60 * 60 * 24 * 7)
+                except ClientError:
+                    url = None
+                result.append(
+                    {
+                        "id": item["id"],
+                        "key": key,
+                        "url": url,
+                        "orderIndex": item["order_index"],
+                    }
+                )
+            return JsonResponse({"items": result})
+        except Exception:
+            # Table might not exist yet
+            return JsonResponse({"items": []})
+
+    def put(self, request):
+        self.permission_classes = [IsAdmin]
+        for permission in self.get_permissions():
+            if not permission.has_permission(request, self):
+                return JsonResponse({"error": "Forbidden"}, status=403)
+
+        keys = request.data.get("keys", [])
+        if not isinstance(keys, list):
+            return JsonResponse({"error": "keys must be a list"}, status=400)
+
+        # Validate all keys
+        validated_keys = []
+        for key in keys:
+            key_str = str(key).lstrip("/")
+            if not key_str.startswith("hero/"):
+                return JsonResponse({"error": f"Key must start with 'hero/': {key_str}"}, status=400)
+            validated_keys.append(key_str)
+
+        # Atomic replace: delete all, then insert new ones
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM hero_slider_images;")
+            for idx, key in enumerate(validated_keys):
+                cursor.execute(
+                    """
+                    INSERT INTO hero_slider_images (key, order_index, is_active, created_at, updated_at)
+                    VALUES (%s, %s, TRUE, NOW(), NOW())
+                    """,
+                    [key, idx],
+                )
+
+        # Return updated list
+        items = list(
+            HeroSliderImage.objects.filter(is_active=True)
+            .order_by("order_index", "id")
+            .values("id", "key", "order_index")
+        )
+        result = []
+        for item in items:
+            key = (item["key"] or "").lstrip("/")
+            if not key:
+                continue
+            try:
+                url = presign_get(key, expires_in=60 * 60 * 24 * 7)
+            except ClientError:
+                url = None
+            result.append(
+                {
+                    "id": item["id"],
+                    "key": key,
+                    "url": url,
+                    "orderIndex": item["order_index"],
+                }
+            )
+        return JsonResponse({"ok": True, "items": result})
+
+
+class HeroSliderUploadView(APIView):
+    """
+    POST /site/hero-slider/upload  (IsAdmin) -> multipart/form-data with files[]
+    Returns: { uploaded: [{ key, url }] }
+    """
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        files = request.FILES.getlist("files[]") or request.FILES.getlist("files")
+        if not files:
+            return JsonResponse({"error": "No files provided"}, status=400)
+
+        max_size = 20 * 1024 * 1024  # 20MB per file
+        uploaded = []
+
+        client = s3_client()
+        for file_obj in files:
+            content_type = getattr(file_obj, "content_type", None) or "application/octet-stream"
+            if not content_type.startswith("image/"):
+                continue  # Skip non-images
+
+            if getattr(file_obj, "size", 0) > max_size:
+                continue  # Skip too large files
+
+            safe_name = _sanitize_filename(getattr(file_obj, "name", "image"))
+            key = f"hero/{int(time.time())}_{safe_name}"
+
+            try:
+                client.upload_fileobj(
+                    file_obj,
+                    settings.MINIO_BUCKET,
+                    key,
+                    ExtraArgs={"ContentType": content_type},
+                )
+                url = presign_get(key, expires_in=60 * 60 * 24 * 7, response_content_type=content_type)
+                uploaded.append({"key": key, "url": url})
+            except ClientError as e:
+                code = (e.response.get("Error") or {}).get("Code")
+                message = (e.response.get("Error") or {}).get("Message", "Upload failed")
+                # Log but continue with other files
+                continue
+
+        if not uploaded:
+            return JsonResponse({"error": "No files were uploaded"}, status=400)
+
+        return JsonResponse({"uploaded": uploaded})
 
 
