@@ -127,7 +127,7 @@
             class="space-y-5"
             @submit.prevent="handleLogin"
           >
-            <!-- Username -->
+            <!-- Username or Email -->
             <el-form-item
               prop="username"
               class="mb-5"
@@ -255,6 +255,7 @@ export default {
     const currentLocale = computed(() => locale.value)
     
     // Правила валидации с реактивностью на изменение языка
+    // Поле username принимает как имя пользователя, так и email
     const rules = computed(() => ({
       username: [
         { required: true, message: t('login.validation.usernameRequired'), trigger: 'blur' }

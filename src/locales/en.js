@@ -226,7 +226,7 @@ export default {
   login: {
     title: 'EDUCATION PORTAL',
     subtitle: 'Sign in to continue',
-    username: 'Username',
+    username: 'Username or Email',
     password: 'Password',
     loginButton: 'LOGIN',
     divider: 'or',
@@ -234,7 +234,7 @@ export default {
     forgotPassword: 'Forgot password?',
     copyright: '© 2025 Asia Trans Gas. All rights reserved.',
     validation: {
-      usernameRequired: 'Please enter username',
+      usernameRequired: 'Please enter username or email',
       passwordRequired: 'Please enter password',
       passwordMinLength: 'Password must contain at least 6 characters'
     },

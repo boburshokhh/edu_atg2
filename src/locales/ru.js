@@ -226,14 +226,14 @@ export default {
   login: {
     title: 'ОБРАЗОВАТЕЛЬНЫЙ ПОРТАЛ',
     subtitle: 'Войдите в систему для продолжения',
-    username: 'Имя пользователя',
+    username: 'Имя пользователя или Email',
     password: 'Пароль',
     loginButton: 'ВОЙТИ',
     divider: 'или',
     forgotPassword: 'Забыли пароль?',
     copyright: '© 2025 Asia Trans Gas. Все права защищены.',
     validation: {
-      usernameRequired: 'Пожалуйста, введите имя пользователя',
+      usernameRequired: 'Пожалуйста, введите имя пользователя или email',
       passwordRequired: 'Пожалуйста, введите пароль',
       passwordMinLength: 'Пароль должен содержать минимум 6 символов'
     },

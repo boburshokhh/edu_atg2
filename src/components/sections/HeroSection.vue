@@ -18,7 +18,7 @@
         <swiper-slide>
           <div class="w-full h-full relative">
             <img 
-              :src="fallbackImageUrl" 
+              :src="heroImageUrl || fallbackImageUrl" 
               alt="ATG Education Platform"
               class="w-full h-full object-cover"
             >
@@ -116,12 +116,13 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, EffectFade } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/effect-fade'
 import 'swiper/css/autoplay'
+import siteSettingsService from '@/services/siteSettingsService'
 
 export default {
   name: 'HeroSection',
@@ -131,6 +132,16 @@ export default {
   },
   setup() {
     const fallbackImageUrl = ref('/slider/photo_2025-10-16_14-31-39.jpg')
+    const heroImageUrl = ref(null)
+
+    const loadHeroBackground = async () => {
+      try {
+        const data = await siteSettingsService.getHeroImage()
+        heroImageUrl.value = data?.url || null
+      } catch {
+        heroImageUrl.value = null
+      }
+    }
 
     const scrollToAbout = () => {
       const aboutSection = document.getElementById('about')
@@ -139,9 +150,14 @@ export default {
       }
     }
 
+    onMounted(() => {
+      loadHeroBackground()
+    })
+
     return {
       modules: [Autoplay, EffectFade],
       fallbackImageUrl,
+      heroImageUrl,
       scrollToAbout
     }
   }

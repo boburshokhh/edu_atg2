@@ -12,6 +12,7 @@ import Login from '@/views/public/Login.vue'
 import Dashboard from '@/views/user/Dashboard.vue'
 import StationList from '@/views/admin/StationList.vue'
 import StationEditor from '@/views/admin/StationEditor.vue'
+import HeroSettings from '@/views/admin/HeroSettings.vue'
 import RegisterProfile from '@/views/user/RegisterProfile.vue'
 import authService from '@/services/auth'
 
@@ -97,6 +98,12 @@ const routes = [
     name: 'AdminStationEdit',
     component: StationEditor,
     props: true,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/hero-settings',
+    name: 'AdminHeroSettings',
+    component: HeroSettings,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
 ]
