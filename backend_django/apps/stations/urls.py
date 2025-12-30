@@ -70,4 +70,10 @@ urlpatterns = [
     # Normative Docs
     path("<int:id>/docs/create/", views.StationNormativeDocCreateView.as_view()),
     path("<int:id>/docs/<int:doc_id>/delete/", views.StationNormativeDocDeleteView.as_view()),
+    # Departments
+    path("departments/", views.DepartmentsListView.as_view()),
+    path("departments/create/", views.DepartmentCreateView.as_view()),
+    path("departments/<int:id>", views.DepartmentDetailView.as_view()),
+    path("departments/<int:id>/update/", views.DepartmentUpdateView.as_view()),
+    path("departments/<int:id>/delete/", views.DepartmentDeleteView.as_view()),
 ]

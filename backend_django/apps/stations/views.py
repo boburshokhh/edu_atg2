@@ -17,6 +17,7 @@ from apps.courses.models import (
     FinalTest,
 )
 from apps.stations.models import (
+    Department,
     Station,
     StationEquipment,
     StationGasSupplySource,
@@ -28,6 +29,7 @@ from apps.stations.models import (
     StationSpecification,
 )
 from apps.stations.serializers import (
+    DepartmentSerializer,
     StationEquipmentSerializer,
     StationGasSupplySourceSerializer,
     StationNormativeDocSerializer,
@@ -1388,4 +1390,77 @@ class StationNormativeDocDeleteView(APIView):
             return JsonResponse({"error": "Document not found"}, status=404)
 
         doc.delete()
+        return JsonResponse({"success": True}, status=200)
+
+
+# ============================================================================
+# DEPARTMENTS API
+# ============================================================================
+
+class DepartmentsListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, _request):
+        rows = list(
+            Department.objects.all()
+            .order_by("id")
+            .values(
+                "id",
+                "name",
+                "short_name",
+                "description",
+                "image",
+                "status",
+            )
+        )
+        return JsonResponse({"data": rows})
+
+
+class DepartmentDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, _request, id: int):
+        department = Department.objects.filter(id=id).values().first()
+        if not department:
+            return JsonResponse({"error": "Department not found"}, status=404)
+        return JsonResponse({"data": department})
+
+
+class DepartmentCreateView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        serializer = DepartmentSerializer(data=request.data)
+        if serializer.is_valid():
+            department = serializer.save()
+            return JsonResponse(DepartmentSerializer(department).data, status=201)
+        return JsonResponse(serializer.errors, status=400)
+
+
+class DepartmentUpdateView(APIView):
+    permission_classes = [IsAdmin]
+
+    def put(self, request, id: int):
+        try:
+            department = Department.objects.get(id=id)
+        except Department.DoesNotExist:
+            return JsonResponse({"error": "Department not found"}, status=404)
+
+        serializer = DepartmentSerializer(department, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(DepartmentSerializer(department).data)
+        return JsonResponse(serializer.errors, status=400)
+
+
+class DepartmentDeleteView(APIView):
+    permission_classes = [IsAdmin]
+
+    def delete(self, request, id: int):
+        try:
+            department = Department.objects.get(id=id)
+        except Department.DoesNotExist:
+            return JsonResponse({"error": "Department not found"}, status=404)
+
+        department.delete()
         return JsonResponse({"success": True}, status=200)

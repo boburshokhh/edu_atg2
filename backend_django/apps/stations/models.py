@@ -139,3 +139,18 @@ class StationPromoVideo(models.Model):
     class Meta:
         db_table = "station_promo_videos"
         managed = False
+
+
+class Department(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=255)
+    short_name = models.CharField(max_length=50)
+    description = models.TextField(null=True, blank=True)
+    image = models.CharField(max_length=255, null=True, blank=True)
+    status = models.CharField(max_length=20, default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "departments"
+        managed = False

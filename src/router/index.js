@@ -6,6 +6,7 @@ import CourseDetail from '@/views/course/CourseDetail.vue'
 import Stations from '@/views/station/Stations.vue'
 import StationDetail from '@/views/station/StationDetail.vue'
 import StationCourses from '@/views/station/StationCourses.vue'
+import Departments from '@/components/Departments.vue'
 import LessonViewer from '@/views/lesson/LessonViewer.vue'
 import Profile from '@/views/user/Profile.vue'
 import Login from '@/views/public/Login.vue'
@@ -38,6 +39,11 @@ const routes = [
     path: '/stations',
     name: 'Stations',
     component: Stations
+  },
+  {
+    path: '/departments',
+    name: 'Departments',
+    component: Departments
   },
   {
     path: '/station/:id',

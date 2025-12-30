@@ -62,6 +62,18 @@
             {{ $t('nav.stations') }}
             <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full" />
           </router-link>
+          
+          <router-link 
+            to="/departments" 
+            class="nav-link relative group"
+            :class="[
+              isLightTheme ? 'text-gray-700 hover:text-gray-900' : 'text-white/90 hover:text-white',
+              $route.name === 'Departments' ? (isLightTheme ? 'text-gray-900 font-semibold' : 'text-white font-semibold') : ''
+            ]"
+          >
+            Отделы
+            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-tamex-blue-600 transition-all duration-300 group-hover:w-full" />
+          </router-link>
         </nav>
 
         <!-- Right Actions -->
@@ -316,6 +328,15 @@
               @click="mobileMenuOpen = false"
             >
               {{ $t('nav.stations') }}
+            </router-link>
+            
+            <router-link
+              to="/departments"
+              class="mobile-nav-link"
+              :class="isLightTheme ? 'text-gray-700 hover:bg-gray-50' : 'text-white hover:bg-white/10'"
+              @click="mobileMenuOpen = false"
+            >
+              Отделы
             </router-link>
 
             <!-- Mobile Auth Buttons -->

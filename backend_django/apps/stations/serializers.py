@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.stations.models import (
+    Department,
     Station,
     StationEquipment,
     StationGasSupplySource,
@@ -114,3 +115,17 @@ class StationNormativeDocSerializer(serializers.ModelSerializer):
         model = StationNormativeDoc
         fields = ["id", "station", "title", "file_url"]
         read_only_fields = ["id", "created_at"]
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = [
+            "id",
+            "name",
+            "short_name",
+            "description",
+            "image",
+            "status",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
