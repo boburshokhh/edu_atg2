@@ -26,21 +26,25 @@
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
               Загрузить новые изображения
             </h2>
-            <el-upload
-              :auto-upload="false"
-              :show-file-list="false"
+            <input
+              ref="fileInputRef"
+              type="file"
               accept="image/*"
               multiple
-              :on-change="handleFilesChange"
-              class="w-full"
+              class="hidden"
+              @change="handleFileInputChange"
             >
-              <el-button type="primary" size="large" class="w-full sm:w-auto">
-                <el-icon class="mr-2">
-                  <Upload />
-                </el-icon>
-                Выбрать файлы (можно несколько)
-              </el-button>
-            </el-upload>
+            <el-button
+              type="primary"
+              size="large"
+              class="w-full sm:w-auto"
+              @click="$refs.fileInputRef.click()"
+            >
+              <el-icon class="mr-2">
+                <Upload />
+              </el-icon>
+              Выбрать файлы (можно несколько)
+            </el-button>
 
             <div v-if="previewFiles.length > 0" class="mt-4">
               <p class="text-sm text-gray-600 mb-3">
@@ -231,9 +235,22 @@ const loadSlider = async () => {
   }
 }
 
-const handleFilesChange = (uploadFile, uploadFiles) => {
-  const files = uploadFiles.map(uf => uf.raw).filter(Boolean)
+const fileInputRef = ref(null)
+
+const handleFileInputChange = (event) => {
+  const files = Array.from(event.target.files || [])
+  if (files.length === 0) return
+  
+  // Track existing file names to avoid duplicates
+  const existingNames = new Set(previewFiles.value.map(pf => pf.name))
+  
+  // Add only new files (not already in preview)
   files.forEach(file => {
+    // Skip if already in preview
+    if (existingNames.has(file.name)) {
+      return
+    }
+    
     if (!String(file.type || '').startsWith('image/')) {
       ElMessage.warning(`Файл ${file.name} не является изображением, пропущен`)
       return
@@ -242,12 +259,17 @@ const handleFilesChange = (uploadFile, uploadFiles) => {
       ElMessage.warning(`Файл ${file.name} слишком большой (макс 20MB), пропущен`)
       return
     }
+    
     previewFiles.value.push({
       file,
       name: file.name,
       preview: URL.createObjectURL(file)
     })
+    existingNames.add(file.name)
   })
+  
+  // Reset input to allow selecting same files again if needed
+  event.target.value = ''
 }
 
 const removePreviewFile = (index) => {
@@ -275,7 +297,7 @@ const uploadFiles = async () => {
     if (result.uploaded && result.uploaded.length > 0) {
       ElMessage.success(`Загружено ${result.uploaded.length} файлов`)
       
-      // Add to slider items
+      // Add to slider items (only new ones, not existing)
       const newItems = result.uploaded.map((item, idx) => ({
         id: null, // Will be assigned by backend after save
         key: item.key,
@@ -284,7 +306,15 @@ const uploadFiles = async () => {
       }))
       sliderItems.value.push(...newItems)
       
+      // Immediately save the entire list to backend to persist changes
+      const keys = sliderItems.value.map(item => item.key)
+      await siteSettingsService.setHeroSliderKeys(keys)
+      
+      // Reload to get proper IDs from backend
+      await loadSlider()
+      
       clearPreviewFiles()
+      ElMessage.success('Слайдер обновлен')
     } else {
       ElMessage.warning('Не удалось загрузить файлы')
     }

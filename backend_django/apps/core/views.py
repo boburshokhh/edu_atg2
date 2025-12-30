@@ -166,6 +166,14 @@ class HeroSliderView(APIView):
 
     def get(self, _request):
         try:
+            # Check if table exists by trying a simple query
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1 FROM hero_slider_images LIMIT 1")
+        except Exception:
+            # Table doesn't exist yet
+            return JsonResponse({"items": []})
+
+        try:
             items = list(
                 HeroSliderImage.objects.filter(is_active=True)
                 .order_by("order_index", "id")
@@ -178,8 +186,9 @@ class HeroSliderView(APIView):
                     continue
                 try:
                     url = presign_get(key, expires_in=60 * 60 * 24 * 7)
-                except ClientError:
-                    url = None
+                except (ClientError, Exception) as e:
+                    # If presigned URL fails, skip this item
+                    continue
                 result.append(
                     {
                         "id": item["id"],
@@ -189,8 +198,11 @@ class HeroSliderView(APIView):
                     }
                 )
             return JsonResponse({"items": result})
-        except Exception:
-            # Table might not exist yet
+        except Exception as e:
+            # Log error but return empty list to not break frontend
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error loading hero slider: {e}")
             return JsonResponse({"items": []})
 
     def put(self, request):

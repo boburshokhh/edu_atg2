@@ -163,6 +163,7 @@ export default {
         sliderItems.value = (data?.items || []).filter(item => item.url)
       } catch (error) {
         console.error('Error loading hero slider:', error)
+        // On error, use empty array (fallback will show default image)
         sliderItems.value = []
       }
     }
