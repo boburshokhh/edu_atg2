@@ -88,73 +88,16 @@ def presign_get(key: str, expires_in: int = 60 * 60 * 24 * 7, response_content_t
         # Log after generation
         logger.info(f"[presign_get] Generated presigned URL (before replacement): {url[:200] if url else 'None'}...")
         
-        # Replace internal endpoint with public endpoint if configured
-        # This is needed because presigned URLs are used by browsers which cannot
-        # resolve internal Docker hostnames like "minio:9000"
-        if url:
-            from urllib.parse import urlparse, urlunparse
-            parsed_url = urlparse(url)
-            parsed_internal = urlparse(settings.MINIO_ENDPOINT)
-            
-            # Get public endpoint from settings (already auto-configured in settings.py)
-            minio_public_endpoint = getattr(settings, 'MINIO_PUBLIC_ENDPOINT', None)
-            logger.info(f"[presign_get] === ENDPOINT REPLACEMENT DEBUG ===")
-            logger.info(f"[presign_get] MINIO_ENDPOINT: {settings.MINIO_ENDPOINT}")
-            logger.info(f"[presign_get] MINIO_PUBLIC_ENDPOINT from settings: {minio_public_endpoint}")
-            logger.info(f"[presign_get] URL netloc (from boto3): {parsed_url.netloc}")
-            logger.info(f"[presign_get] Internal netloc: {parsed_internal.netloc}")
-            
-            # Force replacement if URL contains "minio" (internal Docker hostname)
-            # This is a safety check in case MINIO_PUBLIC_ENDPOINT is not configured
-            url_contains_minio = 'minio' in parsed_url.netloc.lower()
-            
-            if minio_public_endpoint:
-                parsed_public = urlparse(minio_public_endpoint)
-                logger.info(f"[presign_get] Public endpoint parsed - netloc: {parsed_public.netloc}, scheme: {parsed_public.scheme}")
-                
-                # Replace if:
-                # 1. Public endpoint differs from URL's current netloc, OR
-                # 2. URL contains "minio" (internal Docker hostname) - force replacement
-                should_replace = (
-                    (parsed_public.netloc and parsed_public.netloc != parsed_url.netloc) or
-                    url_contains_minio
-                )
-                
-                if should_replace and parsed_public.netloc:
-                    new_netloc = parsed_public.netloc
-                    new_scheme = parsed_public.scheme
-                    old_url = url
-                    url = urlunparse((
-                        new_scheme,
-                        new_netloc,
-                        parsed_url.path,
-                        parsed_url.params,
-                        parsed_url.query,
-                        parsed_url.fragment
-                    ))
-                    
-                    logger.info(f"[presign_get] ✅ SUCCESS: Replaced endpoint: {parsed_url.netloc} -> {new_netloc}")
-                    logger.info(f"[presign_get] Final URL (first 200 chars): {url[:200] if url else 'None'}...")
-                    logger.info(f"[presign_get] === ENDPOINT REPLACEMENT COMPLETE ===")
-                else:
-                    logger.warning(f"[presign_get] ⚠️ Replacement SKIPPED - public netloc: {parsed_public.netloc}, URL netloc: {parsed_url.netloc}, url_contains_minio: {url_contains_minio}")
-            elif url_contains_minio:
-                # URL contains "minio" but no public endpoint configured - use hardcoded default
-                logger.warning(f"[presign_get] ⚠️ URL contains 'minio' but MINIO_PUBLIC_ENDPOINT not set! Using hardcoded default.")
-                default_public = "http://192.168.32.100:9000"
-                parsed_default = urlparse(default_public)
-                url = urlunparse((
-                    parsed_default.scheme,
-                    parsed_default.netloc,
-                    parsed_url.path,
-                    parsed_url.params,
-                    parsed_url.query,
-                    parsed_url.fragment
-                ))
-                logger.info(f"[presign_get] ✅ FORCED replacement using default: {parsed_url.netloc} -> {parsed_default.netloc}")
-            else:
-                logger.error(f"[presign_get] ❌ ERROR: No public endpoint configured - cannot replace internal hostname!")
-                logger.error(f"[presign_get] MINIO_PUBLIC_ENDPOINT is None or not set in settings!")
+        # IMPORTANT: Do NOT replace hostname in presigned URLs!
+        # Presigned URLs are signed with the hostname, so changing it invalidates the signature.
+        # Instead, return URL with original hostname - frontend will use /api/minio/ proxy
+        # which preserves the Host header (proxy_set_header Host minio:9000 in nginx.conf)
+        # 
+        # The frontend getFrontendUrl() function will convert http://minio:9000/... to /api/minio/...
+        # and nginx will proxy it to MinIO with correct Host header, preserving the signature.
+        
+        logger.info(f"[presign_get] Returning presigned URL with original hostname (frontend will use /api/minio/ proxy)")
+        logger.info(f"[presign_get] URL will be converted by frontend getFrontendUrl() to use /api/minio/ proxy")
         
         if not url:
             logger.error(f"[presign_get] Failed to generate URL for key: {key}")

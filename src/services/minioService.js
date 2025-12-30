@@ -99,25 +99,30 @@ export const formatFileSize = (bytes) => {
 
 // Получение URL с кэшированием
 // Простая замена MinIO endpoint на /api/minio, сохраняя весь путь и query параметры
+// IMPORTANT: Presigned URLs are signed with hostname, so we must preserve the signature
+// by using /api/minio/ proxy which sets Host header correctly (minio:9000)
 const getFrontendUrl = (url) => {
   if (typeof window === 'undefined') return url
   if (!url || typeof url !== 'string') return url
   
   // Простая замена: заменяем MinIO endpoint на /api/minio
   // Presigned URL от MinIO уже содержит bucket в пути (например: http://minio:9000/atgedu/stations/WKC1.jpg)
-  // Мы просто заменяем origin на /api/minio, сохраняя путь и query параметры
+  // Мы просто заменяем origin на /api/minio, сохраняя путь и query параметры (включая подпись)
   if (url.includes(MINIO_ENDPOINT)) {
     return url.replace(MINIO_ENDPOINT, '/api/minio')
   }
   
-  // Если URL содержит localhost:9000 или другой MinIO endpoint
+  // Если URL содержит minio:9000 или другой MinIO endpoint
   try {
     const urlObj = new URL(url)
+    // Проверяем порт 9000 или hostname содержит "minio"
     if (urlObj.port === '9000' || urlObj.hostname.includes('minio')) {
+      // Сохраняем путь и query параметры (включая подпись presigned URL)
       return `/api/minio${urlObj.pathname}${urlObj.search}`
     }
   } catch (e) {
     // Игнорируем ошибки парсинга
+    console.warn('[getFrontendUrl] Failed to parse URL:', url, e)
   }
   
   return url
@@ -161,7 +166,9 @@ export const getPresignedDownloadUrl = async (
       return getFileUrl(normalizedObjectName)
     }
 
+    console.log(`[MinIO] Got presigned URL from backend: ${url.substring(0, 150)}...`)
     const frontendUrl = getFrontendUrl(url)
+    console.log(`[MinIO] Converted to frontend URL: ${frontendUrl.substring(0, 150)}...`)
     
     // Сохраняем в кэш
     urlCache.set(cacheKey, {
