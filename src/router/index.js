@@ -13,6 +13,8 @@ import Login from '@/views/public/Login.vue'
 import Dashboard from '@/views/user/Dashboard.vue'
 import StationList from '@/views/admin/StationList.vue'
 import StationEditor from '@/views/admin/StationEditor.vue'
+import DepartmentList from '@/views/admin/DepartmentList.vue'
+import DepartmentEditor from '@/views/admin/DepartmentEditor.vue'
 import HeroSettings from '@/views/admin/HeroSettings.vue'
 import AdminHome from '@/views/admin/AdminHome.vue'
 import RegisterProfile from '@/views/user/RegisterProfile.vue'
@@ -117,6 +119,25 @@ const routes = [
     path: '/admin/hero-settings',
     name: 'AdminHeroSettings',
     component: HeroSettings,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/departments',
+    name: 'AdminDepartments',
+    component: DepartmentList,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/departments/new',
+    name: 'AdminDepartmentCreate',
+    component: DepartmentEditor,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/departments/:id',
+    name: 'AdminDepartmentEdit',
+    component: DepartmentEditor,
+    props: true,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
 ]

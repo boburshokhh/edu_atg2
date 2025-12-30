@@ -137,15 +137,17 @@
           </div>
         </div>
 
-        <!-- Placeholder for future cards -->
+        <!-- Departments Card -->
         <div
-          class="group relative bg-white rounded-2xl shadow-lg border border-gray-200 border-dashed overflow-hidden opacity-60"
+          class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
+          @click="$router.push('/admin/departments')"
         >
+          <div class="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div class="relative p-8">
-            <div class="flex items-center justify-center mb-6">
-              <div class="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center">
+            <div class="flex items-center justify-between mb-6">
+              <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
                 <svg
-                  class="w-8 h-8 text-gray-400"
+                  class="w-8 h-8 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -154,23 +156,64 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 21v-8a2 2 0 00-2-2H9a2 2 0 00-2 2v8"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 3v5h8"
                   />
                 </svg>
               </div>
+              <svg
+                class="w-6 h-6 text-gray-400 group-hover:text-green-500 transition-colors duration-300 transform group-hover:translate-x-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
             </div>
-            <h3 class="text-xl font-semibold text-gray-500 mb-2 text-center">
-              Скоро
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">
+              Отделы
             </h3>
-            <p class="text-gray-400 text-sm text-center">
-              Новые разделы управления
+            <p class="text-gray-600 mb-4">
+              Управление структурными подразделениями компании, их описаниями и изображениями
             </p>
+            <div class="flex items-center text-green-600 font-semibold group-hover:text-green-700">
+              <span>Перейти</span>
+              <svg
+                class="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Quick Stats (optional) -->
-      <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
           <div class="flex items-center justify-between">
             <div>
@@ -231,6 +274,40 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm mb-1">
+                Всего отделов
+              </p>
+              <p class="text-3xl font-bold text-gray-900">
+                {{ departmentsCount }}
+              </p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <svg
+                class="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 21v-8a2 2 0 00-2-2H9a2 2 0 00-2 2v8"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm mb-1">
                 Статус системы
               </p>
               <p class="text-2xl font-bold text-green-600">
@@ -264,9 +341,11 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import stationService from '@/services/stationService'
 import siteSettingsService from '@/services/siteSettingsService'
+import departmentService from '@/services/departmentService'
 
 const stationsCount = ref(0)
 const sliderCount = ref(0)
+const departmentsCount = ref(0)
 
 const loadStats = async () => {
   try {
@@ -277,6 +356,10 @@ const loadStats = async () => {
     // Load slider count
     const slider = await siteSettingsService.getHeroSlider()
     sliderCount.value = slider.items.length || 0
+
+    // Load departments count
+    const departments = await departmentService.getDepartments()
+    departmentsCount.value = departments.length || 0
   } catch (error) {
     console.error('Error loading stats:', error)
     ElMessage.warning('Не удалось загрузить статистику')
