@@ -135,12 +135,71 @@ class UserProfileService {
     }
   }
 
-  // Загрузка аватара (пока не реализовано на бэкенде)
+  // Загрузка аватара
   async uploadAvatar(userId, file) {
     try {
-      // TODO: Реализовать загрузку аватара через Django API
-      // Пока возвращаем ошибку
-      return { success: false, error: 'Avatar upload not yet implemented' }
+      if (!file) {
+        return { success: false, error: 'No file provided' }
+      }
+
+      // Validate file type
+      if (!file.type || !file.type.startsWith('image/')) {
+        return { success: false, error: 'Only image files are allowed' }
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (file.size > maxSize) {
+        return { success: false, error: 'File is too large (max 5MB)' }
+      }
+
+      // Create FormData for multipart upload
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Get auth token
+      const token = getAuthToken()
+      if (!token) {
+        return { success: false, error: 'Authentication required' }
+      }
+
+      // Upload avatar
+      const fullUrl = `${API_BASE_URL}/users/me/avatar`
+      console.log('[userProfileService] Uploading avatar to:', fullUrl)
+
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': token
+          // Don't set Content-Type - browser will set it with boundary for FormData
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
+        }
+        console.error('[userProfileService] Avatar upload error:', response.status, errorData)
+        const errorMessage = errorData.error || errorData.message || errorData.detail || `HTTP ${response.status}`
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.url) {
+        console.log('[userProfileService] Avatar uploaded successfully:', data.key)
+        return {
+          success: true,
+          url: data.url,
+          key: data.key
+        }
+      }
+
+      return { success: false, error: 'Upload failed' }
     } catch (error) {
       console.error('Error uploading avatar:', error)
       return { success: false, error: error.message }

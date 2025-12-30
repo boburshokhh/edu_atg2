@@ -27,6 +27,7 @@ class ProfileUpdateSerializer(serializers.Serializer):
     email_notifications = serializers.BooleanField(required=False)
     push_notifications = serializers.BooleanField(required=False)
     weekly_report = serializers.BooleanField(required=False)
+    avatar_url = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
 
 class RegisterProfileSerializer(serializers.Serializer):

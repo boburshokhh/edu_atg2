@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 import uuid
 from datetime import timedelta
 from typing import Optional
 
+from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db import IntegrityError, models, transaction
@@ -23,8 +25,19 @@ from apps.accounts.serializers import (
     RefreshSerializer,
     RegisterProfileSerializer,
 )
+from apps.files.minio_client import presign_get, s3_client
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Sanitize filename for safe storage in MinIO"""
+    # Remove path components
+    filename = filename.split("/")[-1].split("\\")[-1]
+    # Remove special characters, keep only alphanumeric, dots, hyphens, underscores
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+    # Limit length
+    return filename[:100]
 
 
 def _normalize_username(raw: str) -> str:
@@ -452,13 +465,28 @@ class MyProfileView(APIView):
     def get(self, request):
         user: User = request.user
         profile = UserProfile.objects.filter(id=user.id).first()
+        
+        # Generate presigned URL for avatar if it's stored in MinIO
+        avatar_url = None
+        if profile and profile.avatar_url:
+            # If avatar_url is a MinIO key (starts with avatars/), generate presigned URL
+            if profile.avatar_url.startswith("avatars/"):
+                try:
+                    avatar_url = presign_get(profile.avatar_url, expires_in=60 * 60 * 24 * 7)
+                except Exception as e:
+                    logger.warning(f"[MyProfileView] Failed to generate presigned URL for avatar: {e}")
+                    avatar_url = None
+            else:
+                # If it's already a URL, use it as is
+                avatar_url = profile.avatar_url
+        
         data = {
             "id": str(user.id),
             "username": user.username,
             "role": user.role,
             "full_name": (profile.full_name if profile else user.full_name),
             "email": (profile.email if profile else user.email),
-            "avatar_url": profile.avatar_url if profile else None,
+            "avatar_url": avatar_url,
             "company": profile.company if profile else None,
             "position": profile.position if profile else None,
             "phone": profile.phone if profile else None,
@@ -497,11 +525,86 @@ class MyProfileView(APIView):
                 "email_notifications": updates.get("email_notifications", True),
                 "push_notifications": updates.get("push_notifications", True),
                 "weekly_report": updates.get("weekly_report", False),
+                "avatar_url": updates.get("avatar_url", None),
             }
 
             UserProfile.objects.update_or_create(id=user, defaults=profile_defaults)
 
         return JsonResponse({"success": True})
+
+
+class UploadAvatarView(APIView):
+    """Upload user avatar image to MinIO and update profile"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user: User = request.user
+        
+        if "file" not in request.FILES:
+            return JsonResponse({"error": "No file provided"}, status=400)
+        
+        file_obj = request.FILES["file"]
+        content_type = getattr(file_obj, "content_type", None) or "application/octet-stream"
+        
+        # Validate file type
+        if not content_type.startswith("image/"):
+            return JsonResponse({"error": "Only image files are allowed"}, status=400)
+        
+        # Validate file size (max 5MB for avatars)
+        max_size = 5 * 1024 * 1024  # 5MB
+        if getattr(file_obj, "size", 0) > max_size:
+            return JsonResponse({"error": "File is too large (max 5MB)"}, status=400)
+        
+        # Generate safe filename
+        safe_name = _sanitize_filename(getattr(file_obj, "name", "avatar"))
+        # Use user ID in key to avoid conflicts
+        key = f"avatars/{user.id}/{int(time.time())}_{safe_name}"
+        
+        # Upload to MinIO
+        client = s3_client()
+        try:
+            client.upload_fileobj(
+                file_obj,
+                settings.MINIO_BUCKET,
+                key,
+                ExtraArgs={"ContentType": content_type},
+            )
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            message = (e.response.get("Error") or {}).get("Message", "Upload failed")
+            logger.error(f"[UploadAvatar] MinIO upload failed for user {user.id}: {code} - {message}")
+            return JsonResponse({"error": f"Upload failed: {code} - {message}"}, status=500)
+        
+        # Update user profile with MinIO key
+        with transaction.atomic():
+            profile, created = UserProfile.objects.get_or_create(id=user.id)
+            # Delete old avatar from MinIO if exists
+            if profile.avatar_url and profile.avatar_url.startswith("avatars/"):
+                try:
+                    old_key = profile.avatar_url
+                    client.delete_object(Bucket=settings.MINIO_BUCKET, Key=old_key)
+                    logger.info(f"[UploadAvatar] Deleted old avatar: {old_key}")
+                except Exception as e:
+                    logger.warning(f"[UploadAvatar] Could not delete old avatar: {e}")
+            
+            profile.avatar_url = key
+            profile.save(update_fields=["avatar_url"])
+        
+        # Generate presigned URL for immediate display
+        try:
+            url = presign_get(key, expires_in=60 * 60 * 24 * 7, response_content_type=content_type)
+        except Exception as e:
+            logger.error(f"[UploadAvatar] Failed to generate presigned URL: {e}")
+            url = None
+        
+        logger.info(f"[UploadAvatar] Avatar uploaded successfully for user {user.id}: {key}")
+        
+        return JsonResponse({
+            "success": True,
+            "key": key,
+            "url": url,
+            "message": "Avatar uploaded successfully"
+        })
 
 
 class RegisterProfileView(APIView):
