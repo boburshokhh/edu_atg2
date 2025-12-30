@@ -150,10 +150,21 @@ const mainImageInput = ref(null)
 const isEditing = computed(() => route.params.id !== 'new')
 
 const loadData = async () => {
-  if (!isEditing.value) return
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/c7b67d1a-35f0-4737-ba4d-4a135a126749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DepartmentEditor.vue:152',message:'loadData called',data:{routeParamsId:route.params.id,isEditing:isEditing.value,routeParams:route.params},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H3,H4'})}).catch(()=>{});
+  // #endregion
+  if (!isEditing.value) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/c7b67d1a-35f0-4737-ba4d-4a135a126749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DepartmentEditor.vue:154',message:'loadData early return - not editing',data:{routeParamsId:route.params.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H4'})}).catch(()=>{});
+    // #endregion
+    return
+  }
   
   loading.value = true
   try {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/c7b67d1a-35f0-4737-ba4d-4a135a126749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DepartmentEditor.vue:160',message:'calling getDepartment',data:{id:route.params.id,idType:typeof route.params.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H3'})}).catch(()=>{});
+    // #endregion
     const data = await departmentService.getDepartment(route.params.id)
     if (data) {
       department.value = { ...data }
@@ -200,7 +211,13 @@ const saveGeneral = async () => {
       ElMessage.success('Сохранено')
       loadData() // Reload to get updated data
     } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/c7b67d1a-35f0-4737-ba4d-4a135a126749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DepartmentEditor.vue:203',message:'creating department',data:{departmentData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       const newDepartment = await departmentService.createDepartment(departmentData)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/c7b67d1a-35f0-4737-ba4d-4a135a126749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DepartmentEditor.vue:206',message:'department created, redirecting',data:{newDepartment,newDepartmentId:newDepartment?.id,newDepartmentKeys:Object.keys(newDepartment||{})},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2,H3'})}).catch(()=>{});
+      // #endregion
       ElMessage.success('Отдел создан')
       router.push(`/admin/departments/${newDepartment.id}`)
     }
@@ -266,6 +283,9 @@ const handleMainImageUpload = async (event) => {
 }
 
 onMounted(() => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/c7b67d1a-35f0-4737-ba4d-4a135a126749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DepartmentEditor.vue:268',message:'onMounted called',data:{routeParamsId:route.params.id,routeParams:route.params,isEditing:isEditing.value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H3,H4'})}).catch(()=>{});
+  // #endregion
   loadData()
 })
 </script>
