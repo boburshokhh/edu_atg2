@@ -6,14 +6,25 @@ import { createI18n } from 'vue-i18n'
 import router from './router'
 import App from './App.vue'
 import './style.css'
+import 'flag-icons/css/flag-icons.min.css'
 
 // Import locales
 import ru from './locales/ru.js'
 import en from './locales/en.js'
 
+// Устанавливаем русский язык по умолчанию
+const defaultLocale = 'ru'
+const savedLocale = localStorage.getItem('locale')
+const initialLocale = savedLocale && (savedLocale === 'ru' || savedLocale === 'en') ? savedLocale : defaultLocale
+
+// Если в localStorage был неверный язык, устанавливаем русский
+if (initialLocale !== defaultLocale && !savedLocale) {
+  localStorage.setItem('locale', defaultLocale)
+}
+
 const i18n = createI18n({
   legacy: false,
-  locale: localStorage.getItem('locale') || 'ru',
+  locale: initialLocale,
   fallbackLocale: 'ru',
   messages: {
     ru,

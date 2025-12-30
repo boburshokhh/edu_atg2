@@ -224,22 +224,23 @@ export default {
            viewCertificate: 'Просмотреть сертификат'
   },
   login: {
-    title: 'EDUCATION PORTAL',
+    title: 'ОБРАЗОВАТЕЛЬНЫЙ ПОРТАЛ',
     subtitle: 'Войдите в систему для продолжения',
-    username: 'Username',
-    password: 'Password',
-    loginButton: 'LOGIN',
+    username: 'Имя пользователя',
+    password: 'Пароль',
+    loginButton: 'ВОЙТИ',
     divider: 'или',
-    createAccount: 'Создать новый аккаунт',
     forgotPassword: 'Забыли пароль?',
     copyright: '© 2025 Asia Trans Gas. Все права защищены.',
     validation: {
-      usernameRequired: 'Пожалуйста, введите username',
+      usernameRequired: 'Пожалуйста, введите имя пользователя',
       passwordRequired: 'Пожалуйста, введите пароль',
       passwordMinLength: 'Пароль должен содержать минимум 6 символов'
     },
     messages: {
-      loginSuccess: 'Успешный вход!'
+      loginSuccess: 'Успешный вход!',
+      loginError: 'Ошибка входа. Проверьте правильность данных.',
+      validationError: 'Ошибка валидации формы'
     }
   }
 }

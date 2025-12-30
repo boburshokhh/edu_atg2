@@ -2,11 +2,11 @@
   <div class="min-h-screen flex relative overflow-hidden">
     <!-- Кнопка "Назад" -->
     <button 
-      class="back-button absolute top-6 left-6 z-50 inline-flex items-center bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300 group px-4 py-2 rounded-lg border border-white/30 hover:border-white/50 shadow-lg hover:shadow-xl"
+      class="back-button absolute top-6 left-6 z-50 inline-flex items-center px-4 py-2 rounded-lg"
       @click="$router.go(-1)"
     >
       <svg
-        class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1"
+        class="w-5 h-5 mr-2"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -20,6 +20,53 @@
       </svg>
       <span class="text-sm font-semibold">{{ $t('nav.back') }}</span>
     </button>
+
+    <!-- Кнопка переключения языка -->
+    <div class="absolute top-6 right-6 z-50">
+      <div class="relative" ref="langDropdownRef">
+        <button
+          class="language-button glass-button inline-flex items-center justify-center px-4 py-2.5 rounded-xl"
+          @click="langDropdownOpen = !langDropdownOpen"
+        >
+          <span 
+            class="fi text-xl"
+            :class="currentLocale === 'ru' ? 'fi-ru' : 'fi-us'"
+          ></span>
+        </button>
+        
+        <!-- Dropdown -->
+        <transition
+          enter-active-class="transition ease-out duration-100"
+          enter-from-class="transform opacity-0 scale-95"
+          enter-to-class="transform opacity-100 scale-100"
+          leave-active-class="transition ease-in duration-75"
+          leave-from-class="transform opacity-100 scale-100"
+          leave-to-class="transform opacity-0 scale-95"
+        >
+          <div 
+            v-if="langDropdownOpen"
+            class="absolute right-0 mt-2 w-36 bg-white rounded-lg shadow-xl py-1 border border-gray-100 z-50"
+          >
+            <button
+              class="w-full text-left px-4 py-2 text-sm flex items-center gap-2"
+              :class="currentLocale === 'ru' ? 'text-blue-600 font-semibold bg-blue-50' : 'text-gray-700'"
+              @click="changeLanguage('ru')"
+            >
+              <span class="fi fi-ru"></span>
+              <span>Русский</span>
+            </button>
+            <button
+              class="w-full text-left px-4 py-2 text-sm flex items-center gap-2"
+              :class="currentLocale === 'en' ? 'text-blue-600 font-semibold bg-blue-50' : 'text-gray-700'"
+              @click="changeLanguage('en')"
+            >
+              <span class="fi fi-us"></span>
+              <span>English</span>
+            </button>
+          </div>
+        </transition>
+      </div>
+    </div>
 
     <!-- Левая часть - синий фон с 3D моделью турбины -->
     <div class="hidden lg:flex lg:w-1/2 xl:w-[55%] bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 relative overflow-hidden">
@@ -183,7 +230,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { User, Lock } from '@element-plus/icons-vue'
@@ -194,15 +241,20 @@ export default {
   name: 'Login',
   setup() {
     const router = useRouter()
-    const { t } = useI18n()
+    const { t, locale } = useI18n()
     const loginForm = ref(null)
     const loading = ref(false)
+    const langDropdownOpen = ref(false)
+    const langDropdownRef = ref(null)
     
     const form = reactive({
       username: '',
       password: ''
     })
     
+    const currentLocale = computed(() => locale.value)
+    
+    // Правила валидации с реактивностью на изменение языка
     const rules = computed(() => ({
       username: [
         { required: true, message: t('login.validation.usernameRequired'), trigger: 'blur' }
@@ -212,6 +264,23 @@ export default {
         { min: 6, message: t('login.validation.passwordMinLength'), trigger: 'blur' }
       ]
     }))
+    
+    const changeLanguage = (lang) => {
+      locale.value = lang
+      localStorage.setItem('locale', lang)
+      langDropdownOpen.value = false
+      // Обновляем правила валидации после смены языка
+      if (loginForm.value) {
+        loginForm.value.clearValidate()
+      }
+    }
+    
+    // Закрываем dropdown при клике вне его
+    const handleClickOutside = (event) => {
+      if (langDropdownOpen.value && langDropdownRef.value && !langDropdownRef.value.contains(event.target)) {
+        langDropdownOpen.value = false
+      }
+    }
     
     const handleLogin = async () => {
       if (!loginForm.value) return
@@ -271,6 +340,15 @@ export default {
     
     // Проверяем авторизацию при загрузке компонента
     onMounted(async () => {
+      // Устанавливаем русский язык по умолчанию, если не установлен
+      const savedLocale = localStorage.getItem('locale')
+      if (!savedLocale || (savedLocale !== 'ru' && savedLocale !== 'en')) {
+        locale.value = 'ru'
+        localStorage.setItem('locale', 'ru')
+      } else {
+        locale.value = savedLocale
+      }
+      
       const authResult = await authService.checkAuth()
       if (authResult.isAuthenticated) {
         // Пользователь уже авторизован, перенаправляем в зависимости от роли
@@ -282,6 +360,13 @@ export default {
           router.push('/profile')
         }
       }
+      
+      // Добавляем обработчик клика вне dropdown
+      document.addEventListener('click', handleClickOutside)
+    })
+    
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside)
     })
     
     return {
@@ -291,7 +376,11 @@ export default {
       loading,
       handleLogin,
       User,
-      Lock
+      Lock,
+      currentLocale,
+      langDropdownOpen,
+      langDropdownRef,
+      changeLanguage
     }
   }
 }
@@ -342,10 +431,6 @@ export default {
   height: 56px;
 }
 
-:deep(.login-input .el-input__wrapper:hover) {
-  background-color: #e5e7eb;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-}
 
 :deep(.login-input .el-input__wrapper.is-focus) {
   background-color: #ffffff;
@@ -392,31 +477,6 @@ export default {
   overflow: hidden;
 }
 
-:deep(.login-button::before) {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-:deep(.login-button:hover::before) {
-  left: 100%;
-}
-
-:deep(.login-button:hover) {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.35), 0 6px 12px rgba(59, 130, 246, 0.2);
-  transform: translateY(-2px) scale(1.01);
-}
-
-:deep(.login-button:active) {
-  transform: translateY(0) scale(0.98);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-}
 
 :deep(.login-button.is-loading) {
   background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
@@ -454,22 +514,49 @@ export default {
   border-radius: 14px;
 }
 
-/* Плавный переход для всех интерактивных элементов */
-a, button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Стили для кнопки "Назад" - жидкое стекло */
+.back-button {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px 0 rgba(31, 38, 135, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  color: white;
+  text-white: white;
+}
+
+/* Стили для кнопки переключения языка - жидкое стекло */
+.glass-button {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px 0 rgba(31, 38, 135, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  color: white;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Адаптивные стили для кнопки "Назад" */
 @media (max-width: 1024px) {
   .back-button {
-    background-color: rgba(59, 130, 246, 0.1) !important;
+    background: rgba(59, 130, 246, 0.15) !important;
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
     color: #3b82f6 !important;
-    border-color: rgba(59, 130, 246, 0.3) !important;
+    border: 1px solid rgba(59, 130, 246, 0.3) !important;
   }
   
-  .back-button:hover {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-    border-color: rgba(59, 130, 246, 0.5) !important;
+  .glass-button {
+    background: rgba(59, 130, 246, 0.15) !important;
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    color: #3b82f6 !important;
+    border: 1px solid rgba(59, 130, 246, 0.3) !important;
   }
 }
 </style>

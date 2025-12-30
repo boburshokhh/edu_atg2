@@ -239,7 +239,9 @@ export default {
       passwordMinLength: 'Password must contain at least 6 characters'
     },
     messages: {
-      loginSuccess: 'Login successful!'
+      loginSuccess: 'Login successful!',
+      loginError: 'Login error. Please check your credentials.',
+      validationError: 'Form validation error'
     }
   }
 }
