@@ -51,8 +51,8 @@ def _profile_is_complete(user: User, profile: Optional[UserProfile]) -> bool:
     - full_name (either in profile or in users table)
     - email (either in profile or in users table)
     - phone (profile)
-    - company/station (profile.company)
     - position (profile.position)
+    Note: company/station is optional and not required for profile completion
     """
     if not profile:
         return False
@@ -60,10 +60,10 @@ def _profile_is_complete(user: User, profile: Optional[UserProfile]) -> bool:
     full_name = (profile.full_name or user.full_name or "").strip()
     email = (profile.email or user.email or "").strip()
     phone = (profile.phone or "").strip()
-    company = (profile.company or "").strip()
     position = (profile.position or "").strip()
 
-    return bool(full_name and email and phone and company and position)
+    # Company/station is optional, so we don't check it
+    return bool(full_name and email and phone and position)
 
 
 class LoginView(APIView):
@@ -315,8 +315,10 @@ class LoginView(APIView):
                 user_full_name = user.full_name or user.username
                 user_email = user.email or f'{user.username}@example.com'
             
-            # Check if profile is complete (required for first-time LDAP users)
-            requires_registration = not _profile_is_complete(user, profile)
+            # IMPORTANT: If user already exists in users table, they should NOT be required to register again
+            # requires_registration should only be True for temp LDAP sessions (handled earlier in the code)
+            # For existing users in DB, always set requires_registration = False
+            requires_registration = False
             
             response_data = {
                 "token": access_token,
@@ -331,10 +333,9 @@ class LoginView(APIView):
                 "expiresIn": settings.ACCESS_TTL_SEC,
             }
             
-            # Add requires_registration flag if profile is incomplete
-            if requires_registration:
-                response_data["requires_registration"] = True
-                logger.info(f"[Auth] User {username} requires profile registration")
+            # Note: requires_registration is only set to True for temp LDAP sessions (see line 232)
+            # Existing users in DB should never be required to register again
+            logger.info(f"[Auth] User {username} is existing user in DB, registration not required")
 
             logger.info(
                 "[Perf][Login] step=total ms=%d username=%s",
