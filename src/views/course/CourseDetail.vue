@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="section-padding bg-gray-50 min-h-screen">
+  <div class="section-padding bg-gray-50 min-h-screen">
       <div class="page-container">
         <!-- Course Header -->
         <div class="card p-8 mb-8">
@@ -464,7 +463,6 @@
       @next="playNext"
       @previous="playPrevious"
     />
-  </AppLayout>
 </template>
 
 <script>
@@ -473,7 +471,6 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Document, Download } from '@element-plus/icons-vue'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import VideoPlayer from '@/components/course/VideoPlayer.vue'
 import videoService from '@/services/videoService'
 import authService from '@/services/auth'
@@ -482,7 +479,6 @@ import minioService from '@/services/minioService'
 export default {
   name: 'CourseDetail',
   components: {
-    AppLayout,
     VideoPlayer,
     Document,
     Download

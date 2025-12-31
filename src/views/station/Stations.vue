@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="section-padding bg-gray-50 min-h-screen">
+  <div class="section-padding bg-gray-50 min-h-screen">
       <div class="page-container">
         <!-- Header -->
         <div class="text-center mb-12">
@@ -75,21 +74,16 @@
         </div>
       </div>
     </div>
-  </AppLayout>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import minioService from '@/services/minioService'
 import stationService from '@/services/stationService'
 import { resolveStationMedia } from '@/utils/stationsMedia'
 
 export default {
   name: 'Stations',
-  components: {
-    AppLayout
-  },
   setup() {
     // Хранилище URL изображений из MinIO
     const stationImageUrls = ref({})

@@ -578,6 +578,9 @@ export default {
     // Ref для принудительного обновления computed свойств
     const userDataVersion = ref(0)
     
+    // Флаг для отслеживания первичной загрузки данных
+    const isDataLoaded = ref(false)
+    
     // Функция для проверки и использования кешированного avatar URL
     const getCachedAvatarUrl = (newAvatarKey, newAvatarUrl) => {
       if (!newAvatarKey || !newAvatarUrl) {
@@ -608,7 +611,18 @@ export default {
     }
     
     // Функция для обновления данных пользователя
-    const refreshUserData = async () => {
+    const refreshUserData = async (force = false) => {
+      // Если данные уже загружены и не требуется принудительное обновление, пропускаем
+      if (isDataLoaded.value && !force) {
+        // Проверяем, есть ли данные пользователя в authService
+        const currentUser = authService.getCurrentUser()
+        if (currentUser && currentUser.full_name && currentUser.avatar_url) {
+          // Данные уже есть, просто обновляем computed свойства
+          userDataVersion.value++
+          return
+        }
+      }
+      
       try {
         // Сначала обновляем базовые данные через authService
         await authService.checkAuth()
@@ -644,11 +658,17 @@ export default {
                 // Сохраняем обновленные данные в localStorage, чтобы при перезагрузке они были доступны сразу
                 localStorage.setItem('user', JSON.stringify(updatedUser))
               }
+              
+              // Отмечаем, что данные загружены
+              isDataLoaded.value = true
             }
           } catch (error) {
             console.error('Error loading user profile:', error)
             // Не прерываем выполнение, используем данные из authService
           }
+        } else {
+          // Пользователь не авторизован, отмечаем что загрузка завершена
+          isDataLoaded.value = true
         }
       } catch (error) {
         console.error('Error refreshing user data:', error)
@@ -797,7 +817,8 @@ export default {
     
     // Обработчик обновления профиля
     const handleProfileUpdate = () => {
-      refreshUserData()
+      // При обновлении профиля принудительно обновляем данные
+      refreshUserData(true)
     }
     
     onMounted(async () => {

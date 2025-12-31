@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="bg-gray-50 min-h-screen pt-24 sm:pt-28 lg:pt-32 pb-8 sm:pb-12 lg:pb-20">
+  <div class="bg-gray-50 min-h-screen pt-24 sm:pt-28 lg:pt-32 pb-8 sm:pb-12 lg:pb-20">
       <div class="page-container">
         <!-- Header -->
         <div class="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -499,12 +498,10 @@
         </div>
       </template>
     </el-dialog>
-  </AppLayout>
 </template>
 
 <script>
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import UserStatistics from '@/components/user/UserStatistics.vue'
 import { ElMessage } from 'element-plus'
 import authService from '@/services/auth'
@@ -518,7 +515,6 @@ import {
 export default {
   name: 'Profile',
   components: {
-    AppLayout,
     UserStatistics,
     Edit, Camera, Message, OfficeBuilding, Suitcase, ArrowRight, Lock,
     Monitor, Bell, Clock, Collection, Loading, User

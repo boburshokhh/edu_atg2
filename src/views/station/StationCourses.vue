@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <!-- Hero Section с фото станции -->
+  <!-- Hero Section с фото станции -->
     <div class="relative h-[80vh] min-h-[700px] overflow-hidden">
       <!-- Изображение станции -->
       <div class="absolute inset-0">
@@ -394,15 +393,12 @@
       @next="playNextVideo"
       @previous="playPreviousVideo"
     />
-
-  </AppLayout>
 </template>
 
 <script>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import useNotify from '@/composables/useNotify'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import VideoPlayer from '@/components/course/VideoPlayer.vue'
 import CourseCurriculum from '@/components/course/CourseCurriculum.vue'
 import courseMaterials from '@/data/courseMaterials.json'
@@ -415,7 +411,6 @@ import { ClockIcon, PlayCircleIcon, DocumentTextIcon, BookOpenIcon, ChevronRight
 export default {
   name: 'StationCourses',
   components: {
-    AppLayout,
     VideoPlayer,
     CourseCurriculum,
     ClockIcon,

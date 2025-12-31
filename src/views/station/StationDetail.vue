@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <!-- Hero Section с фото станции -->
+  <!-- Hero Section с фото станции -->
     <div class="relative h-[80vh] min-h-[600px] overflow-hidden">
       <!-- Изображение станции -->
       <div class="absolute inset-0">
@@ -1008,13 +1007,11 @@
       :index="lightboxIndex"
       @hide="lightboxVisible = false"
     />
-  </AppLayout>
 </template>
 
 <script>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import VueEasyLightbox from 'vue-easy-lightbox'
 import stationService from '@/services/stationService'
 import minioService from '@/services/minioService'
@@ -1023,7 +1020,6 @@ import { resolveStationMedia } from '@/utils/stationsMedia'
 export default {
   name: 'StationDetail',
   components: {
-    AppLayout,
     VueEasyLightbox
   },
   setup() {

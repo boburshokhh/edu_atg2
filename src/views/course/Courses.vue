@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="section-padding bg-gray-50 min-h-screen">
+  <div class="section-padding bg-gray-50 min-h-screen">
       <div class="page-container">
         <!-- Header -->
         <div class="text-center mb-8 sm:mb-12">
@@ -202,20 +201,15 @@
         </div>
       </div>
     </div>
-  </AppLayout>
 </template>
 
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import { Search, Setting, Lock, Tools, Monitor, Star } from '@element-plus/icons-vue'
 
 export default {
   name: 'Courses',
-  components: {
-    AppLayout
-  },
   setup() {
     const { t } = useI18n()
     const searchQuery = ref('')

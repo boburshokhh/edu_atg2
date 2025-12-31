@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="section-padding bg-gray-50 min-h-screen">
+  <div class="section-padding bg-gray-50 min-h-screen">
       <div class="page-container">
         <!-- Header -->
         <div class="mb-6 sm:mb-8">
@@ -284,13 +283,11 @@
         </div>
       </div>
     </div>
-  </AppLayout>
 </template>
 
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import authService from '@/services/auth'
 import userProfileService from '@/services/userProfile'
 import { 
@@ -310,7 +307,6 @@ import {
 export default {
   name: 'Dashboard',
   components: {
-    AppLayout,
     VideoPlay,
     Trophy,
     Clock,

@@ -64,7 +64,7 @@ const routes = [
     name: 'lesson-viewer',
     component: LessonViewer,
     props: true,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, hideHeader: true, hideFooter: true }
   },
   {
     path: '/profile',
@@ -81,7 +81,8 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { hideHeader: true, hideFooter: true }
   },
   {
     path: '/register',
