@@ -122,9 +122,13 @@ class DepartmentSerializer(serializers.ModelSerializer):
         model = Department
         fields = [
             "id",
-            "name",
+            "name",  # Legacy field
             "short_name",
-            "description",
+            "description",  # Legacy field
+            "name_ru",
+            "name_en",
+            "description_ru",
+            "description_en",
             "image",
             "status",
         ]

@@ -143,9 +143,16 @@ class StationPromoVideo(models.Model):
 
 class Department(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
+    # Legacy fields (kept for backward compatibility)
+    name = models.CharField(max_length=255, null=True, blank=True)
     short_name = models.CharField(max_length=50)
     description = models.TextField(null=True, blank=True)
+    # Multilingual fields
+    name_ru = models.CharField(max_length=255, null=True, blank=True)
+    name_en = models.CharField(max_length=255, null=True, blank=True)
+    description_ru = models.TextField(null=True, blank=True)
+    description_en = models.TextField(null=True, blank=True)
+    # Other fields
     image = models.CharField(max_length=255, null=True, blank=True)
     status = models.CharField(max_length=20, default="active")
     created_at = models.DateTimeField(auto_now_add=True)

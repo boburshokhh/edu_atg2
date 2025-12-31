@@ -11,7 +11,7 @@
         Назад
       </el-button>
       <h1 class="text-2xl font-bold text-gray-800">
-        {{ isEditing ? `Редактирование отдела: ${department.name || 'Загрузка...'}` : 'Новый отдел' }}
+        {{ isEditing ? `Редактирование отдела: ${department.name_ru || department.name || 'Загрузка...'}` : 'Новый отдел' }}
       </h1>
     </div>
 
@@ -30,31 +30,58 @@
           label-width="200px"
           class="max-w-4xl"
         >
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item
-                label="Название"
-                required
-              >
-                <el-input v-model="department.name" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item
-                label="Короткое название"
-                required
-              >
-                <el-input v-model="department.short_name" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+          <!-- Русский язык -->
+          <el-divider content-position="left">
+            <span class="text-lg font-semibold">🇷🇺 Русский язык</span>
+          </el-divider>
           
-          <el-form-item label="Описание">
+          <el-form-item
+            label="Название (RU)"
+            required
+          >
+            <el-input v-model="department.name_ru" placeholder="Введите название на русском" />
+          </el-form-item>
+          
+          <el-form-item label="Описание (RU)">
             <el-input
-              v-model="department.description"
+              v-model="department.description_ru"
               type="textarea"
               rows="4"
+              placeholder="Введите описание на русском"
             />
+          </el-form-item>
+          
+          <!-- Английский язык -->
+          <el-divider content-position="left">
+            <span class="text-lg font-semibold">🇬🇧 English</span>
+          </el-divider>
+          
+          <el-form-item
+            label="Название (EN)"
+            required
+          >
+            <el-input v-model="department.name_en" placeholder="Enter name in English" />
+          </el-form-item>
+          
+          <el-form-item label="Описание (EN)">
+            <el-input
+              v-model="department.description_en"
+              type="textarea"
+              rows="4"
+              placeholder="Enter description in English"
+            />
+          </el-form-item>
+          
+          <!-- Общие поля -->
+          <el-divider content-position="left">
+            <span class="text-lg font-semibold">Общие настройки</span>
+          </el-divider>
+          
+          <el-form-item
+            label="Короткое название"
+            required
+          >
+            <el-input v-model="department.short_name" placeholder="Код отдела (например: DEPT01)" />
           </el-form-item>
           
           <el-form-item label="Статус">
@@ -140,9 +167,13 @@ const loading = ref(false)
 const saving = ref(false)
 
 const department = ref({
-  name: '',
+  name: '', // Legacy field
+  name_ru: '',
+  name_en: '',
   short_name: '',
-  description: '',
+  description: '', // Legacy field
+  description_ru: '',
+  description_en: '',
   image: '',
   status: 'active',
   imageUrl: ''
@@ -171,7 +202,14 @@ const loadData = async () => {
   try {
     const data = await departmentService.getDepartment(route.params.id)
     if (data) {
-      department.value = { ...data }
+      // Инициализация полей переводов, если их нет (для обратной совместимости)
+      department.value = {
+        ...data,
+        name_ru: data.name_ru || data.name || '',
+        name_en: data.name_en || '',
+        description_ru: data.description_ru || data.description || '',
+        description_en: data.description_en || ''
+      }
       
       // Load image URL if exists
       if (data.image) {
@@ -201,8 +239,13 @@ const loadData = async () => {
 
 const saveGeneral = async () => {
   // Валидация обязательных полей
-  if (!department.value.name || !department.value.name.trim()) {
-    ElMessage.error('Поле "Название" обязательно для заполнения')
+  if (!department.value.name_ru || !department.value.name_ru.trim()) {
+    ElMessage.error('Поле "Название (RU)" обязательно для заполнения')
+    return
+  }
+  
+  if (!department.value.name_en || !department.value.name_en.trim()) {
+    ElMessage.error('Поле "Название (EN)" обязательно для заполнения')
     return
   }
   
@@ -214,9 +257,11 @@ const saveGeneral = async () => {
   saving.value = true
   try {
     const departmentData = {
-      name: department.value.name.trim(),
+      name_ru: department.value.name_ru.trim(),
+      name_en: department.value.name_en.trim(),
       shortName: department.value.short_name.trim(),
-      description: department.value.description ? department.value.description.trim() : '',
+      description_ru: department.value.description_ru ? department.value.description_ru.trim() : '',
+      description_en: department.value.description_en ? department.value.description_en.trim() : '',
       image: department.value.image || '',
       status: department.value.status || 'active'
     }
@@ -257,9 +302,11 @@ const handleMainImageUpload = async (event) => {
     // Create department first with minimal data
     try {
       const departmentData = {
-        name: department.value.name || 'Новый отдел',
+        name_ru: department.value.name_ru || 'Новый отдел',
+        name_en: department.value.name_en || 'New Department',
         shortName: department.value.short_name || 'NEW',
-        description: department.value.description || '',
+        description_ru: department.value.description_ru || '',
+        description_en: department.value.description_en || '',
         image: '',
         status: department.value.status || 'active'
       }

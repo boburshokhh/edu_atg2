@@ -103,8 +103,12 @@ class DepartmentService {
     }
     
     // Validate required fields
-    if (!departmentData.name || !departmentData.name.trim()) {
-      throw new Error('Поле "Название" обязательно для заполнения')
+    if (!departmentData.name_ru || !departmentData.name_ru.trim()) {
+      throw new Error('Поле "Название (RU)" обязательно для заполнения')
+    }
+    
+    if (!departmentData.name_en || !departmentData.name_en.trim()) {
+      throw new Error('Поле "Название (EN)" обязательно для заполнения')
     }
     
     if (!departmentData.shortName && !departmentData.short_name) {
@@ -113,9 +117,11 @@ class DepartmentService {
     
     // Convert camelCase to snake_case for API
     const apiData = {
-      name: departmentData.name.trim(),
+      name_ru: departmentData.name_ru ? departmentData.name_ru.trim() : '',
+      name_en: departmentData.name_en ? departmentData.name_en.trim() : '',
       short_name: (departmentData.shortName || departmentData.short_name || '').trim(),
-      description: departmentData.description || '',
+      description_ru: departmentData.description_ru || '',
+      description_en: departmentData.description_en || '',
       image: departmentData.image || '',
       status: departmentData.status || 'active',
     }
@@ -149,8 +155,12 @@ class DepartmentService {
     }
     
     // Validate required fields
-    if (!departmentData.name || !departmentData.name.trim()) {
-      throw new Error('Поле "Название" обязательно для заполнения')
+    if (!departmentData.name_ru || !departmentData.name_ru.trim()) {
+      throw new Error('Поле "Название (RU)" обязательно для заполнения')
+    }
+    
+    if (!departmentData.name_en || !departmentData.name_en.trim()) {
+      throw new Error('Поле "Название (EN)" обязательно для заполнения')
     }
     
     if (!departmentData.shortName && !departmentData.short_name) {
@@ -158,9 +168,11 @@ class DepartmentService {
     }
     
     const apiData = {
-      name: departmentData.name.trim(),
+      name_ru: departmentData.name_ru ? departmentData.name_ru.trim() : '',
+      name_en: departmentData.name_en ? departmentData.name_en.trim() : '',
       short_name: (departmentData.shortName || departmentData.short_name || '').trim(),
-      description: departmentData.description || '',
+      description_ru: departmentData.description_ru || '',
+      description_en: departmentData.description_en || '',
       image: departmentData.image || '',
       status: departmentData.status || 'active',
     }

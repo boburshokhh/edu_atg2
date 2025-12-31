@@ -35,10 +35,16 @@
           width="80"
         />
         <el-table-column
-          prop="name"
-          label="Название"
-          min-width="200"
-        />
+          label="Название (RU / EN)"
+          min-width="300"
+        >
+          <template #default="{ row }">
+            <div>
+              <div class="font-semibold">{{ row.name_ru || row.name || '-' }}</div>
+              <div class="text-sm text-gray-500">{{ row.name_en || '-' }}</div>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column
           prop="short_name"
           label="Код"
