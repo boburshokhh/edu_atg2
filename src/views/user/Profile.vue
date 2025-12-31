@@ -611,7 +611,17 @@ export default {
         
         if (result.success) {
           const newAvatarUrl = result.url
+          const avatarKey = result.key // MinIO key
           ElMessage.success('Фото профиля обновлено')
+          
+          // Обновляем кеш аватарки сразу после загрузки
+          if (avatarKey) {
+            localStorage.setItem('avatar_key', avatarKey)
+            localStorage.setItem('avatar_url_cached', newAvatarUrl)
+            // Кеш действителен 6 дней (из 7 дней presigned URL)
+            localStorage.setItem('avatar_url_expires', String(Date.now() + (6 * 24 * 60 * 60 * 1000)))
+            console.log('[Profile] Avatar cache updated, key:', avatarKey)
+          }
           
           // Обновляем везде
           user.value.avatar = newAvatarUrl

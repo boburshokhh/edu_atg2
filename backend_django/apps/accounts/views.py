@@ -468,7 +468,10 @@ class MyProfileView(APIView):
         
         # Generate presigned URL for avatar if it's stored in MinIO
         avatar_url = None
+        avatar_key = None
         if profile and profile.avatar_url:
+            # Store the MinIO key
+            avatar_key = profile.avatar_url
             # If avatar_url is a MinIO key (starts with avatars/), generate presigned URL
             if profile.avatar_url.startswith("avatars/"):
                 try:
@@ -487,6 +490,7 @@ class MyProfileView(APIView):
             "full_name": (profile.full_name if profile else user.full_name),
             "email": (profile.email if profile else user.email),
             "avatar_url": avatar_url,
+            "avatar_key": avatar_key,  # MinIO key for caching
             "company": profile.company if profile else None,
             "position": profile.position if profile else None,
             "phone": profile.phone if profile else None,

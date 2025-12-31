@@ -78,6 +78,7 @@ class UserProfileService {
             full_name: data.data.full_name,
             email: data.data.email,
             avatar_url: avatarUrl,
+            avatar_key: data.data.avatar_key || null, // MinIO key for caching
             company: data.data.company, // Station name
             position: data.data.position,
             phone: data.data.phone,

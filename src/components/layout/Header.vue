@@ -578,6 +578,35 @@ export default {
     // Ref для принудительного обновления computed свойств
     const userDataVersion = ref(0)
     
+    // Функция для проверки и использования кешированного avatar URL
+    const getCachedAvatarUrl = (newAvatarKey, newAvatarUrl) => {
+      if (!newAvatarKey || !newAvatarUrl) {
+        return newAvatarUrl
+      }
+      
+      // Проверяем кеш
+      const cachedAvatarKey = localStorage.getItem('avatar_key')
+      const cachedAvatarUrl = localStorage.getItem('avatar_url_cached')
+      const avatarUrlExpires = parseInt(localStorage.getItem('avatar_url_expires') || '0')
+      
+      // Если ключ совпадает и кеш не истек (6 дней из 7), используем кешированный URL
+      if (cachedAvatarKey === newAvatarKey && 
+          cachedAvatarUrl && 
+          Date.now() < avatarUrlExpires) {
+        console.log('[Header] Using cached avatar URL, key:', newAvatarKey)
+        return cachedAvatarUrl
+      }
+      
+      // Обновляем кеш
+      console.log('[Header] Updating avatar cache, key:', newAvatarKey)
+      localStorage.setItem('avatar_key', newAvatarKey)
+      localStorage.setItem('avatar_url_cached', newAvatarUrl)
+      // Кеш действителен 6 дней (из 7 дней presigned URL)
+      localStorage.setItem('avatar_url_expires', String(Date.now() + (6 * 24 * 60 * 60 * 1000)))
+      
+      return newAvatarUrl
+    }
+    
     // Функция для обновления данных пользователя
     const refreshUserData = async () => {
       try {
@@ -592,6 +621,11 @@ export default {
             if (profileResult.success && profileResult.data) {
               const profileData = profileResult.data
               
+              // Применяем кеширование для avatar URL
+              const avatarKey = profileData.avatar_key || null
+              const newAvatarUrl = profileData.avatar_url || profileData.avatar || null
+              const cachedAvatarUrl = avatarKey ? getCachedAvatarUrl(avatarKey, newAvatarUrl) : newAvatarUrl
+              
               // Обновляем данные в authService
               if (authService.currentUser) {
                 // Создаем обновленный объект пользователя, объединяя данные из auth и профиля
@@ -599,7 +633,7 @@ export default {
                   ...authService.currentUser,
                   full_name: profileData.full_name || authService.currentUser.full_name,
                   role: profileData.role || authService.currentUser.role,
-                  avatar_url: profileData.avatar_url || profileData.avatar || authService.currentUser.avatar_url || null,
+                  avatar_url: cachedAvatarUrl,
                   position: profileData.position || authService.currentUser.position || null,
                   station: profileData.station || profileData.company || authService.currentUser.station || null, // Маппинг company -> station
                   email: profileData.email || authService.currentUser.email || null
@@ -711,6 +745,11 @@ export default {
         userDropdownOpen.value = false
         mobileMenuOpen.value = false
         
+        // Очищаем кеш аватарки
+        localStorage.removeItem('avatar_key')
+        localStorage.removeItem('avatar_url_cached')
+        localStorage.removeItem('avatar_url_expires')
+        
         // Выполняем выход
         const result = await authService.logout()
         
@@ -731,6 +770,10 @@ export default {
         // В случае ошибки очищаем локально и перенаправляем
         localStorage.removeItem('auth_token')
         localStorage.removeItem('user')
+        // Очищаем кеш аватарки
+        localStorage.removeItem('avatar_key')
+        localStorage.removeItem('avatar_url_cached')
+        localStorage.removeItem('avatar_url_expires')
         window.location.href = '/'
       }
     }
