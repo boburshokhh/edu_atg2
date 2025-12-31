@@ -1432,8 +1432,13 @@ class DepartmentCreateView(APIView):
     def post(self, request):
         serializer = DepartmentSerializer(data=request.data)
         if serializer.is_valid():
-            department = serializer.save()
-            return JsonResponse(DepartmentSerializer(department).data, status=201)
+            try:
+                department = serializer.save()
+                # Refresh from database to get all fields including timestamps
+                department.refresh_from_db()
+                return JsonResponse(DepartmentSerializer(department).data, status=201)
+            except Exception as e:
+                return JsonResponse({"error": str(e)}, status=500)
         return JsonResponse(serializer.errors, status=400)
 
 
@@ -1448,8 +1453,13 @@ class DepartmentUpdateView(APIView):
 
         serializer = DepartmentSerializer(department, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(DepartmentSerializer(department).data)
+            try:
+                serializer.save()
+                # Refresh from database to get updated timestamps
+                department.refresh_from_db()
+                return JsonResponse(DepartmentSerializer(department).data)
+            except Exception as e:
+                return JsonResponse({"error": str(e)}, status=500)
         return JsonResponse(serializer.errors, status=400)
 
 

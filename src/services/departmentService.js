@@ -87,18 +87,45 @@ class DepartmentService {
    * Create a new department
    */
   async createDepartment(departmentData) {
+    // Check auth before making request
+    const token = getAuthToken()
+    if (!token) {
+      console.error('[createDepartment] No auth token! Please login first.')
+      throw new Error('Требуется авторизация. Пожалуйста, войдите в систему.')
+    }
+    
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    console.log('[createDepartment] User:', user.id, 'Role:', user.role)
+    
+    if (user.role !== 'admin') {
+      console.error('[createDepartment] User is not admin! Role:', user.role)
+      throw new Error('Требуется роль администратора.')
+    }
+    
+    // Validate required fields
+    if (!departmentData.name || !departmentData.name.trim()) {
+      throw new Error('Поле "Название" обязательно для заполнения')
+    }
+    
+    if (!departmentData.shortName && !departmentData.short_name) {
+      throw new Error('Поле "Короткое название" обязательно для заполнения')
+    }
+    
     // Convert camelCase to snake_case for API
     const apiData = {
-      name: departmentData.name,
-      short_name: departmentData.shortName || departmentData.short_name,
-      description: departmentData.description,
-      image: departmentData.image,
+      name: departmentData.name.trim(),
+      short_name: (departmentData.shortName || departmentData.short_name || '').trim(),
+      description: departmentData.description || '',
+      image: departmentData.image || '',
       status: departmentData.status || 'active',
     }
+    
+    console.log('[createDepartment] Sending data:', apiData)
     const result = await apiRequest('/stations/departments/create/', {
       method: 'POST',
       body: JSON.stringify(apiData),
     })
+    console.log('[createDepartment] Response:', result)
     return result
   }
 
@@ -121,17 +148,30 @@ class DepartmentService {
       throw new Error('Требуется роль администратора.')
     }
     
-    const apiData = {
-      name: departmentData.name,
-      short_name: departmentData.shortName || departmentData.short_name,
-      description: departmentData.description,
-      image: departmentData.image,
-      status: departmentData.status,
+    // Validate required fields
+    if (!departmentData.name || !departmentData.name.trim()) {
+      throw new Error('Поле "Название" обязательно для заполнения')
     }
-    return await apiRequest(`/stations/departments/${id}/update/`, {
+    
+    if (!departmentData.shortName && !departmentData.short_name) {
+      throw new Error('Поле "Короткое название" обязательно для заполнения')
+    }
+    
+    const apiData = {
+      name: departmentData.name.trim(),
+      short_name: (departmentData.shortName || departmentData.short_name || '').trim(),
+      description: departmentData.description || '',
+      image: departmentData.image || '',
+      status: departmentData.status || 'active',
+    }
+    
+    console.log('[updateDepartment] Sending data:', apiData)
+    const result = await apiRequest(`/stations/departments/${id}/update/`, {
       method: 'PUT',
       body: JSON.stringify(apiData),
     })
+    console.log('[updateDepartment] Response:', result)
+    return result
   }
 
   /**

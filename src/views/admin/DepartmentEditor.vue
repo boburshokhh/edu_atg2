@@ -3,9 +3,12 @@
     <div class="flex items-center mb-6">
       <el-button
         class="mr-4"
-        @click="$router.push('/admin/departments')"
+        @click="$router.push('/admin')"
       >
-        <el-icon><ArrowLeft /></el-icon>
+        <el-icon class="mr-2">
+          <ArrowLeft />
+        </el-icon>
+        Назад
       </el-button>
       <h1 class="text-2xl font-bold text-gray-800">
         {{ isEditing ? `Редактирование отдела: ${department.name || 'Загрузка...'}` : 'Новый отдел' }}
@@ -197,27 +200,49 @@ const loadData = async () => {
 }
 
 const saveGeneral = async () => {
+  // Валидация обязательных полей
+  if (!department.value.name || !department.value.name.trim()) {
+    ElMessage.error('Поле "Название" обязательно для заполнения')
+    return
+  }
+  
+  if (!department.value.short_name || !department.value.short_name.trim()) {
+    ElMessage.error('Поле "Короткое название" обязательно для заполнения')
+    return
+  }
+  
   saving.value = true
   try {
     const departmentData = {
-      name: department.value.name,
-      shortName: department.value.short_name,
-      description: department.value.description,
-      image: department.value.image,
-      status: department.value.status
+      name: department.value.name.trim(),
+      shortName: department.value.short_name.trim(),
+      description: department.value.description ? department.value.description.trim() : '',
+      image: department.value.image || '',
+      status: department.value.status || 'active'
     }
     
     if (isEditing.value) {
-      await departmentService.updateDepartment(route.params.id, departmentData)
+      const result = await departmentService.updateDepartment(route.params.id, departmentData)
+      console.log('[DepartmentEditor] Update result:', result)
       ElMessage.success('Сохранено')
-      loadData() // Reload to get updated data
+      await loadData() // Reload to get updated data
     } else {
-      const newDepartment = await departmentService.createDepartment(departmentData)
+      const result = await departmentService.createDepartment(departmentData)
+      console.log('[DepartmentEditor] Create result:', result)
+      
+      // Обработка ответа - может быть объект напрямую или обернутый
+      const newDepartment = result.data || result
+      if (!newDepartment || !newDepartment.id) {
+        throw new Error('Не удалось получить ID созданного отдела')
+      }
+      
       ElMessage.success('Отдел создан')
       router.push(`/admin/departments/${newDepartment.id}`)
     }
   } catch (error) {
-    ElMessage.error('Ошибка сохранения: ' + error.message)
+    console.error('[DepartmentEditor] Save error:', error)
+    const errorMessage = error.message || 'Неизвестная ошибка при сохранении'
+    ElMessage.error('Ошибка сохранения: ' + errorMessage)
   } finally {
     saving.value = false
   }
@@ -238,7 +263,12 @@ const handleMainImageUpload = async (event) => {
         image: '',
         status: department.value.status || 'active'
       }
-      const newDepartment = await departmentService.createDepartment(departmentData)
+      const result = await departmentService.createDepartment(departmentData)
+      // Обработка ответа - может быть объект напрямую или обернутый
+      const newDepartment = result.data || result
+      if (!newDepartment || !newDepartment.id) {
+        throw new Error('Не удалось получить ID созданного отдела')
+      }
       department.value.id = newDepartment.id
       // Update route to editing mode
       router.replace(`/admin/departments/${newDepartment.id}`)

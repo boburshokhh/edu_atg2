@@ -1,15 +1,17 @@
 <template>
   <div class="container mx-auto px-4 py-8">
-    <div class="flex items-center mb-6">
-      <el-button
-        class="mr-4"
-        @click="$router.push('/admin')"
-      >
-        <el-icon><ArrowLeft /></el-icon>
-      </el-button>
-      <h1 class="text-2xl font-bold text-gray-800 flex-1">
-        Управление отделами
-      </h1>
+    <div class="flex justify-between items-center mb-6">
+      <div class="flex items-center gap-4">
+        <el-button @click="$router.push('/admin')">
+          <el-icon class="mr-2">
+            <ArrowLeft />
+          </el-icon>
+          Назад
+        </el-button>
+        <h1 class="text-2xl font-bold text-gray-800">
+          Управление отделами
+        </h1>
+      </div>
       <el-button
         type="primary"
         @click="$router.push('/admin/departments/new')"

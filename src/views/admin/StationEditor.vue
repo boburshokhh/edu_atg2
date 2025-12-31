@@ -3,9 +3,12 @@
     <div class="flex items-center mb-6">
       <el-button
         class="mr-4"
-        @click="$router.push('/admin/stations')"
+        @click="$router.push('/admin')"
       >
-        <el-icon><ArrowLeft /></el-icon>
+        <el-icon class="mr-2">
+          <ArrowLeft />
+        </el-icon>
+        Назад
       </el-button>
       <h1 class="text-2xl font-bold text-gray-800">
         {{ isEditing ? `Редактирование станции: ${station.name || 'Загрузка...'}` : 'Новая станция' }}

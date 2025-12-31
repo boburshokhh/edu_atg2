@@ -2,13 +2,21 @@
   <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
-      <div class="mb-12">
-        <h1 class="text-4xl font-bold text-gray-900 mb-2">
-          Панель администратора
-        </h1>
-        <p class="text-gray-600 text-lg">
-          Управление контентом и настройками платформы
-        </p>
+      <div class="flex items-center justify-between mb-12">
+        <div>
+          <h1 class="text-4xl font-bold text-gray-900 mb-2">
+            Панель администратора
+          </h1>
+          <p class="text-gray-600 text-lg">
+            Управление контентом и настройками платформы
+          </p>
+        </div>
+        <el-button @click="$router.push('/')">
+          <el-icon class="mr-2">
+            <ArrowLeft />
+          </el-icon>
+          Назад
+        </el-button>
       </div>
 
       <!-- Admin Cards Grid -->
@@ -339,6 +347,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import stationService from '@/services/stationService'
 import siteSettingsService from '@/services/siteSettingsService'
 import departmentService from '@/services/departmentService'
