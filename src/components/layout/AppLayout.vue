@@ -4,7 +4,7 @@
     <Header v-if="showHeader" />
 
     <!-- Main Content -->
-    <main :class="{ 'pt-10': showHeader }">
+    <main >
       <slot />
     </main>
 
