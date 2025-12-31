@@ -21,10 +21,15 @@
         >
           <!-- Image Container -->
           <div class="relative h-48 overflow-hidden bg-gray-200">
-            <!-- Loading Skeleton -->
-            <div class="skeleton-loader absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200" />
+            <!-- Loading Skeleton - показываем пока URL не готов -->
+            <div 
+              v-if="!isImageUrlReady(department)"
+              class="skeleton-loader absolute inset-0 z-30"
+            />
             
+            <!-- Изображение показываем только когда URL готов -->
             <img 
+              v-if="isImageUrlReady(department)"
               :src="getDepartmentImageUrl(department)" 
               :alt="department.name"
               loading="lazy"
@@ -34,7 +39,10 @@
               @error="imageError"
             >
             <!-- Gradient Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20" />
+            <div 
+              v-if="isImageUrlReady(department)"
+              class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20" 
+            />
           </div>
           
           <!-- Content -->
@@ -109,6 +117,26 @@ export default {
       }
     }
 
+    // Проверить, готов ли URL изображения для отображения
+    const isImageUrlReady = (department) => {
+      const cacheKey = String(department?.id ?? department?.image ?? '')
+      if (!cacheKey) return false
+      
+      // Если URL уже в кеше, значит готов
+      if (departmentImageUrls.value[cacheKey]) {
+        return true
+      }
+
+      // Проверяем, есть ли публичный URL
+      const resolved = resolveDepartmentMedia(department?.image, { defaultFolder: 'departments' })
+      if (resolved.kind === 'url' || resolved.kind === 'public') {
+        return !!resolved.url
+      }
+      
+      // Для MinIO нужен presigned URL из кеша
+      return false
+    }
+
     // Получить URL изображения отдела
     const getDepartmentImageUrl = (department) => {
       const cacheKey = String(department?.id ?? department?.image ?? '')
@@ -179,7 +207,9 @@ export default {
     }
 
     const imageError = (event) => {
-      event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EИзображение не загружено%3C/text%3E%3C/svg%3E'
+      // Скрываем изображение и показываем серый фон вместо текста "Изображение не загружено"
+      event.target.style.display = 'none'
+      // Skeleton останется видимым, что лучше чем показывать ошибку
     }
 
     // Загружаем URL изображений при монтировании компонента
@@ -194,6 +224,7 @@ export default {
       loadingImages,
       loadingDepartments,
       departmentsError,
+      isImageUrlReady,
       getDepartmentImageUrl,
       imageLoaded,
       imageError
@@ -203,19 +234,24 @@ export default {
 </script>
 
 <style scoped>
-/* Skeleton loader animation */
+/* Skeleton loader animation with shimmer effect */
 .skeleton-loader {
-  animation: pulse 1.5s ease-in-out infinite;
-  background: linear-gradient(to right, #e5e7eb 0%, #d1d5db 50%, #e5e7eb 100%);
+  background: linear-gradient(
+    90deg,
+    #e5e7eb 0%,
+    #f3f4f6 50%,
+    #e5e7eb 100%
+  );
   background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
   }
-  50% {
-    opacity: 0.7;
+  100% {
+    background-position: 200% 0;
   }
 }
 
