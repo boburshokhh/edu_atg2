@@ -1,204 +1,171 @@
 <template>
-  <div class="lesson-content-app min-h-screen bg-gray-50">
+  <div class="lesson-content-app">
     <!-- Lesson Header with User Account -->
     <LessonHeader
       :station-id="stationId"
       :station="station"
       :current-lesson="processedCurrentLesson"
+      :show-sidebar="showSidebar"
+      :show-materials-sidebar="showMaterialsSidebar"
+      @toggle-sidebar="handleToggleSidebar"
+      @toggle-materials-sidebar="handleToggleMaterialsSidebar"
     />
 
-    <!-- Main Content Layout -->
-    <el-container class="main-container">
-      <!-- Left Sidebar (Lessons) -->
-      <transition name="slide">
-        <LessonSidebar
-          v-show="showSidebar"
-          :lessons="processedLessons"
-          :current-lesson-index="currentLessonIndex"
-          :current-topic-index="currentTopicIndex"
-          :completed-topics="completedTopics"
-          :passed-tests="passedTests"
-          :is-test-mode="isTestMode"
-          :class="[
-            'flex-shrink-0',
-            isMobile ? 'sidebar-mobile' : 'sidebar-desktop'
-          ]"
-          @select-lesson="handleSelectLesson"
-          @select-test="handleSelectTest"
-          @toggle-sidebar="handleToggleSidebar"
-        />
-      </transition>
-
-      <!-- Mobile Overlay for Left Sidebar -->
-      <div
-        v-if="showSidebar && isMobile"
-        class="mobile-overlay"
-        @click="showSidebar = false"
-      />
-
-      <!-- Mobile Overlay for Right Sidebar (Materials) -->
-      <div
-        v-if="showMaterialsSidebar && isMobile"
-        class="mobile-overlay"
-        @click="showMaterialsSidebar = false"
-      />
-
-      <!-- Expand Left Sidebar Button (desktop only, when sidebar is hidden) -->
-      <el-button
-        v-if="!showSidebar && !isMobile && !isTablet"
-        class="sidebar-expand-btn sidebar-expand-btn-left"
-        type="primary"
-        circle
-        :icon="Menu"
-        title="Показать сайдбар"
-        @click="showSidebar = true"
-      />
-
+    <!-- Main Content Layout - CSS Grid -->
+    <main class="lesson-grid">
       <!-- Main Content Area -->
-      <el-main class="main-content-area">
-        <el-card
-          class="lesson-content-card"
-          shadow="never"
+      <section class="content-area">
+        <!-- Test Mode -->
+        <div
+          v-if="isTestMode"
+          class="test-container"
         >
-          <!-- Test Mode -->
-          <div
-            v-if="isTestMode"
-            class="test-container"
-          >
-            <TestQuiz 
-              v-if="currentLessonTest"
-              :test-data="currentLessonTest"
-              @test-completed="handleTestCompleted"
-              @test-started="handleTestStarted"
-            />
-            <el-empty
-              v-else
-              description="Тест для этого модуля пока недоступен"
-              :image-size="80"
-            />
-          </div>
-
-          <!-- Content Viewer (PDF/Video/Other) -->
-          <ContentViewer
-            v-else
-            :current-file="currentFile"
-            :current-file-type="currentFileType"
-            :current-zoom="currentZoom"
-            @zoom-in="zoomIn"
-            @zoom-out="zoomOut"
-            @download-file="downloadFile"
+          <TestQuiz 
+            v-if="currentLessonTest"
+            :test-data="currentLessonTest"
+            @test-completed="handleTestCompleted"
+            @test-started="handleTestStarted"
           />
+          <el-empty
+            v-else
+            description="Тест для этого модуля пока недоступен"
+            :image-size="80"
+          />
+        </div>
 
-          <!-- Navigation and Tabs -->
-          <div class="navigation-section">
-            <!-- Navigation Buttons -->
-            <div class="navigation-buttons">
-              <el-button
-                :disabled="!hasPreviousLesson"
-                :icon="ArrowLeft"
-                size="small"
-                class="nav-btn"
-                @click="previousLesson"
-              >
-                <span class="nav-btn-text">Назад</span>
-              </el-button>
-              
-              <div class="nav-center">
-                <el-button
-                  v-if="!isTopicCompleted"
-                  type="success"
-                  :icon="Check"
-                  size="small"
-                  class="nav-btn"
-                  @click="markAsCompleted"
-                >
-                  <span class="nav-btn-text-desktop">Завершить</span>
-                  <span class="nav-btn-text-mobile">✓</span>
-                </el-button>
-                <el-tag
-                  v-else
-                  type="success"
-                  size="small"
-                  class="completed-tag"
-                >
-                  <el-icon><Check /></el-icon>
-                  <span class="completed-text">Завершено</span>
-                </el-tag>
-              </div>
-
-              <el-button
-                :disabled="!hasNextLesson"
-                type="primary"
-                size="small"
-                class="nav-btn"
-                @click="nextLesson"
-              >
-                <span class="nav-btn-text">Далее</span>
-                <el-icon class="nav-icon">
-                  <ArrowRight />
-                </el-icon>
-              </el-button>
-            </div>
-          </div>
-        </el-card>
-      </el-main>
-
-      <!-- Right Sidebar (Materials) -->
-      <transition name="slide-right">
-        <CourseMaterialsPanel
-          v-show="showMaterialsSidebar"
-          :main-materials="mainMaterials"
-          :additional-materials="additionalMaterials"
+        <!-- Content Viewer (PDF/Video/Other) -->
+        <ContentViewer
+          v-else
           :current-file="currentFile"
-          :topic-title="currentTopic?.title || currentLesson?.title || ''"
-          :class="[
-            'flex-shrink-0',
-            isMobile ? 'materials-sidebar-mobile' : 'materials-sidebar-desktop'
-          ]"
-          @select-material="openMaterial"
-          @toggle-sidebar="handleToggleMaterialsSidebar"
+          :current-file-type="currentFileType"
+          :current-zoom="currentZoom"
+          @zoom-in="zoomIn"
+          @zoom-out="zoomOut"
+          @download-file="downloadFile"
         />
-      </transition>
 
-      <!-- Expand Right Sidebar Button (desktop only, when sidebar is hidden) -->
-      <el-button
-        v-if="!showMaterialsSidebar && !isMobile && !isTablet"
-        class="sidebar-expand-btn sidebar-expand-btn-right"
-        type="primary"
-        circle
-        :icon="Folder"
-        title="Показать материалы"
-        @click="showMaterialsSidebar = true"
+        <!-- Desktop Navigation (hidden on mobile) -->
+        <div class="navigation-section-desktop">
+          <div class="navigation-buttons">
+            <el-button
+              :disabled="!hasPreviousLesson"
+              :icon="ArrowLeft"
+              size="small"
+              plain
+              class="nav-btn"
+              aria-label="Предыдущий урок"
+              @click="previousLesson"
+            >
+              <span class="nav-btn-text">Назад</span>
+            </el-button>
+            
+            <div class="nav-center">
+              <el-button
+                v-if="!isTopicCompleted"
+                type="success"
+                :icon="Check"
+                size="small"
+                plain
+                class="nav-btn"
+                aria-label="Завершить урок"
+                @click="markAsCompleted"
+              >
+                <span class="nav-btn-text">Завершить</span>
+              </el-button>
+              <el-tag
+                v-else
+                type="success"
+                size="small"
+                class="completed-tag"
+                role="status"
+                aria-label="Урок завершен"
+              >
+                <el-icon><Check /></el-icon>
+                <span class="completed-text">Завершено</span>
+              </el-tag>
+            </div>
+
+            <el-button
+              :disabled="!hasNextLesson"
+              type="primary"
+              size="small"
+              class="nav-btn"
+              aria-label="Следующий урок"
+              @click="nextLesson"
+            >
+              <span class="nav-btn-text">Далее</span>
+              <el-icon class="nav-icon">
+                <ArrowRight />
+              </el-icon>
+            </el-button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Left Sidebar Drawer (Lessons) -->
+    <el-drawer
+      v-model="showSidebar"
+      :direction="isMobile || isTablet ? 'btt' : 'ltr'"
+      :size="isMobile || isTablet ? '85vh' : drawerSize"
+      :with-header="false"
+      :modal="true"
+      :close-on-click-modal="true"
+      :close-on-press-escape="true"
+      class="sidebar-drawer sidebar-drawer-left"
+      role="navigation"
+      aria-label="Навигация по урокам"
+      @close="handleToggleSidebar"
+      @opened="handleDrawerOpened('left')"
+    >
+      <LessonSidebar
+        :lessons="processedLessons"
+        :current-lesson-index="currentLessonIndex"
+        :current-topic-index="currentTopicIndex"
+        :completed-topics="completedTopics"
+        :passed-tests="passedTests"
+        :is-test-mode="isTestMode"
+        @select-lesson="handleSelectLesson"
+        @select-test="handleSelectTest"
+        @toggle-sidebar="handleToggleSidebar"
       />
-    </el-container>
+    </el-drawer>
 
-    <!-- Mobile Menu Buttons (only on mobile/tablet) -->
-    <el-button
-      v-if="isMobile || isTablet"
-      class="mobile-menu-btn mobile-menu-btn-left"
-      type="primary"
-      circle
-      @click="showSidebar = !showSidebar"
+    <!-- Right Sidebar Drawer (Materials) -->
+    <el-drawer
+      v-model="showMaterialsSidebar"
+      :direction="isMobile || isTablet ? 'btt' : 'rtl'"
+      :size="isMobile || isTablet ? '85vh' : drawerSize"
+      :with-header="false"
+      :modal="true"
+      :close-on-click-modal="true"
+      :close-on-press-escape="true"
+      class="sidebar-drawer sidebar-drawer-right"
+      role="complementary"
+      aria-label="Материалы курса"
+      @close="handleToggleMaterialsSidebar"
+      @opened="handleDrawerOpened('right')"
     >
-      <el-icon class="mobile-menu-icon">
-        <Menu v-if="!showSidebar" />
-        <Close v-else />
-      </el-icon>
-    </el-button>
+      <CourseMaterialsPanel
+        :main-materials="mainMaterials"
+        :additional-materials="additionalMaterials"
+        :current-file="currentFile"
+        :topic-title="currentTopic?.title || currentLesson?.title || ''"
+        @select-material="openMaterial"
+        @toggle-sidebar="handleToggleMaterialsSidebar"
+      />
+    </el-drawer>
 
-    <!-- Mobile Materials Button (only on mobile/tablet) -->
-    <el-button
-      v-if="isMobile || isTablet"
-      class="mobile-menu-btn mobile-menu-btn-right"
-      type="primary"
-      circle
-      @click="showMaterialsSidebar = !showMaterialsSidebar"
-    >
-      <el-icon class="mobile-menu-icon">
-        <Folder v-if="!showMaterialsSidebar" />
-        <Close v-else />
-      </el-icon>
-    </el-button>
+    <!-- Mobile Navigation Footer -->
+    <MobileNavigationFooter
+      :has-previous="hasPreviousLesson"
+      :has-next="hasNextLesson"
+      :is-completed="isTopicCompleted"
+      :is-visible="!isTestMode && (isMobile || isTablet)"
+      @previous="previousLesson"
+      @next="nextLesson"
+      @complete="markAsCompleted"
+    />
   </div>
 </template>
 
@@ -222,6 +189,7 @@ import LessonHeader from '@/components/lesson/LessonHeader.vue'
 import LessonSidebar from '@/components/lesson/LessonSidebar.vue'
 import TestQuiz from '@/components/lesson/TestQuiz.vue'
 import CourseMaterialsPanel from '@/components/lesson/CourseMaterialsPanel.vue'
+import MobileNavigationFooter from '@/components/lesson/MobileNavigationFooter.vue'
 import testsData from '@/data/testsData.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'
@@ -405,6 +373,14 @@ const isMobile = ref(window.innerWidth < 768)
 const isTablet = ref(window.innerWidth >= 768 && window.innerWidth < 1024)
 const showSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном
 const showMaterialsSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном
+// Drawer size calculation (reactive to window width)
+const windowWidth = ref(window.innerWidth)
+const drawerSize = computed(() => {
+  // Calculate drawer size based on viewport width (20% of viewport, min 18rem, max 20rem)
+  const vw = windowWidth.value
+  const calculated = Math.max(288, Math.min(320, vw * 0.2)) // 18rem = 288px, 20rem = 320px
+  return `${calculated}px`
+})
 
 // Handle window resize
 const handleResize = () => {
@@ -412,6 +388,7 @@ const handleResize = () => {
   const wasTablet = isTablet.value
   const currentWidth = window.innerWidth
   
+  windowWidth.value = currentWidth
   isMobile.value = currentWidth < 768
   isTablet.value = currentWidth >= 768 && currentWidth < 1024
   
@@ -734,6 +711,18 @@ const handleToggleMaterialsSidebar = () => {
   showMaterialsSidebar.value = !showMaterialsSidebar.value
 }
 
+// Focus management for drawers
+const handleDrawerOpened = (side) => {
+  // Focus management will be handled by Element Plus Drawer component
+  // But we can add screen reader announcements if needed
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    const announcement = side === 'left' 
+      ? 'Открыта навигация по урокам'
+      : 'Открыты материалы курса'
+    // Note: Screen reader will automatically announce drawer opening
+  }
+}
+
 const handleTestCompleted = ({ score, isPassed }) => {
   const testToSave = isTestMode.value ? currentLessonTest.value : currentTopicTest.value
   
@@ -835,49 +824,36 @@ onUnmounted(() => {
 
 <style scoped>
 .lesson-content-app {
-  padding-top: 0;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
   height: 100vh;
-}
-
-/* Main Container */
-.main-container {
-  max-width: 100%;
-  width: 100%;
-  margin: 0 auto;
   display: flex;
-  flex-wrap: nowrap;
-  overflow: hidden;
-  height: calc(100vh - clamp(3.5rem, 10vw, 4.5rem)); /* Вычитаем высоту header */
+  flex-direction: column;
+  background: #f9fafb;
 }
 
-:deep(.el-main) {
-  padding: 0;
+/* CSS Grid Layout */
+.lesson-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  height: calc(100vh - clamp(3.5rem, 10vw, 4.5rem));
   width: 100%;
   max-width: 100%;
   overflow: hidden;
+  gap: 0;
 }
 
-.main-content-area {
-  flex: 1;
+/* Content Area */
+.content-area {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   min-width: 0;
-  padding: clamp(0.5rem, 1.5vw, 1rem) !important;
-  overflow: hidden;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.lesson-content-card {
-  border-radius: clamp(0.5rem, 1vw, 0.75rem);
-  width: 100%;
-  max-width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  gap: 1rem;
 }
 
 /* Test Container */
@@ -981,19 +957,18 @@ onUnmounted(() => {
   width: 100%;
 }
 
-/* Navigation Section */
-.navigation-section {
+/* Desktop Navigation Section */
+.navigation-section-desktop {
   border-top: 1px solid #e5e7eb;
   width: 100%;
   flex-shrink: 0;
+  padding-top: clamp(0.75rem, 1.5vw, 1rem);
 }
 
 .navigation-buttons {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: clamp(0.5rem, 1.5vw, 0.75rem) clamp(0.5rem, 2vw, 1rem);
-  background: #f9fafb;
   gap: clamp(0.5rem, 1.5vw, 1rem);
   flex-wrap: wrap;
 }
@@ -1035,227 +1010,95 @@ onUnmounted(() => {
   margin-left: clamp(0.25rem, 0.5vw, 0.5rem);
 }
 
-/* Mobile Overlay */
-.mobile-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 30;
+/* Custom Scrollbars */
+.sidebar-left,
+.sidebar-right,
+.content-area {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 }
 
-/* Mobile Menu Buttons */
-.mobile-menu-btn {
-  position: fixed;
-  bottom: clamp(1rem, 4vw, 1.5rem);
-  z-index: 40;
-  width: clamp(3rem, 8vw, 3.5rem);
-  height: clamp(3rem, 8vw, 3.5rem);
-  border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.sidebar-left:hover,
+.sidebar-right:hover,
+.content-area:hover {
+  scrollbar-color: #c1c1c1 #f1f1f1;
 }
 
-.mobile-menu-btn-left {
-  left: clamp(1rem, 4vw, 1.5rem);
+.sidebar-left::-webkit-scrollbar,
+.sidebar-right::-webkit-scrollbar,
+.content-area::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.mobile-menu-btn-right {
-  right: clamp(1rem, 4vw, 1.5rem);
+.sidebar-left::-webkit-scrollbar-track,
+.sidebar-right::-webkit-scrollbar-track,
+.content-area::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.mobile-menu-icon {
-  font-size: clamp(1rem, 3vw, 1.25rem);
+.sidebar-left::-webkit-scrollbar-thumb,
+.sidebar-right::-webkit-scrollbar-thumb,
+.content-area::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.2s;
 }
 
-/* Sidebar Expand Buttons */
-.sidebar-expand-btn {
-  position: fixed;
-  top: clamp(4.5rem, 12vw, 5rem);
-  z-index: 50;
-  width: clamp(2.5rem, 6vw, 2.75rem);
-  height: clamp(2.5rem, 6vw, 2.75rem);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
+.sidebar-left:hover::-webkit-scrollbar-thumb,
+.sidebar-right:hover::-webkit-scrollbar-thumb,
+.content-area:hover::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
 }
 
-.sidebar-expand-btn-left {
-  left: clamp(0.75rem, 2vw, 1rem);
+.sidebar-left:hover::-webkit-scrollbar-thumb:hover,
+.sidebar-right:hover::-webkit-scrollbar-thumb:hover,
+.content-area:hover::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
-.sidebar-expand-btn-right {
-  right: clamp(0.75rem, 2vw, 1rem);
+/* Drawer Styles */
+:deep(.sidebar-drawer .el-drawer__body) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.sidebar-expand-btn:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  transform: scale(1.1);
+:deep(.sidebar-drawer-left .el-drawer) {
+  border-right: 1px solid #e5e7eb;
 }
 
-/* Transitions */
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.3s ease;
+:deep(.sidebar-drawer-right .el-drawer) {
+  border-left: 1px solid #e5e7eb;
 }
 
-.slide-enter-from {
-  transform: translateX(-100%);
-}
-
-.slide-leave-to {
-  transform: translateX(-100%);
-}
-
-.slide-right-enter-active,
-.slide-right-leave-active {
-  transition: transform 0.3s ease;
-}
-
-.slide-right-enter-from {
-  transform: translateX(100%);
-}
-
-.slide-right-leave-to {
-  transform: translateX(100%);
-}
-
-/* Media Queries */
-/* Mobile phones (max-width: 480px) */
-@media (max-width: 480px) {
-  .main-content-area {
-    padding: clamp(0.5rem, 2vw, 0.75rem) !important;
-}
-
-  .controls-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: clamp(0.25rem, 1.5vw, 0.5rem);
-}
-
-  .controls-group {
+/* Responsive Layout */
+@media (max-width: 1023px) {
+  .content-area {
     width: 100%;
-    justify-content: space-between;
+    padding: clamp(0.75rem, 2vw, 1rem);
   }
 
-  .navigation-buttons {
-    flex-direction: column;
-    gap: clamp(0.5rem, 2vw, 0.75rem);
-  }
-
-  .nav-btn {
-    width: 100%;
-  justify-content: center;
-  }
-
-  .nav-center {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .completed-text {
-    display: inline;
-}
-}
-
-/* Tablets (max-width: 768px) */
-@media (max-width: 768px) {
-  .nav-btn-text-desktop {
-    display: none;
-  }
-
-  .nav-btn-text-mobile {
-    display: inline;
-  }
-
-  .completed-text {
-    display: none;
-}
-
-  .mobile-overlay {
-    display: block;
+  .navigation-section-desktop {
+    display: none; /* Mobile footer handles navigation */
   }
 }
 
-/* Small laptops (max-width: 1024px) */
-@media (max-width: 1024px) {
-  .main-container {
-    flex-wrap: wrap;
-}
-
-  .nav-btn-text {
-    display: inline;
-  }
-
-  .nav-btn-text-desktop {
-    display: none;
-  }
-
-  .nav-btn-text-mobile {
-    display: inline;
-  }
-}
-
-/* Desktop (min-width: 1025px) */
-@media (min-width: 1025px) {
-  .main-container {
+/* Desktop (min-width: 1024px) */
+@media (min-width: 1024px) {
+  .content-area {
+    padding: clamp(1.5rem, 2.5vw, 2rem);
     max-width: 1920px;
-  }
-
-  .nav-btn-text {
-    display: inline;
-  }
-
-  .nav-btn-text-desktop {
-    display: inline;
-  }
-
-  .nav-btn-text-mobile {
-    display: none;
-}
-
-  .completed-text {
-    display: inline;
-  }
-
-  .mobile-overlay {
-    display: none;
+    margin: 0 auto;
   }
 }
 
 /* Wide monitors (min-width: 1440px) */
 @media (min-width: 1440px) {
-  .main-container {
+  .lesson-grid {
     max-width: 1920px;
     margin: 0 auto;
-  }
-
-  .viewer-container {
-    min-height: clamp(31.25rem, 60vh, 43.75rem);
-  }
-}
-
-/* Hide mobile menu on desktop (уже контролируется через v-if, но оставляем для надежности) */
-@media (min-width: 1025px) {
-  .mobile-menu-btn {
-    display: none !important;
-  }
-}
-
-/* Hide desktop expand buttons on mobile/tablet */
-@media (max-width: 1024px) {
-  .sidebar-expand-btn {
-    display: none !important;
-  }
-}
-
-/* Mobile phones - adjust button positions */
-@media (max-width: 480px) {
-  .mobile-menu-btn-left {
-    left: clamp(0.75rem, 3vw, 1rem);
-    bottom: clamp(0.75rem, 3vw, 1rem);
-}
-
-  .mobile-menu-btn-right {
-    right: clamp(0.75rem, 3vw, 1rem);
-    bottom: clamp(0.75rem, 3vw, 1rem);
   }
 }
 </style>

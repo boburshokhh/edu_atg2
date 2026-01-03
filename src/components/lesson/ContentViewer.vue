@@ -64,41 +64,13 @@
       />
 
       <!-- Unsupported File Type -->
-      <div 
+      <DocumentErrorState
         v-else
-        class="flex flex-col items-center justify-center min-h-[400px] p-8"
-      >
-        <el-icon
-          :size="64"
-          class="text-gray-400 mb-4"
-        >
-          <Document />
-        </el-icon>
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">
-          Неподдерживаемый формат файла
-        </h3>
-        <p class="text-sm text-gray-500 mb-4">
-          {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
-        </p>
-        <!-- Скачивание запрещено для конфиденциальных документов -->
-        <el-button 
-          v-if="currentFileType !== 'pdf'"
-          type="primary" 
-          @click="$emit('download-file', currentFile)"
-        >
-          Скачать файл
-        </el-button>
-        <el-alert
-          v-else
-          type="info"
-          :closable="false"
-          show-icon
-        >
-          <template #title>
-            <span>Скачивание конфиденциальных документов запрещено</span>
-          </template>
-        </el-alert>
-      </div>
+        error="Неподдерживаемый формат файла"
+        :file-type="currentFileType"
+        :file-name="currentFile.original_name || currentFile.originalName || 'Файл'"
+        :on-download="() => $emit('download-file', currentFile)"
+      />
     </template>
 
     <!-- No Content Placeholder -->
@@ -118,6 +90,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { defineAsyncComponent } from 'vue'
 import { ZoomIn, ZoomOut, FullScreen, Document } from '@element-plus/icons-vue'
+import DocumentErrorState from './DocumentErrorState.vue'
 
 // Lazy load viewers
 const SecurePDFViewer = defineAsyncComponent(() => import('./SecurePDFViewer.vue'))
