@@ -16,13 +16,22 @@
     </div>
 
     <!-- Error State -->
-    <DocumentErrorState
+    <div 
       v-else-if="error"
-      :error="error"
-      file-type="pdf"
-      :file-name="props.file?.fileName || props.file?.originalName || props.file?.original_name"
-      :on-reload="loadPdf"
-    />
+      class="pdf-error"
+    >
+      <el-icon :size="64" class="error-icon">
+        <Document />
+      </el-icon>
+      <h3 class="error-title">Ошибка загрузки документа</h3>
+      <p class="error-message">{{ error }}</p>
+      <el-button 
+        type="primary" 
+        @click="loadPdf"
+      >
+        Попробовать снова
+      </el-button>
+    </div>
 
     <!-- PDF Canvas Container -->
     <div 
@@ -86,7 +95,6 @@
 import { ref, onMounted, onUnmounted, watch, nextTick, toRaw } from 'vue'
 import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, Document, Refresh } from '@element-plus/icons-vue'
 import * as pdfjsLib from 'pdfjs-dist'
-import DocumentErrorState from './DocumentErrorState.vue'
 
 // Настройка worker для PDF.js
 // КРИТИЧЕСКИ ВАЖНО: Worker должен точно соответствовать версии библиотеки
@@ -581,7 +589,8 @@ onUnmounted(() => {
   min-height: 100vh;
 }
 
-.pdf-loading {
+.pdf-loading,
+.pdf-error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -594,6 +603,23 @@ onUnmounted(() => {
 .loading-text {
   color: #6b7280;
   font-size: 0.875rem;
+}
+
+.error-icon {
+  color: #ef4444;
+}
+
+.error-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.error-message {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
 }
 
 .pdf-canvas-container {

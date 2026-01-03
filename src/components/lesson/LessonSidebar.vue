@@ -39,10 +39,10 @@
             <div class="text-xs font-semibold text-blue-600 mb-0.5">
               Модуль {{ lessonIndex + 1 }}
             </div>
-            <div class="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+            <div class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
               {{ lesson.title }}
             </div>
-            <div class="text-xs font-medium text-gray-500 mt-0.5">
+            <div class="text-xs text-gray-500 mt-0.5">
               {{ lesson.topics?.length || 0 }} {{ lesson.topics?.length === 1 ? 'тема' : 'тем' }}
             </div>
           </div>
@@ -111,7 +111,7 @@
               <div class="flex-1 min-w-0">
                 <div 
                   :class="[
-                    'text-xs font-bold mb-0.5 leading-tight',
+                    'text-xs font-medium mb-0.5 leading-tight',
                     isCurrentTopic(lessonIndex, topicIndex)
                       ? 'text-blue-600'
                       : 'text-gray-900'
@@ -119,7 +119,7 @@
                 >
                   {{ lessonIndex + 1 }}.{{ topicIndex + 1 }}: {{ topic.title }}
                 </div>
-                <div class="text-xs font-medium text-gray-500">
+                <div class="text-xs text-gray-500">
                   {{ topic.duration || '15 мин' }}
                 </div>
               </div>
@@ -189,7 +189,7 @@
               <div class="flex-1 min-w-0">
                 <div 
                   :class="[
-                    'text-xs font-bold mb-0.5 leading-tight flex items-center gap-1',
+                    'text-xs font-medium mb-0.5 leading-tight flex items-center gap-1',
                     isCurrentTest(lessonIndex)
                       ? 'text-purple-600'
                       : 'text-gray-900'
@@ -205,7 +205,7 @@
                     ✓
                   </el-tag>
                 </div>
-                <div class="text-xs font-medium text-gray-500">
+                <div class="text-xs text-gray-500">
                   Проверка знаний
                 </div>
               </div>
@@ -379,36 +379,21 @@ watch(() => props.currentLessonIndex, (newIndex) => {
   height: clamp(1.75rem, 4vw, 2rem);
 }
 
-/* Custom Scrollbar - Hidden by default, visible on hover */
-.lessons-list-container {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-
-.lessons-list-container:hover {
-  scrollbar-color: #c1c1c1 #f1f1f1;
-}
-
+/* Кастомный скроллбар для сайдбара */
 .lessons-list-container::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: clamp(0.25rem, 0.75vw, 0.375rem);
 }
 
 .lessons-list-container::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f1f1;
 }
 
 .lessons-list-container::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 3px;
-  transition: background 0.2s;
-}
-
-.lessons-list-container:hover::-webkit-scrollbar-thumb {
   background: #c1c1c1;
+  border-radius: clamp(0.125rem, 0.375vw, 0.1875rem);
 }
 
-.lessons-list-container:hover::-webkit-scrollbar-thumb:hover {
+.lessons-list-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 

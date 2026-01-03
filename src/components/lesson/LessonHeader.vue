@@ -2,47 +2,22 @@
   <el-header class="lesson-header">
     <div class="lesson-header-content">
       <div class="lesson-header-left">
-        <!-- Sidebar Toggle Buttons -->
-        <div class="header-toolbar">
-          <!-- Left Sidebar Toggle -->
-          <el-button
-            :icon="showSidebar ? Menu : Menu"
-            circle
-            size="small"
-            class="sidebar-toggle-btn"
-            :class="{ 'toggle-active': showSidebar }"
-            :aria-label="showSidebar ? 'Скрыть навигацию' : 'Показать навигацию'"
-            @click="handleToggleSidebar"
-          />
-          
-          <!-- Right Sidebar Toggle -->
-          <el-button
-            :icon="Folder"
-            circle
-            size="small"
-            class="sidebar-toggle-btn"
-            :class="{ 'toggle-active': showMaterialsSidebar }"
-            :aria-label="showMaterialsSidebar ? 'Скрыть материалы' : 'Показать материалы'"
-            @click="handleToggleMaterialsSidebar"
-          />
-        </div>
-
         <!-- Breadcrumb -->
         <el-breadcrumb
           separator="/"
           class="lesson-breadcrumb"
         >
           <el-breadcrumb-item :to="{ path: '/stations' }">
-            <span class="breadcrumb-item-text">Станции</span>
+            <span>Станции</span>
           </el-breadcrumb-item>
           <el-breadcrumb-item :to="{ path: `/station/${stationId}` }">
-            <span class="breadcrumb-item-text">{{ station?.shortName }}</span>
+            <span>{{ station?.shortName }}</span>
           </el-breadcrumb-item>
           <el-breadcrumb-item :to="{ path: `/station/${stationId}/courses` }">
-            <span class="breadcrumb-item-text">Программа</span>
+            <span>Программа</span>
           </el-breadcrumb-item>
           <el-breadcrumb-item>
-            <span class="lesson-title-truncate lesson-title-primary">{{ currentLesson?.title }}</span>
+            <span class="lesson-title-truncate">{{ currentLesson?.title }}</span>
           </el-breadcrumb-item>
         </el-breadcrumb>
       </div>
@@ -138,7 +113,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowDown, User, Setting, SwitchButton, Monitor, DataLine, Menu, Folder } from '@element-plus/icons-vue'
+import { ArrowDown, User, Setting, SwitchButton, Monitor, DataLine } from '@element-plus/icons-vue'
 import authService from '@/services/auth'
 import userProfileService from '@/services/userProfile'
 import UserStatistics from '@/components/user/UserStatistics.vue'
@@ -155,18 +130,8 @@ const props = defineProps({
   currentLesson: {
     type: Object,
     default: () => ({})
-  },
-  showSidebar: {
-    type: Boolean,
-    default: false
-  },
-  showMaterialsSidebar: {
-    type: Boolean,
-    default: false
   }
 })
-
-const emit = defineEmits(['toggle-sidebar', 'toggle-materials-sidebar'])
 
 const router = useRouter()
 
@@ -259,14 +224,6 @@ const isAdminUser = computed(() => {
   userDataVersion.value // Зависимость для обновления
   return authService.isAdmin()
 })
-
-const handleToggleSidebar = () => {
-  emit('toggle-sidebar')
-}
-
-const handleToggleMaterialsSidebar = () => {
-  emit('toggle-materials-sidebar')
-}
 
 const handleCommand = async (command) => {
   switch (command) {
@@ -365,35 +322,6 @@ onUnmounted(() => {
   min-width: 0;
   width: 100%;
   max-width: 100%;
-  display: flex;
-  align-items: center;
-  gap: clamp(0.5rem, 1.5vw, 0.75rem);
-}
-
-.header-toolbar {
-  display: flex;
-  align-items: center;
-  gap: clamp(0.25rem, 0.75vw, 0.5rem);
-  flex-shrink: 0;
-}
-
-.sidebar-toggle-btn {
-  width: clamp(2rem, 4vw, 2.25rem);
-  height: clamp(2rem, 4vw, 2.25rem);
-  transition: all 0.2s ease;
-}
-
-.sidebar-toggle-btn.toggle-active {
-  background-color: #e0e7ff;
-  color: #4f46e5;
-}
-
-.sidebar-toggle-btn:hover {
-  background-color: #f3f4f6;
-}
-
-.sidebar-toggle-btn.toggle-active:hover {
-  background-color: #c7d2fe;
 }
 
 .lesson-header-right {
@@ -402,19 +330,13 @@ onUnmounted(() => {
 
 .lesson-breadcrumb {
   margin: 0;
-  flex: 1;
-  min-width: 0;
-}
-
-.breadcrumb-item-text {
-  font-size: clamp(0.625rem, 1.25vw, 0.6875rem);
-  color: #9ca3af;
-  transition: color 0.2s;
+  width: 100%;
+  max-width: 100%;
 }
 
 :deep(.el-breadcrumb__inner) {
-  font-size: clamp(0.625rem, 1.25vw, 0.6875rem);
-  color: #9ca3af;
+  font-size: clamp(0.625rem, 1.5vw, 0.75rem);
+  color: #6b7280;
   transition: color 0.2s;
 }
 
@@ -424,21 +346,15 @@ onUnmounted(() => {
 
 :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
   color: #1f2937;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .lesson-title-truncate {
   display: inline-block;
-  max-width: clamp(10rem, 35vw, 16rem);
+  max-width: clamp(8rem, 30vw, 12.5rem);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.lesson-title-primary {
-  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
-  font-weight: 600;
-  color: #1f2937;
 }
 
 /* User Menu Styles */
@@ -543,14 +459,6 @@ onUnmounted(() => {
 
   .lesson-header-left {
     width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: clamp(0.5rem, 1.5vw, 0.75rem);
-  }
-
-  .header-toolbar {
-    width: 100%;
-    justify-content: flex-start;
   }
 
   .lesson-header-right {
@@ -560,7 +468,7 @@ onUnmounted(() => {
   }
 
   .lesson-title-truncate {
-    max-width: clamp(12rem, 60vw, 18rem);
+    max-width: clamp(10rem, 50vw, 15rem);
   }
 
   .user-info {
@@ -569,10 +477,6 @@ onUnmounted(() => {
 
   .user-menu-trigger {
     gap: clamp(0.25rem, 1vw, 0.5rem);
-  }
-
-  .breadcrumb-item-text {
-    font-size: clamp(0.5625rem, 1.25vw, 0.625rem);
   }
 }
 

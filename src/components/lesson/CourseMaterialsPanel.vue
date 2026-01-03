@@ -9,7 +9,7 @@
           </h2>
           <div
             v-if="topicTitle"
-            class="text-xs font-medium text-gray-500 truncate"
+            class="text-xs font-medium text-gray-600 truncate"
           >
             {{ topicTitle }}
           </div>
@@ -40,7 +40,7 @@
             >
               <Document />
             </el-icon>
-            <span class="text-xs font-bold text-gray-700">Основные материалы</span>
+            <span class="text-xs font-semibold text-gray-700">Основные материалы</span>
           </div>
         </div>
         
@@ -88,7 +88,7 @@
             <div class="flex-1 min-w-0">
               <div 
                 :class="[
-                  'text-xs font-bold mb-0.5 leading-tight',
+                  'text-xs font-medium mb-0.5 leading-tight',
                   isActiveMaterial(material)
                     ? 'text-blue-600'
                     : 'text-gray-900'
@@ -96,7 +96,7 @@
               >
                 {{ material.original_name || material.originalName }}
               </div>
-              <div class="text-xs font-medium text-gray-500">
+              <div class="text-xs text-gray-500">
                 {{ material.sizeFormatted || formatFileSize(material.file_size) }}
               </div>
             </div>
@@ -177,7 +177,7 @@
             <div class="flex-1 min-w-0">
               <div 
                 :class="[
-                  'text-xs font-bold mb-0.5 leading-tight',
+                  'text-xs font-medium mb-0.5 leading-tight',
                   isActiveMaterial(material)
                     ? 'text-purple-600'
                     : 'text-gray-900'
@@ -340,36 +340,20 @@ const handleToggleSidebar = () => {
 }
 
 /* Кастомный скроллбар для сайдбара */
-/* Custom Scrollbar - Hidden by default, visible on hover */
-.materials-list-container {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-
-.materials-list-container:hover {
-  scrollbar-color: #c1c1c1 #f1f1f1;
-}
-
 .materials-list-container::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: clamp(0.25rem, 0.75vw, 0.375rem);
 }
 
 .materials-list-container::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f1f1;
 }
 
 .materials-list-container::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 3px;
-  transition: background 0.2s;
-}
-
-.materials-list-container:hover::-webkit-scrollbar-thumb {
   background: #c1c1c1;
+  border-radius: clamp(0.125rem, 0.375vw, 0.1875rem);
 }
 
-.materials-list-container:hover::-webkit-scrollbar-thumb:hover {
+.materials-list-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 
