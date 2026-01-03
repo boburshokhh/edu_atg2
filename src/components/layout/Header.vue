@@ -1,7 +1,103 @@
 <template>
+  <!-- Mobile Header (Top Bar) -->
   <header 
     ref="headerRef"
-    class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out"
+    class="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 backdrop-blur-md border-b border-gray-100 transition-all duration-300 ease-out"
+  >
+    <div class="max-w-7xl mx-auto px-4 h-full grid grid-cols-3 items-center">
+      <!-- Burger Menu Button -->
+      <button
+        @click="mobileMenuOpen = true"
+        class="w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-100 active:bg-gray-200"
+        aria-label="Открыть меню"
+      >
+        <svg 
+          class="w-6 h-6 text-gray-700" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path 
+            stroke-linecap="round" 
+            stroke-linejoin="round" 
+            stroke-width="2" 
+            d="M4 6h16M4 12h16M4 18h16" 
+          />
+        </svg>
+      </button>
+      
+      <!-- Logo (Center) -->
+      <div class="justify-self-center">
+        <router-link to="/" class="flex items-center">
+          <img 
+            src="/logo.e75fb66.svg" 
+            alt="Asia Trans Gas" 
+            class="h-6 w-auto transition-all duration-300"
+            @error="handleLogoError"
+          >
+        </router-link>
+      </div>
+      
+      <!-- Language Switcher (Right) -->
+      <div class="relative justify-self-end">
+        <button
+          @click="langDropdownOpen = !langDropdownOpen"
+          class="w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-100 active:bg-gray-200"
+          aria-label="Сменить язык"
+        >
+          <svg
+            class="w-6 h-6 text-gray-700"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </button>
+        
+        <!-- Language Dropdown -->
+        <transition
+          enter-active-class="transition ease-out duration-100"
+          enter-from-class="transform opacity-0 scale-95"
+          enter-to-class="transform opacity-100 scale-100"
+          leave-active-class="transition ease-in duration-75"
+          leave-from-class="transform opacity-100 scale-100"
+          leave-to-class="transform opacity-0 scale-95"
+        >
+          <div 
+            v-if="langDropdownOpen"
+            class="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg py-1 border border-gray-100 z-50"
+            @click="langDropdownOpen = false"
+          >
+            <button
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+              :class="currentLocale === 'ru' ? 'text-tamex-blue-600 font-semibold' : 'text-gray-700'"
+              @click="changeLanguage('ru')"
+            >
+              🇷🇺 Русский
+            </button>
+            <button
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+              :class="currentLocale === 'en' ? 'text-tamex-blue-600 font-semibold' : 'text-gray-700'"
+              @click="changeLanguage('en')"
+            >
+              🇺🇸 English
+            </button>
+          </div>
+        </transition>
+      </div>
+    </div>
+  </header>
+
+  <!-- Desktop Header -->
+  <header 
+    ref="headerRef"
+    class="hidden lg:block fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out"
     :class="[
       isLightTheme
         ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100' 
@@ -253,160 +349,207 @@
             </div>
           </template>
 
-          <!-- Mobile Menu Button -->
-          <button
-            class="lg:hidden p-2 rounded-lg transition-all duration-200"
-            :class="isLightTheme 
-              ? 'text-gray-700 hover:bg-gray-100' 
-              : 'text-white hover:bg-white/10'"
-            @click="mobileMenuOpen = !mobileMenuOpen"
-          >
-            <svg 
-              class="w-6 h-6" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                v-if="!mobileMenuOpen"
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
-                stroke-width="2" 
-                d="M4 6h16M4 12h16M4 18h16" 
-              />
-              <path 
-                v-else
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
-                stroke-width="2" 
-                d="M6 18L18 6M6 6l12 12" 
-              />
-            </svg>
-          </button>
         </div>
       </div>
+    </div>
 
-      <!-- Mobile Menu -->
-      <transition
-        enter-active-class="transition ease-out duration-200"
-        enter-from-class="transform opacity-0 -translate-y-2"
-        enter-to-class="transform opacity-100 translate-y-0"
-        leave-active-class="transition ease-in duration-150"
-        leave-from-class="transform opacity-100 translate-y-0"
-        leave-to-class="transform opacity-0 -translate-y-2"
-      >
+    <!-- Mobile Drawer -->
+    <Teleport to="body">
+      <!-- Backdrop -->
+      <Transition name="drawer-backdrop">
         <div 
-          v-if="mobileMenuOpen" 
-          class="lg:hidden mt-4 pb-4 border-t"
-          :class="isLightTheme 
-            ? 'border-gray-100 bg-white/95 backdrop-blur-md' 
-            : 'border-white/10 bg-white/10 backdrop-blur-md'"
+          v-if="mobileMenuOpen"
+          class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+          @click="closeDrawer"
+          @touchstart="handleTouchStart"
+          @touchmove="handleTouchMove"
+          @touchend="handleTouchEnd"
+        />
+      </Transition>
+      
+      <!-- Drawer Panel -->
+      <Transition name="drawer-slide">
+        <aside 
+          v-if="mobileMenuOpen"
+          class="fixed top-0 right-0 bottom-0 z-[101] w-80 max-w-[85vw] bg-white shadow-2xl overflow-y-auto"
+          @click.stop
+          @touchstart="handleDrawerTouchStart"
+          @touchmove="handleDrawerTouchMove"
+          @touchend="handleDrawerTouchEnd"
         >
-          <div class="flex flex-col space-y-1 mt-4">
-            <router-link
-              to="/"
-              class="mobile-nav-link"
-              :class="isLightTheme ? 'text-gray-700 hover:bg-gray-50' : 'text-white hover:bg-white/10'"
-              @click="mobileMenuOpen = false"
-            >
-              {{ $t('nav.home') }}
-            </router-link>
-            
-            <a
-              href="#about"
-              class="mobile-nav-link cursor-pointer"
-              :class="isLightTheme ? 'text-gray-700 hover:bg-gray-50' : 'text-white hover:bg-white/10'"
-              @click.prevent="scrollToAbout(); mobileMenuOpen = false"
-            >
-              {{ $t('nav.about') }}
-            </a>
-            
-            <router-link
-              to="/stations"
-              class="mobile-nav-link"
-              :class="isLightTheme ? 'text-gray-700 hover:bg-gray-50' : 'text-white hover:bg-white/10'"
-              @click="mobileMenuOpen = false"
-            >
-              {{ $t('nav.stations') }}
-            </router-link>
-            
-            <router-link
-              to="/departments"
-              class="mobile-nav-link"
-              :class="isLightTheme ? 'text-gray-700 hover:bg-gray-50' : 'text-white hover:bg-white/10'"
-              @click="mobileMenuOpen = false"
-            >
-              Отделы
-            </router-link>
-
-            <!-- Mobile Auth Buttons -->
-            <template v-if="!isAuthenticated">
-              <div
-                class="pt-4 space-y-2"
-                :class="isLightTheme ? 'border-t border-gray-100' : 'border-t border-white/10'"
+          <div class="flex flex-col h-full">
+            <!-- Section 1: Navigation -->
+            <nav class="px-4 py-3 border-b border-gray-100">
+              <router-link
+                to="/"
+                class="flex items-center space-x-3 h-11 px-3 rounded-lg transition-colors text-sm font-normal text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                @click="closeDrawer"
               >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>{{ $t('nav.home') }}</span>
+              </router-link>
+              
+              <router-link
+                to="/stations"
+                class="flex items-center space-x-3 h-11 px-3 rounded-lg transition-colors text-sm font-normal text-gray-700 hover:bg-gray-50 active:bg-gray-100 mt-1"
+                @click="closeDrawer"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span>{{ $t('nav.stations') }}</span>
+              </router-link>
+              
+              <router-link
+                to="/departments"
+                class="flex items-center space-x-3 h-11 px-3 rounded-lg transition-colors text-sm font-normal text-gray-700 hover:bg-gray-50 active:bg-gray-100 mt-1"
+                @click="closeDrawer"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Отделы</span>
+              </router-link>
+              
+              <a
+                href="#about"
+                class="flex items-center space-x-3 h-11 px-3 rounded-lg transition-colors text-sm font-normal text-gray-700 hover:bg-gray-50 active:bg-gray-100 mt-1 cursor-pointer"
+                @click.prevent="scrollToAbout(); closeDrawer()"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{{ $t('nav.about') }}</span>
+              </a>
+            </nav>
+            
+            <!-- Section 2: Account -->
+            <template v-if="isAuthenticated && userName">
+              <div class="px-4 py-3 border-b border-gray-100">
+                <router-link
+                  to="/profile"
+                  class="flex items-center space-x-3 py-2 rounded-lg transition-colors hover:bg-gray-50 active:bg-gray-100"
+                  @click="closeDrawer"
+                >
+                  <div 
+                    class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-gray-200"
+                    :class="userAvatar 
+                      ? '' 
+                      : 'bg-gradient-to-br from-tamex-blue-600 to-tamex-blue-700'"
+                  >
+                    <img 
+                      v-if="userAvatar" 
+                      :src="userAvatar" 
+                      :alt="userName"
+                      class="w-full h-full object-cover"
+                    >
+                    <div
+                      v-else
+                      class="w-full h-full flex items-center justify-center text-white text-lg font-semibold"
+                    >
+                      {{ userName.charAt(0).toUpperCase() }}
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900 truncate">
+                      {{ userName }}
+                    </div>
+                    <div class="text-xs text-gray-500 truncate">
+                      {{ userRole }}
+                    </div>
+                  </div>
+                </router-link>
+              </div>
+              
+              <!-- Section 3: Settings / Tools -->
+              <div class="px-4 py-2 border-b border-gray-100">
+                <router-link
+                  to="/dashboard"
+                  class="flex items-center space-x-3 h-11 px-3 rounded-lg transition-colors text-sm font-normal text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                  @click="closeDrawer"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  <span>{{ $t('nav.dashboard') }}</span>
+                </router-link>
+                
+                <router-link
+                  v-if="isAdminUser"
+                  to="/admin"
+                  class="flex items-center space-x-3 h-11 px-3 rounded-lg transition-colors text-sm font-normal text-blue-600 hover:bg-blue-50 active:bg-blue-100 mt-1"
+                  @click="closeDrawer"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Админ-панель</span>
+                </router-link>
+              </div>
+              
+              <!-- Section 4: Danger Zone -->
+              <div class="px-4 py-2 mt-auto">
+                <button
+                  @click="confirmLogout"
+                  class="flex items-center space-x-3 h-11 px-3 rounded-lg transition-colors text-sm font-normal text-gray-600 hover:bg-gray-50 active:bg-gray-100 w-full text-left"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>{{ $t('nav.logout') }}</span>
+                </button>
+              </div>
+            </template>
+            
+            <!-- Not Authenticated -->
+            <template v-else>
+              <div class="px-4 py-3 mt-auto">
                 <router-link
                   to="/login"
-                  class="block w-full text-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all"
-                  :class="isLightTheme 
-                    ? 'text-gray-700 bg-gray-100 hover:bg-gray-200' 
-                    : 'text-white bg-white/10 hover:bg-white/20'"
-                  @click="mobileMenuOpen = false"
+                  class="flex items-center justify-center h-11 px-4 rounded-lg transition-colors text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 active:bg-gray-700"
+                  @click="closeDrawer"
                 >
                   {{ $t('nav.login') }}
                 </router-link>
               </div>
             </template>
+          </div>
+        </aside>
+      </Transition>
+    </Teleport>
 
-            <!-- Mobile User Menu -->
-            <template v-else-if="isAuthenticated && userName">
-              <div
-                class="pt-4 space-y-1"
-                :class="isLightTheme ? 'border-t border-gray-100' : 'border-t border-white/10'"
+    <!-- Logout Confirmation Dialog -->
+    <Teleport to="body">
+      <Transition name="dialog">
+        <div 
+          v-if="showLogoutConfirm"
+          class="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4"
+          @click.self="showLogoutConfirm = false"
+        >
+          <div class="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Выйти из системы?</h3>
+            <p class="text-sm text-gray-600 mb-4">Вы уверены, что хотите выйти?</p>
+            <div class="flex gap-3">
+              <button 
+                @click="showLogoutConfirm = false" 
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <div 
-                  class="flex items-center space-x-3 px-4 py-3 rounded-lg"
-                  :class="isLightTheme ? 'bg-gray-50' : 'bg-white/5'"
-                >
-                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-tamex-blue-600 to-tamex-blue-700 flex items-center justify-center text-white font-semibold">
-                    {{ userName.charAt(0).toUpperCase() }}
-                  </div>
-                  <div>
-                    <p
-                      class="text-sm font-medium"
-                      :class="isLightTheme ? 'text-gray-900' : 'text-white'"
-                    >
-                      {{ userName }}
-                    </p>
-                    <p
-                      class="text-xs opacity-70"
-                      :class="isLightTheme ? 'text-gray-600' : 'text-white/70'"
-                    >
-                      {{ userRole }}
-                    </p>
-                  </div>
-                </div>
-                <router-link
-                  to="/profile"
-                  class="mobile-nav-link"
-                  :class="isLightTheme ? 'text-gray-700 hover:bg-gray-50' : 'text-white hover:bg-white/10'"
-                  @click="mobileMenuOpen = false"
-                >
-                  {{ $t('nav.profile') }}
-                </router-link>
-                <button
-                  class="mobile-nav-link w-full text-left text-red-600"
-                  :class="isLightTheme ? 'hover:bg-red-50' : 'hover:bg-red-500/10'"
-                  @click="logout"
-                >
-                  {{ $t('nav.logout') }}
-                </button>
-              </div>
-            </template>
+                Отмена
+              </button>
+              <button 
+                @click="handleLogout" 
+                class="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                Выйти
+              </button>
+            </div>
           </div>
         </div>
-      </transition>
-    </div>
+      </Transition>
+    </Teleport>
 
     <!-- Avatar Preview Modal -->
     <Teleport to="body">
@@ -568,6 +711,13 @@ export default {
     const hoveringAvatar = ref(false)
     const showAvatarPreview = ref(false)
     const avatarScale = ref(1)
+    const showLogoutConfirm = ref(false)
+    
+    // Swipe detection for drawer
+    const touchStartX = ref(0)
+    const touchStartY = ref(0)
+    const isSwiping = ref(false)
+    const drawerTouchStartX = ref(0)
     
     const currentLocale = computed(() => locale.value)
 
@@ -736,6 +886,71 @@ export default {
       avatarScale.value = 1
     }
     
+    // Drawer close function
+    const closeDrawer = () => {
+      mobileMenuOpen.value = false
+    }
+    
+    // Touch handlers for backdrop swipe
+    const handleTouchStart = (e) => {
+      touchStartX.value = e.touches[0].clientX
+      touchStartY.value = e.touches[0].clientY
+      isSwiping.value = false
+    }
+    
+    const handleTouchMove = (e) => {
+      const deltaX = e.touches[0].clientX - touchStartX.value
+      const deltaY = e.touches[0].clientY - touchStartY.value
+      
+      // Detect horizontal swipe
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+        isSwiping.value = true
+      }
+    }
+    
+    const handleTouchEnd = (e) => {
+      if (isSwiping.value) {
+        const deltaX = e.changedTouches[0].clientX - touchStartX.value
+        // Swipe left to close (threshold: 100px)
+        if (deltaX < -100) {
+          closeDrawer()
+        }
+      }
+      isSwiping.value = false
+    }
+    
+    // Touch handlers for drawer panel swipe
+    const handleDrawerTouchStart = (e) => {
+      drawerTouchStartX.value = e.touches[0].clientX
+    }
+    
+    const handleDrawerTouchMove = (e) => {
+      // Prevent default scrolling when swiping
+      const deltaX = e.touches[0].clientX - drawerTouchStartX.value
+      if (deltaX < 0 && Math.abs(deltaX) > 10) {
+        e.preventDefault()
+      }
+    }
+    
+    const handleDrawerTouchEnd = (e) => {
+      const deltaX = e.changedTouches[0].clientX - drawerTouchStartX.value
+      // Swipe left to close (threshold: 100px)
+      if (deltaX < -100) {
+        closeDrawer()
+      }
+    }
+    
+    // Logout confirmation
+    const confirmLogout = () => {
+      showLogoutConfirm.value = true
+      closeDrawer()
+    }
+    
+    const handleLogout = async () => {
+      showLogoutConfirm.value = false
+      await logout()
+    }
+    
     // Определяем, нужно ли использовать светлую тему (темный текст на белом фоне)
     const isLightTheme = computed(() => {
       return isScrolled.value || route.name !== 'Home'
@@ -844,6 +1059,7 @@ export default {
       hoveringAvatar,
       showAvatarPreview,
       avatarScale,
+      showLogoutConfirm,
       currentLocale,
       isAuthenticated,
       userName,
@@ -858,7 +1074,16 @@ export default {
       scrollToAbout,
       zoomIn,
       zoomOut,
-      resetZoom
+      resetZoom,
+      closeDrawer,
+      handleTouchStart,
+      handleTouchMove,
+      handleTouchEnd,
+      handleDrawerTouchStart,
+      handleDrawerTouchMove,
+      handleDrawerTouchEnd,
+      confirmLogout,
+      handleLogout
     }
   }
 }
@@ -883,6 +1108,61 @@ export default {
   transition: all 0.2s;
 }
 
+/* Drawer backdrop animation */
+.drawer-backdrop-enter-active,
+.drawer-backdrop-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.drawer-backdrop-enter-from,
+.drawer-backdrop-leave-to {
+  opacity: 0;
+}
+
+/* Drawer slide animation */
+.drawer-slide-enter-active,
+.drawer-slide-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-slide-enter-from {
+  transform: translateX(100%);
+}
+
+.drawer-slide-leave-to {
+  transform: translateX(100%);
+}
+
+/* Dialog animation */
+.dialog-enter-active,
+.dialog-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.dialog-enter-active .bg-white,
+.dialog-leave-active .bg-white {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.dialog-enter-from {
+  opacity: 0;
+}
+
+.dialog-enter-from .bg-white {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+.dialog-leave-to {
+  opacity: 0;
+}
+
+.dialog-leave-to .bg-white {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+/* Fade animation for avatar preview */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
