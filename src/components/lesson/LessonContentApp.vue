@@ -1,10 +1,10 @@
 <template>
-  <div class="lesson-content-app bg-background-light h-screen overflow-hidden flex flex-col">
+  <div ref="fullscreenContainer" class="lesson-content-app bg-background-light h-screen overflow-hidden flex flex-col">
     <div class="flex flex-1 h-full overflow-hidden">
       <!-- Left Sidebar -->
       <transition name="slide">
         <LessonSidebar
-          v-show="showSidebar"
+          v-show="showSidebar && !isFullscreen"
           :lessons="processedLessons"
           :current-lesson-index="currentLessonIndex"
           :current-topic-index="currentTopicIndex"
@@ -29,7 +29,7 @@
       />
 
       <!-- Main Content Area -->
-      <main ref="fullscreenContainer" class="flex-1 bg-slate-100/50 flex flex-col h-full relative min-h-0">
+      <main class="flex-1 bg-slate-100/50 flex flex-col h-full relative min-h-0">
         <!-- Header -->
         <LessonHeader
           :current-file-name="currentFileName"
@@ -79,17 +79,15 @@
       </main>
 
       <!-- Comments Sidebar -->
-      <transition name="slide-right">
-        <CommentsSidebar
-          v-show="isCommentsOpen"
-          :is-open="isCommentsOpen"
-          :station-id="stationId"
-          :lesson-index="currentLessonIndex"
-          :topic-index="currentTopicIndex"
-          :file-object-key="currentFile?.objectName || currentFile?.objectKey"
-          @close="isCommentsOpen = false"
-        />
-      </transition>
+      <CommentsSidebar
+        v-if="isCommentsOpen && !isFullscreen"
+        :is-open="isCommentsOpen && !isFullscreen"
+        :station-id="stationId"
+        :lesson-index="currentLessonIndex"
+        :topic-index="currentTopicIndex"
+        :file-object-key="currentFile?.objectName || currentFile?.objectKey"
+        @close="isCommentsOpen = false"
+      />
 
       <!-- Mobile Overlay for Comments -->
       <div
@@ -555,12 +553,19 @@ const toggleFullscreen = async () => {
 }
 
 const handleFullscreenChange = () => {
-  if (!document.fullscreenElement && 
-      !document.webkitFullscreenElement && 
-      !document.mozFullScreenElement && 
-      !document.msFullscreenElement) {
+  const isCurrentlyFullscreen = !!(
+    document.fullscreenElement || 
+    document.webkitFullscreenElement || 
+    document.mozFullScreenElement || 
+    document.msFullscreenElement
+  )
+  
+  if (!isCurrentlyFullscreen) {
     isFullscreen.value = false
     document.body.style.overflow = ''
+  } else {
+    isFullscreen.value = true
+    document.body.style.overflow = 'hidden'
   }
 }
 
