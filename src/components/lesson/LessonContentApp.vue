@@ -35,10 +35,12 @@
           :current-file-name="currentFileName"
           :current-zoom="currentZoom"
           :is-topic-completed="isTopicCompleted"
+          :is-comments-open="isCommentsOpen"
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
           @mark-complete="markAsCompleted"
           @toggle-sidebar="handleToggleSidebar"
+          @toggle-comments="handleToggleComments"
       />
 
         <!-- Content Area -->
@@ -73,6 +75,26 @@
           />
               </div>
       </main>
+
+      <!-- Comments Sidebar -->
+      <transition name="slide-right">
+        <CommentsSidebar
+          v-show="isCommentsOpen"
+          :is-open="isCommentsOpen"
+          :station-id="stationId"
+          :lesson-index="currentLessonIndex"
+          :topic-index="currentTopicIndex"
+          :file-object-key="currentFile?.objectName || currentFile?.objectKey"
+          @close="isCommentsOpen = false"
+        />
+      </transition>
+
+      <!-- Mobile Overlay for Comments -->
+      <div
+        v-if="isCommentsOpen && isMobile"
+        class="mobile-overlay"
+        @click="isCommentsOpen = false"
+      />
             </div>
 
     <!-- Mobile Menu Button -->
@@ -110,6 +132,7 @@ import {
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
 import LessonSidebar from '@/components/lesson/LessonSidebar.vue'
 import TestQuiz from '@/components/lesson/TestQuiz.vue'
+import CommentsSidebar from '@/components/lesson/CommentsSidebar.vue'
 import testsData from '@/data/testsData.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'
@@ -292,6 +315,7 @@ const isFullscreen = ref(false)
 const isMobile = ref(window.innerWidth < 768)
 const isTablet = ref(window.innerWidth >= 768 && window.innerWidth < 1024)
 const showSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном
+const isCommentsOpen = ref(window.innerWidth >= 1024) // По умолчанию открыт на десктопе
 
 
 // Handle window resize
@@ -307,9 +331,10 @@ const handleResize = () => {
   if ((wasMobile || wasTablet) && !isMobile.value && !isTablet.value) {
     showSidebar.value = true
   }
-  // При переходе с десктопа на мобильный/планшет скрываем сайдбар
+  // При переходе с десктопа на мобильный/планшет скрываем сайдбары
   if (!wasMobile && !wasTablet && (isMobile.value || isTablet.value)) {
     showSidebar.value = false
+    isCommentsOpen.value = false
   }
 }
 
@@ -604,6 +629,10 @@ const handleToggleSidebar = () => {
   showSidebar.value = !showSidebar.value
 }
 
+const handleToggleComments = () => {
+  isCommentsOpen.value = !isCommentsOpen.value
+}
+
 const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
   currentLessonIndex.value = lessonIndex
   currentTopicIndex.value = topicIndex
@@ -782,6 +811,19 @@ onUnmounted(() => {
 
 .slide-leave-to {
   transform: translateX(-100%);
+}
+
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-right-enter-from {
+  transform: translateX(100%);
+}
+
+.slide-right-leave-to {
+  transform: translateX(100%);
 }
 
 /* Test Container */

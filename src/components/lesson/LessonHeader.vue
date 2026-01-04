@@ -45,6 +45,21 @@
         <span class="material-symbols-outlined text-[18px]">check</span>
         <span>Завершено</span>
       </div>
+      <button
+        :class="[
+          'p-2 rounded-lg transition-colors',
+          isCommentsOpen ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-100'
+        ]"
+        @click="$emit('toggle-comments')"
+        title="Комментарии"
+      >
+        <span
+          class="material-symbols-outlined text-[20px]"
+          :style="isCommentsOpen ? { fontVariationSettings: '\'FILL\' 1' } : {}"
+        >
+          chat_bubble
+        </span>
+      </button>
     </div>
   </header>
 </template>
@@ -62,10 +77,14 @@ const props = defineProps({
   isTopicCompleted: {
     type: Boolean,
     default: false
+  },
+  isCommentsOpen: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['zoom-in', 'zoom-out', 'mark-complete', 'toggle-sidebar'])
+const emit = defineEmits(['zoom-in', 'zoom-out', 'mark-complete', 'toggle-sidebar', 'toggle-comments'])
 
 const handleToggleSidebar = () => {
   emit('toggle-sidebar')

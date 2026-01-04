@@ -2,8 +2,7 @@
   <div 
     ref="fullscreenContainer"
     :class="[
-      'flex-1 flex justify-center bg-[#525659] relative custom-scrollbar',
-      currentFileType === 'pdf' ? 'overflow-hidden h-full' : 'overflow-auto p-8'
+      'flex-1 overflow-auto bg-[#525659] p-4 sm:p-8 flex justify-center items-start relative custom-scrollbar'
     ]"
     style="min-height: 0;"
   >
@@ -28,7 +27,7 @@
     <!-- Document Viewer (for unsupported files) -->
       <div 
       v-else-if="currentFile"
-      class="w-full max-w-[800px] bg-white h-auto shadow-2xl relative transition-transform origin-top"
+      class="w-full max-w-[800px] bg-white h-auto min-h-[1130px] shadow-2xl relative mb-12 flex flex-col group transition-transform origin-top"
       :style="{ transform: `scale(${currentZoom / 100})` }"
     >
       <div class="w-full min-h-[1130px] p-12 flex flex-col gap-8 opacity-80">
@@ -188,10 +187,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Custom scrollbar */
+/* Custom scrollbar - matching advanced-course-viewer */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.1);
+  scrollbar-color: #cbd5e1 transparent;
   /* Ensure scrolling works in flex containers */
   min-height: 0;
   /* Smooth scrolling */
@@ -200,21 +199,19 @@ onUnmounted(() => {
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 12px;
+  width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  border: 2px solid rgba(0, 0, 0, 0.1);
+  background-color: #cbd5e1;
+  border-radius: 20px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background-color: #94a3b8;
 }
 </style>

@@ -8,6 +8,7 @@ urlpatterns = [
     path("<uuid:courseId>/programs", views.CourseProgramsView.as_view()),
     path("<uuid:courseId>/enroll", views.EnrollCourseView.as_view()),
     path("<uuid:courseId>", views.CourseDetailView.as_view()),
+    path("comments", views.CourseCommentsView.as_view()),
 ]
 
 

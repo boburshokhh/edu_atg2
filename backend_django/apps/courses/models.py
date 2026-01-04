@@ -183,6 +183,25 @@ class Certificate(models.Model):
         managed = False
 
 
+class CourseComment(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(
+        "accounts.User", db_column="user_id", on_delete=models.CASCADE
+    )
+    station_id = models.IntegerField(null=True, blank=True)
+    lesson_index = models.IntegerField(null=True, blank=True)
+    topic_index = models.IntegerField(null=True, blank=True)
+    file_object_key = models.TextField(null=True, blank=True)
+    comment_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "course_comments"
+        managed = False
+        ordering = ["-created_at"]
+
+
 
 
 
