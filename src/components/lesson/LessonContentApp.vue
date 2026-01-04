@@ -29,7 +29,7 @@
       />
 
       <!-- Main Content Area -->
-      <main class="flex-1 bg-slate-100/50 flex flex-col h-full relative">
+      <main class="flex-1 bg-slate-100/50 flex flex-col h-full relative min-h-0">
         <!-- Header -->
         <LessonHeader
           :current-file-name="currentFileName"
@@ -44,11 +44,11 @@
       />
 
         <!-- Content Area -->
-        <div class="flex-1">
+        <div class="flex-1 min-h-0 flex flex-col">
           <!-- Test Mode -->
           <div
             v-if="isTestMode"
-            class="test-container h-full overflow-auto p-8"
+            class="test-container flex-1 min-h-0 overflow-auto p-8"
           >
             <TestQuiz 
               v-if="currentLessonTest"
