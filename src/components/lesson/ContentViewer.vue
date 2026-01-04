@@ -26,13 +26,13 @@
         v-else
         class="flex flex-col items-center justify-center min-h-[400px] p-8"
       >
-        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4">
+        <span class="material-symbols-outlined text-6xl text-slate-600 dark:text-slate-400 mb-4">
           description
         </span>
-        <h3 class="text-lg font-semibold text-slate-300 mb-2">
+        <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
           Неподдерживаемый формат файла
         </h3>
-        <p class="text-sm text-slate-400 mb-4">
+        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
           {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
         </p>
         <el-button 
