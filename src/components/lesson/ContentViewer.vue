@@ -3,8 +3,9 @@
     ref="fullscreenContainer"
     :class="[
       'flex-1 flex justify-center bg-[#525659] relative custom-scrollbar',
-      currentFileType === 'pdf' ? 'overflow-auto h-full' : 'overflow-auto p-8'
+      currentFileType === 'pdf' ? 'overflow-y-auto overflow-x-hidden h-full' : 'overflow-auto p-8'
     ]"
+    style="min-height: 0;"
   >
       <!-- Video Player -->
       <OptimizedVideoPlayer
@@ -188,26 +189,32 @@ onUnmounted(() => {
 
 <style scoped>
 /* Custom scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.1);
+  /* Ensure scrolling works in flex containers */
+  min-height: 0;
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 12px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
-}
-
-/* Firefox scrollbar */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.1);
 }
 </style>
