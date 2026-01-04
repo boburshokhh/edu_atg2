@@ -27,7 +27,7 @@
     <!-- Document Viewer (for unsupported files) -->
       <div 
       v-else-if="currentFile"
-      class="w-full max-w-[800px] bg-white h-auto min-h-[1130px] shadow-2xl relative mb-12 flex flex-col group"
+      class="w-full max-w-[800px] bg-white h-auto min-h-[60vh] md:min-h-[1130px] shadow-2xl relative mb-12 flex flex-col group"
       :style="{ transform: `scale(${currentZoom / 100})` }"
     >
       <div class="w-full h-full p-8 sm:p-16 flex flex-col gap-10 opacity-80" aria-label="Simulated Document Page">

@@ -1,15 +1,15 @@
 <template>
   <aside
     :class="[
-      'w-[340px] flex flex-col border-r border-slate-200 bg-white h-full flex-shrink-0 z-20 shadow-sm',
-      isMobile ? 'sidebar-mobile' : 'sidebar-desktop'
+      'flex flex-col border-r border-slate-200 bg-white h-full flex-shrink-0 z-20 shadow-sm transition-all duration-300',
+      isMobile ? 'sidebar-mobile w-full' : 'sidebar-desktop w-full md:w-[300px] lg:w-[340px]'
     ]"
   >
     <!-- Course Header with Progress -->
     <div
       class="px-6 py-6 border-b border-slate-100 flex-shrink-0 bg-white"
     >
-      <h1 class="text-[#111418] text-xl font-bold leading-tight tracking-tight mb-4">
+      <h1 class="text-[#111418] text-lg md:text-xl font-bold leading-tight tracking-tight mb-4">
         {{ courseTitle || 'Курс обучения' }}
       </h1>
       <div class="flex flex-col gap-2">

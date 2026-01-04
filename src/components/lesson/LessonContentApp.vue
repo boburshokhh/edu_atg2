@@ -828,10 +828,16 @@ onUnmounted(() => {
 
 /* Test Container */
 .test-container {
-  padding: 2rem;
+  padding: 1rem;
   width: 100%;
   max-width: 100%;
   overflow: auto;
+}
+
+@media (min-width: 768px) {
+  .test-container {
+    padding: 2rem;
+  }
 }
 
 /* Mobile Overlay */

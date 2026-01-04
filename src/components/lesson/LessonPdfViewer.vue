@@ -1,19 +1,19 @@
 <template>
   <div class="w-full max-w-[800px] relative mb-12 flex flex-col group">
     <!-- Control Panel -->
-    <div class="sticky top-4 z-10 flex items-center justify-center mb-4">
-      <div class="flex items-center gap-2 bg-white/90 backdrop-blur rounded-lg shadow-lg px-4 py-2">
+    <div class="sticky top-4 z-10 flex items-center justify-center mb-4 px-4">
+      <div class="flex items-center gap-2 bg-white/90 backdrop-blur rounded-lg shadow-lg px-3 py-1.5 md:px-4 md:py-2">
         <!-- Zoom Out -->
         <button
           class="p-1 hover:bg-slate-100 rounded text-slate-600 transition-colors"
           @click="$emit('zoom-out')"
           :disabled="zoom <= 50"
         >
-          <ZoomOut :size="20" />
+          <ZoomOut :size="18" class="md:w-5 md:h-5" />
         </button>
         
         <!-- Zoom Display -->
-        <span class="text-sm font-medium w-12 text-center text-slate-700">{{ zoom }}%</span>
+        <span class="text-xs md:text-sm font-medium w-10 md:w-12 text-center text-slate-700">{{ zoom }}%</span>
         
         <!-- Zoom In -->
         <button
@@ -21,12 +21,12 @@
           @click="$emit('zoom-in')"
           :disabled="zoom >= 200"
         >
-          <ZoomIn :size="20" />
+          <ZoomIn :size="18" class="md:w-5 md:h-5" />
         </button>
         
         <!-- Page Indicator -->
-        <div class="h-6 w-px bg-slate-300 mx-1"></div>
-        <span class="text-sm font-medium text-slate-700">
+        <div class="h-4 md:h-6 w-px bg-slate-300 mx-1"></div>
+        <span class="text-xs md:text-sm font-medium text-slate-700 whitespace-nowrap">
           {{ currentPage }} / {{ totalPages }}
         </span>
       </div>

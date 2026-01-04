@@ -1,7 +1,7 @@
 <template>
   <div 
     :class="[
-      'w-full max-w-[800px] bg-white rounded-lg shadow-2xl overflow-hidden',
+      'w-full max-w-full lg:max-w-[800px] bg-white rounded-lg shadow-2xl overflow-hidden',
       isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''
     ]"
     :style="isFullscreen ? {} : { 

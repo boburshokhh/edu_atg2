@@ -3,59 +3,59 @@
     <!-- Test Header -->
     <div
       v-if="!testStarted && !testCompleted"
-      class="test-intro"
+      class="test-intro p-4 md:p-8"
     >
       <el-card
         shadow="hover"
-        class="intro-card"
+        class="intro-card !p-4 md:!p-8"
       >
         <div class="text-center">
-          <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div class="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
             <el-icon
-              :size="40"
-              class="text-white"
+              :size="32"
+              class="text-white md:text-[40px]"
             >
               <Document />
             </el-icon>
           </div>
           
-          <h2 class="text-2xl font-bold text-gray-900 mb-3">
+          <h2 class="text-xl md:text-2xl font-bold text-gray-900 mb-2 md:mb-3">
             {{ testData.title }}
           </h2>
           <p class="text-gray-600 mb-6">
             {{ testData.description }}
           </p>
           
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="stat-card">
-              <div class="text-2xl font-bold text-blue-600">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <div class="stat-card p-3 md:p-4">
+              <div class="text-xl md:text-2xl font-bold text-blue-600">
                 {{ testData.questions?.length || 0 }}
               </div>
-              <div class="text-xs text-gray-600">
+              <div class="text-[10px] md:text-xs text-gray-600">
                 Вопросов
               </div>
             </div>
-            <div class="stat-card">
-              <div class="text-2xl font-bold text-green-600">
+            <div class="stat-card p-3 md:p-4">
+              <div class="text-xl md:text-2xl font-bold text-green-600">
                 {{ testData.passingScore || 70 }}%
               </div>
-              <div class="text-xs text-gray-600">
+              <div class="text-[10px] md:text-xs text-gray-600">
                 Проходной балл
               </div>
             </div>
-            <div class="stat-card">
-              <div class="text-2xl font-bold text-purple-600">
+            <div class="stat-card p-3 md:p-4">
+              <div class="text-xl md:text-2xl font-bold text-purple-600">
                 {{ testData.timeLimit || 30 }}
               </div>
-              <div class="text-xs text-gray-600">
+              <div class="text-[10px] md:text-xs text-gray-600">
                 Минут
               </div>
             </div>
-            <div class="stat-card">
-              <div class="text-2xl font-bold text-orange-600">
+            <div class="stat-card p-3 md:p-4">
+              <div class="text-xl md:text-2xl font-bold text-orange-600">
                 {{ testData.attempts || '∞' }}
               </div>
-              <div class="text-xs text-gray-600">
+              <div class="text-[10px] md:text-xs text-gray-600">
                 Попыток
               </div>
             </div>
