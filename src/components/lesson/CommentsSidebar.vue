@@ -1,28 +1,12 @@
 <template>
-  <aside
-    :class="[
-      'fixed lg:relative inset-y-0 right-0 z-40',
-      'w-[320px] flex flex-col',
-      'border-l border-slate-200',
-      'bg-white',
-      'transition-transform duration-300 ease-in-out',
-      isOpen ? 'translate-x-0' : 'translate-x-full lg:hidden',
-      'h-full flex-shrink-0 shadow-sm'
-    ]"
+  <SidebarShell
+    :is-open="isOpen"
+    @close="handleClose"
   >
-    <!-- Header -->
-    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-      <h3 class="text-[#111418] text-base font-bold">Комментарии</h3>
-      <button
-        @click="handleClose"
-        class="text-slate-400 hover:text-slate-600 transition-colors lg:hidden"
-      >
-        <span class="material-symbols-outlined text-[20px]">close</span>
-      </button>
-    </div>
+    <template #header>Комментарии</template>
 
     <!-- Comments List -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-6">
+    <div class="p-5 flex flex-col gap-6">
       <div v-if="isLoading" class="flex items-center justify-center py-8">
         <el-icon class="is-loading text-2xl text-slate-400">
           <Loading />
@@ -78,8 +62,9 @@
       </div>
     </div>
 
-    <!-- Comment Form -->
-    <div class="p-4 border-t border-slate-100 bg-slate-50">
+    <template #footer>
+      <!-- Comment Form -->
+      <div class="p-4 bg-slate-50">
       <form @submit.prevent="handleSubmit" class="flex flex-col gap-3">
         <el-input
           v-model="newCommentText"
@@ -120,14 +105,16 @@
           </el-button>
         </div>
       </form>
-    </div>
-  </aside>
+      </div>
+    </template>
+  </SidebarShell>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading, Promotion } from '@element-plus/icons-vue'
+import SidebarShell from '@/components/ui/SidebarShell.vue'
 import commentsService from '@/services/commentsService'
 import authService from '@/services/auth'
 
@@ -290,26 +277,6 @@ onMounted(() => {
 
 
 <style scoped>
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 20px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
-}
+/* Styles handled by SidebarShell */
 </style>
 

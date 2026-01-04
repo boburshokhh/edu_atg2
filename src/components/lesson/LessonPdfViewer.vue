@@ -1,15 +1,13 @@
 <template>
-  <div class="relative mb-12 flex flex-col items-center group w-full">
+  <div class="relative mb-8 md:mb-12 flex flex-col items-center group w-full">
     <!-- PDF Container -->
     <div
-      v-if="pdfData && !isRendering"
-      class="bg-white shadow-2xl transition-all duration-200 ease-out origin-top"
-      :style="{ width: zoom + '%' }"
+      v-if="pdfData"
+      class="w-full max-w-5xl bg-white shadow-2xl"
     >
       <VuePdfEmbed
-        :key="pdfKey"
         :source="pdfData"
-        :scale="zoom / 100"
+        :scale="1"
         text-layer
         annotation-layer
         class="w-full h-auto"
@@ -19,23 +17,10 @@
       />
     </div>
 
-    <!-- Rendering State (during zoom change) -->
-    <div
-      v-if="isRendering && pdfData"
-      class="w-full bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
-    >
-      <div class="text-center">
-        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block animate-pulse">
-          description
-        </span>
-        <p class="text-slate-500">Обновление масштаба...</p>
-      </div>
-    </div>
-
     <!-- Loading State -->
     <div
       v-else-if="isLoading"
-      class="w-full bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
+      class="w-full max-w-5xl bg-white rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]"
     >
       <div class="text-center">
         <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block animate-pulse">
@@ -48,7 +33,7 @@
     <!-- Error State -->
     <div
       v-else-if="error"
-      class="w-full bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
+      class="w-full max-w-5xl bg-white rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]"
     >
       <div class="text-center">
         <span class="material-symbols-outlined text-6xl text-red-400 mb-4 block">
@@ -62,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, watch } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 // Import required styles for PDF viewer
 import 'vue-pdf-embed/dist/styles/annotationLayer.css'
@@ -72,10 +57,6 @@ const props = defineProps({
   source: {
     type: Object,
     default: null
-  },
-  zoom: {
-    type: Number,
-    default: 100
   }
 })
 
@@ -86,14 +67,6 @@ const totalPages = ref(0)
 const pdfData = ref(null)
 const isLoading = ref(false)
 const error = ref(null)
-const isRendering = ref(false)
-const zoomUpdateTimeout = ref(null)
-
-// Computed key for VuePdfEmbed to force re-render on zoom change
-const pdfKey = computed(() => {
-  const sourceKey = props.source?.objectName || props.source?.object_key || props.source?.objectKey || ''
-  return `pdf-${sourceKey}-${props.zoom}`
-})
 
 // API base URL
 const API_BASE_URL = '/api'
@@ -165,69 +138,17 @@ const handlePdfLoaded = (pdfDoc) => {
 
 const handlePdfRendered = () => {
   // Document rendered successfully
-  isRendering.value = false
 }
 
 const handlePdfError = (err) => {
   console.error('[LessonPdfViewer] PDF rendering error:', err)
   error.value = err?.message || 'Ошибка отображения PDF'
-  isRendering.value = false
-  
-  // Try to recover - reset to previous state
-  if (pdfData.value) {
-    // PDF data exists, just rendering failed - try to continue
-    setTimeout(() => {
-      isRendering.value = false
-    }, 500)
-  }
 }
-
-// Watch for zoom changes
-watch(() => props.zoom, async (newZoom, oldZoom) => {
-  // Only trigger if PDF is already loaded and zoom actually changed
-  if (!pdfData.value || newZoom === oldZoom) {
-    return
-  }
-
-  // Clear any pending timeout
-  if (zoomUpdateTimeout.value) {
-    clearTimeout(zoomUpdateTimeout.value)
-  }
-
-  // Set rendering state
-  isRendering.value = true
-
-  // Use debounce to avoid too frequent updates
-  zoomUpdateTimeout.value = setTimeout(async () => {
-    try {
-      // Wait for next tick to ensure DOM is ready
-      await nextTick()
-      
-      // Small delay to allow smooth transition
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // The key change will force VuePdfEmbed to re-render
-      // isRendering will be set to false in handlePdfRendered
-    } catch (err) {
-      console.error('[LessonPdfViewer] Error updating zoom:', err)
-      isRendering.value = false
-      error.value = 'Ошибка при изменении масштаба'
-    }
-  }, 150)
-}, { immediate: false })
 
 // Watch for source changes
 watch(() => props.source, () => {
   currentPage.value = 1
   totalPages.value = 0
-  isRendering.value = false
-  
-  // Clear any pending zoom updates
-  if (zoomUpdateTimeout.value) {
-    clearTimeout(zoomUpdateTimeout.value)
-    zoomUpdateTimeout.value = null
-  }
-  
   loadPdf()
 }, { immediate: true })
 </script>

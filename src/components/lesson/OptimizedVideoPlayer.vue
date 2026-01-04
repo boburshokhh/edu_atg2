@@ -1,13 +1,9 @@
 <template>
   <div 
     :class="[
-      'w-full max-w-full lg:max-w-[800px] bg-white rounded-lg shadow-2xl overflow-hidden',
+      'w-full max-w-5xl bg-white rounded-lg shadow-2xl overflow-hidden',
       isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''
     ]"
-    :style="isFullscreen ? {} : { 
-      transform: `scale(${zoom / 100})`,
-      transformOrigin: 'center center'
-    }"
   >
     <div :class="isFullscreen ? 'w-full h-full bg-black' : 'w-full'">
       <video
@@ -35,10 +31,6 @@ const props = defineProps({
   source: {
     type: Object,
     required: true
-  },
-  zoom: {
-    type: Number,
-    default: 100
   },
   isFullscreen: {
     type: Boolean,

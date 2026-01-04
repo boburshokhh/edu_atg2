@@ -33,12 +33,9 @@
         <!-- Header -->
         <LessonHeader
           :current-file-name="currentFileName"
-          :current-zoom="currentZoom"
           :is-topic-completed="isTopicCompleted"
           :is-comments-open="isCommentsOpen"
           :is-fullscreen="isFullscreen"
-          @zoom-in="zoomIn"
-          @zoom-out="zoomOut"
           @mark-complete="markAsCompleted"
           @toggle-sidebar="handleToggleSidebar"
           @toggle-comments="handleToggleComments"
@@ -70,9 +67,6 @@
             v-else
             :current-file="currentFile"
             :current-file-type="currentFileType"
-            :current-zoom="currentZoom"
-            @zoom-in="zoomIn"
-            @zoom-out="zoomOut"
             @download-file="downloadFile"
           />
               </div>
@@ -114,20 +108,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
-  ZoomIn, 
-  ZoomOut, 
-  Check,
-  ArrowLeft,
-  ArrowRight,
   Menu,
-  Close,
-  VideoPlay,
-  Document,
-  Folder
+  Close
 } from '@element-plus/icons-vue'
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
 import LessonSidebar from '@/components/lesson/LessonSidebar.vue'
@@ -137,6 +123,8 @@ import testsData from '@/data/testsData.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'
 import stationService from '@/services/stationService'
+import { useFullscreen } from '@/composables/useFullscreen'
+import { useBreakpoints } from '@/composables/useBreakpoints'
 
 const ContentViewer = defineAsyncComponent(() => import('@/components/lesson/ContentViewer.vue'))
 
@@ -208,9 +196,6 @@ const currentTopic = computed(() => currentLesson.value?.topics?.[currentTopicIn
 
 // ID for tracking completed topics
 const currentTopicId = computed(() => `${stationId.value}-${currentLessonIndex.value}-${currentTopicIndex.value}`)
-
-// Viewer state
-const currentZoom = ref(100)
 
 // Current file
 const currentFile = ref(null)
@@ -311,33 +296,24 @@ const courseProgress = computed(() => {
 })
 
 // UI State
-const isFullscreen = ref(false)
 const fullscreenContainer = ref(null)
-const isMobile = ref(window.innerWidth < 768)
-const isTablet = ref(window.innerWidth >= 768 && window.innerWidth < 1024)
-const showSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном
-const isCommentsOpen = ref(window.innerWidth >= 1024) // По умолчанию открыт на десктопе
+const { isFullscreen, toggleFullscreen } = useFullscreen(fullscreenContainer)
+const { isMobile, isTablet, isDesktop } = useBreakpoints()
+const showSidebar = ref(isDesktop.value) // По умолчанию виден на десктопе, скрыт на мобильном
+const isCommentsOpen = ref(isDesktop.value) // По умолчанию открыт на десктопе
 
-
-// Handle window resize
-const handleResize = () => {
-  const wasMobile = isMobile.value
-  const wasTablet = isTablet.value
-  const currentWidth = window.innerWidth
-  
-  isMobile.value = currentWidth < 768
-  isTablet.value = currentWidth >= 768 && currentWidth < 1024
-  
-  // При переходе с мобильного/планшета на десктоп показываем сайдбар
-  if ((wasMobile || wasTablet) && !isMobile.value && !isTablet.value) {
+// Handle breakpoint changes
+watch([isMobile, isTablet, isDesktop], ([mobile, tablet, desktop]) => {
+  // При переходе на десктоп показываем сайдбар
+  if (desktop) {
     showSidebar.value = true
   }
-  // При переходе с десктопа на мобильный/планшет скрываем сайдбары
-  if (!wasMobile && !wasTablet && (isMobile.value || isTablet.value)) {
+  // При переходе на мобильный/планшет скрываем сайдбары
+  if (mobile || tablet) {
     showSidebar.value = false
     isCommentsOpen.value = false
   }
-}
+})
 
 // Check if topic is completed
 const isTopicCompleted = computed(() => {
@@ -375,11 +351,6 @@ const loadTopicMaterials = async () => {
     
     if (dbFiles.length === 0) {
       // Нет файлов в БД - показываем пустое состояние
-      console.info('[LessonContentApp] No files found in DB for topic:', {
-        lessonIndex: currentLessonIndex.value,
-        topicIndex: currentTopicIndex.value,
-        topicCode: currentTopic.value?.code
-      })
       mainMaterials.value = []
       additionalMaterials.value = []
       currentFile.value = null
@@ -397,7 +368,6 @@ const loadTopicMaterials = async () => {
         const isMain = f.isMain ?? f.is_main ?? false
 
         if (!objectKey) {
-          console.warn('[LessonContentApp] Topic file missing objectKey:', f)
           return null
         }
 
@@ -459,13 +429,6 @@ const loadTopicMaterials = async () => {
     } else {
       currentFile.value = null
     }
-
-    console.log('[LessonContentApp] Materials loaded from DB:', {
-      total: allFiles.length,
-      main: mainFiles.length,
-      additional: additionals.length,
-      topicCode: currentTopic.value?.code
-    })
   } catch (error) {
     console.error('[LessonContentApp] Error loading topic materials:', error)
     ElMessage.error('Не удалось загрузить материалы урока')
@@ -494,88 +457,8 @@ const formatFileSize = (bytes) => {
   return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
 }
 
-const zoomIn = () => {
-  console.log('Zoom In clicked. Current zoom:', currentZoom.value)
-  if (currentZoom.value < 200) {
-    currentZoom.value += 10
-    console.log('New zoom:', currentZoom.value)
-  }
-}
-
-const zoomOut = () => {
-  console.log('Zoom Out clicked. Current zoom:', currentZoom.value)
-  if (currentZoom.value > 50) {
-    currentZoom.value -= 10
-    console.log('New zoom:', currentZoom.value)
-  }
-}
-
-const toggleFullscreen = async () => {
-  if (!fullscreenContainer.value) return
-  
-  try {
-    if (!isFullscreen.value) {
-      if (fullscreenContainer.value.requestFullscreen) {
-        await fullscreenContainer.value.requestFullscreen()
-      } else if (fullscreenContainer.value.webkitRequestFullscreen) {
-        await fullscreenContainer.value.webkitRequestFullscreen()
-      } else if (fullscreenContainer.value.mozRequestFullScreen) {
-        await fullscreenContainer.value.mozRequestFullScreen()
-      } else if (fullscreenContainer.value.msRequestFullscreen) {
-        await fullscreenContainer.value.msRequestFullscreen()
-      }
-      
-      isFullscreen.value = true
-      document.body.style.overflow = 'hidden'
-    } else {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen()
-      } else if (document.webkitExitFullscreen) {
-        await document.webkitExitFullscreen()
-      } else if (document.mozCancelFullScreen) {
-        await document.mozCancelFullScreen()
-      } else if (document.msExitFullscreen) {
-        await document.msExitFullscreen()
-      }
-      
-      isFullscreen.value = false
-      document.body.style.overflow = ''
-    }
-  } catch (error) {
-    console.error('Error toggling fullscreen:', error)
-    isFullscreen.value = !isFullscreen.value
-    if (isFullscreen.value) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-  }
-}
-
-const handleFullscreenChange = () => {
-  const isCurrentlyFullscreen = !!(
-    document.fullscreenElement || 
-    document.webkitFullscreenElement || 
-    document.mozFullScreenElement || 
-    document.msFullscreenElement
-  )
-  
-  if (!isCurrentlyFullscreen) {
-    isFullscreen.value = false
-    document.body.style.overflow = ''
-  } else {
-    isFullscreen.value = true
-    document.body.style.overflow = 'hidden'
-  }
-}
-
 const openMaterial = (material) => {
   currentFile.value = material
-  console.log('[LessonContentApp] Material selected:', {
-    objectName: material?.objectName || material?.object_key || material?.objectKey,
-    name: material?.original_name || material?.originalName || material?.fileName || material?.file_name,
-    type: material?.type || material?.mimeType || material?.mime_type,
-  })
 }
 
 const markAsCompleted = () => {
@@ -719,7 +602,7 @@ const handleTestCompleted = ({ score, isPassed }) => {
 }
 
 const handleTestStarted = () => {
-  console.log('Test started')
+  // Test started handler
 }
 
 const loadCompletedTopics = () => {
@@ -771,35 +654,6 @@ onMounted(async () => {
   loadCompletedTopics()
   loadPassedTests()
   loadTopicMaterials()
-  
-  window.addEventListener('resize', handleResize)
-  
-  document.addEventListener('fullscreenchange', handleFullscreenChange)
-  document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
-  document.addEventListener('mozfullscreenchange', handleFullscreenChange)
-  document.addEventListener('MSFullscreenChange', handleFullscreenChange)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  
-  document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
-  document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
-  document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
-  
-  if (isFullscreen.value) {
-    document.body.style.overflow = ''
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {})
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen().catch(() => {})
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen().catch(() => {})
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen().catch(() => {})
-    }
-  }
 })
 </script>
 
@@ -847,6 +701,12 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
+  .test-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
   .test-container {
     padding: 2rem;
   }

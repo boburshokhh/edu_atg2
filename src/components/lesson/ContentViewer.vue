@@ -1,36 +1,27 @@
 <template>
   <div 
-    ref="fullscreenContainer"
     :class="[
-      'flex-1 overflow-auto bg-[#525659] p-4 sm:p-8 flex justify-center items-start relative custom-scrollbar'
+      'flex-1 overflow-auto bg-[#525659] p-4 sm:p-6 md:p-8 flex justify-center items-start relative custom-scrollbar min-h-0'
     ]"
-    style="min-height: 0;"
   >
       <!-- Video Player -->
       <OptimizedVideoPlayer
         v-if="currentFile && currentFileType === 'video'"
         :source="currentFile"
-        :zoom="currentZoom"
-        :is-fullscreen="isFullscreen"
-        @fullscreen-change="handleFullscreenChange"
       />
 
       <!-- PDF Viewer -->
       <LessonPdfViewer
         v-else-if="currentFile && currentFileType === 'pdf'"
         :source="currentFile"
-        :zoom="currentZoom"
-        @zoom-in="$emit('zoom-in')"
-        @zoom-out="$emit('zoom-out')"
       />
 
     <!-- Document Viewer (for unsupported files) -->
       <div 
       v-else-if="currentFile"
-      class="w-full max-w-[800px] bg-white h-auto min-h-[60vh] md:min-h-[1130px] shadow-2xl relative mb-12 flex flex-col group"
-      :style="{ transform: `scale(${currentZoom / 100})` }"
+      class="w-full max-w-3xl bg-white h-auto min-h-[60vh] md:min-h-[80vh] shadow-2xl relative mb-8 md:mb-12 flex flex-col group"
     >
-      <div class="w-full h-full p-8 sm:p-16 flex flex-col gap-10 opacity-80" aria-label="Simulated Document Page">
+      <div class="w-full h-full p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col gap-6 md:gap-8 lg:gap-10 opacity-80" aria-label="Simulated Document Page">
         <!-- Title Skeleton -->
         <div class="w-3/4 h-10 bg-slate-200 rounded animate-pulse"></div>
 
@@ -90,7 +81,7 @@
     <!-- No Content Placeholder -->
     <div
       v-else
-      class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
+      class="w-full max-w-3xl bg-white rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]"
     >
       <div class="text-center">
         <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block">
@@ -104,7 +95,6 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { defineAsyncComponent } from 'vue'
 
 // Lazy load viewers
@@ -119,55 +109,10 @@ const props = defineProps({
   currentFileType: {
     type: String,
     default: 'unknown'
-  },
-  currentZoom: {
-    type: Number,
-    default: 100
   }
 })
 
-const emit = defineEmits(['zoom-in', 'zoom-out', 'toggle-fullscreen', 'download-file'])
-
-const fullscreenContainer = ref(null)
-const isFullscreen = ref(false)
-
-const handleFullscreenChange = (value) => {
-  isFullscreen.value = value
-}
-
-const handleDocumentFullscreenChange = () => {
-  if (!document.fullscreenElement && 
-      !document.webkitFullscreenElement && 
-      !document.mozFullScreenElement && 
-      !document.msFullscreenElement) {
-    isFullscreen.value = false
-    document.body.style.overflow = ''
-  }
-}
-
-const addFullscreenListeners = () => {
-  if (typeof document === 'undefined') return
-  document.addEventListener('fullscreenchange', handleDocumentFullscreenChange)
-  document.addEventListener('webkitfullscreenchange', handleDocumentFullscreenChange)
-  document.addEventListener('mozfullscreenchange', handleDocumentFullscreenChange)
-  document.addEventListener('MSFullscreenChange', handleDocumentFullscreenChange)
-}
-
-const removeFullscreenListeners = () => {
-  if (typeof document === 'undefined') return
-  document.removeEventListener('fullscreenchange', handleDocumentFullscreenChange)
-  document.removeEventListener('webkitfullscreenchange', handleDocumentFullscreenChange)
-  document.removeEventListener('mozfullscreenchange', handleDocumentFullscreenChange)
-  document.removeEventListener('MSFullscreenChange', handleDocumentFullscreenChange)
-}
-
-onMounted(() => {
-  addFullscreenListeners()
-})
-
-onUnmounted(() => {
-  removeFullscreenListeners()
-})
+const emit = defineEmits(['download-file'])
 </script>
 
 <style scoped>
