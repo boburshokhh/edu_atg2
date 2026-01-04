@@ -1,7 +1,7 @@
 <template>
   <div 
     ref="fullscreenContainer"
-    class="flex-1 overflow-auto p-8 flex justify-center bg-[#525659] relative"
+    class="flex-1 overflow-auto p-8 flex justify-center bg-[#525659] relative custom-scrollbar"
   >
     <!-- Video Player -->
     <OptimizedVideoPlayer
@@ -12,26 +12,83 @@
       @fullscreen-change="handleFullscreenChange"
     />
 
-    <!-- Unsupported File Type -->
+    <!-- Document Viewer (for unsupported files including PDF) -->
     <div 
       v-else-if="currentFile"
-      class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex flex-col items-center justify-center min-h-[400px]"
+      class="w-full max-w-[800px] bg-white h-auto shadow-2xl relative transition-transform origin-top"
+      :style="{ transform: `scale(${currentZoom / 100})` }"
     >
-      <span class="material-symbols-outlined text-6xl text-slate-400 mb-4">
-        description
-      </span>
-      <h3 class="text-lg font-semibold text-slate-700 mb-2">
-        Неподдерживаемый формат файла
-      </h3>
-      <p class="text-sm text-slate-500 mb-4">
-        {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
-      </p>
-      <el-button 
-        type="primary" 
-        @click="$emit('download-file', currentFile)"
-      >
-        Скачать файл
-      </el-button>
+      <div class="w-full min-h-[1130px] p-12 flex flex-col gap-8 opacity-80">
+        <!-- Header Skeleton -->
+        <div class="w-3/4 h-8 bg-slate-200 rounded animate-pulse"></div>
+        
+        <!-- Text Skeletons -->
+        <div class="space-y-3">
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-2/3 h-4 bg-slate-100 rounded"></div>
+        </div>
+
+        <!-- Diagram Placeholder -->
+        <div class="w-full h-64 bg-slate-50 rounded border border-dashed border-slate-200 flex items-center justify-center">
+          <div class="text-slate-300 flex flex-col items-center gap-2">
+            <span class="material-symbols-outlined text-4xl">image</span>
+            <span class="text-sm">
+              {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- More Text -->
+        <div class="space-y-3">
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-1/2 h-4 bg-slate-100 rounded"></div>
+        </div>
+
+        <!-- Additional content sections for long scroll -->
+        <div class="space-y-3 mt-8">
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-3/4 h-4 bg-slate-100 rounded"></div>
+        </div>
+
+        <div class="space-y-3 mt-8">
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+        </div>
+
+        <div class="w-full h-48 bg-slate-50 rounded border border-dashed border-slate-200 flex items-center justify-center mt-8">
+          <div class="text-slate-300 flex flex-col items-center gap-2">
+            <span class="material-symbols-outlined text-4xl">description</span>
+            <span class="text-sm">Content Section</span>
+          </div>
+        </div>
+
+        <div class="space-y-3 mt-8">
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-full h-4 bg-slate-100 rounded"></div>
+          <div class="w-2/3 h-4 bg-slate-100 rounded"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-auto pt-8 border-t border-slate-100 flex flex-col gap-2">
+          <div class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
+            Confidential Training Material
+          </div>
+          <div class="text-xs text-slate-400">
+            © 2024 Advanced UX Academy. All rights reserved.
+          </div>
+        </div>
+      </div>
+
+      <!-- Page Indicator -->
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg flex gap-4 text-sm font-medium opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-default pointer-events-none">
+        <span>Page 1 of 5</span>
+      </div>
     </div>
 
     <!-- No Content Placeholder -->
@@ -117,5 +174,27 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* No additional styles needed - using Tailwind */
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Firefox scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.1);
+}
 </style>
