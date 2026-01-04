@@ -6,20 +6,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'background-light': '#f6f7f8',
-        'background-dark': '#101922',
-        primary: {
-          DEFAULT: '#137fec',
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+        primary: '#137fec',
+        'primary-50': '#eff6ff',
+        'primary-100': '#dbeafe',
+        'primary-200': '#bfdbfe',
+        'primary-300': '#93c5fd',
+        'primary-400': '#60a5fa',
+        'primary-500': '#3b82f6',
+        'primary-600': '#2563eb',
+        'primary-700': '#1d4ed8',
+        'primary-800': '#1e40af',
+        'primary-900': '#1e3a8a',
+        background: {
+          light: '#f6f7f8',
+          dark: '#101922',
         },
         secondary: {
           50: '#f8fafc',

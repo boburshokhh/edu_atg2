@@ -1,6 +1,8 @@
 <template>
-  <div class="content-viewer-wrapper">
-    <!-- Content Area -->
+  <div 
+    ref="fullscreenContainer"
+    class="flex-1 overflow-auto p-8 flex justify-center bg-[#525659] relative"
+  >
     <template v-if="currentFile">
       <!-- PDF Viewer -->
       <SecurePDFViewer
@@ -10,6 +12,7 @@
         :is-fullscreen="isFullscreen"
         @zoom-in="$emit('zoom-in')"
         @zoom-out="$emit('zoom-out')"
+        @page-change="$emit('page-change', $event)"
       />
 
       <!-- Video Player -->
@@ -24,15 +27,15 @@
       <!-- Unsupported File Type -->
       <div 
         v-else
-        class="flex flex-col items-center justify-center min-h-[400px] p-8"
+        class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex flex-col items-center justify-center min-h-[400px]"
       >
-        <span class="material-symbols-outlined text-6xl text-slate-600 dark:text-slate-400 mb-4">
+        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4">
           description
         </span>
-        <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
+        <h3 class="text-lg font-semibold text-slate-700 mb-2">
           Неподдерживаемый формат файла
         </h3>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+        <p class="text-sm text-slate-500 mb-4">
           {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
         </p>
         <el-button 
@@ -58,12 +61,22 @@
     <!-- No Content Placeholder -->
     <div
       v-else
-      class="flex items-center justify-center min-h-[400px]"
+      class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
     >
-      <el-empty
-        description="Выберите материал для просмотра"
-        :image-size="80"
-      />
+      <div class="text-center">
+        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block">
+          description
+        </span>
+        <p class="text-slate-500">Выберите материал для просмотра</p>
+      </div>
+    </div>
+
+    <!-- Page Indicator (for PDF) -->
+    <div
+      v-if="currentFileType === 'pdf' && totalPages > 0"
+      class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg flex gap-4 text-sm font-medium opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-default"
+    >
+      <span>Страница {{ currentPage }} из {{ totalPages }}</span>
     </div>
   </div>
 </template>
@@ -88,11 +101,20 @@ const props = defineProps({
   currentZoom: {
     type: Number,
     default: 100
+  },
+  currentPage: {
+    type: Number,
+    default: 1
+  },
+  totalPages: {
+    type: Number,
+    default: 0
   }
 })
 
 const emit = defineEmits(['zoom-in', 'zoom-out', 'toggle-fullscreen', 'download-file'])
 
+const fullscreenContainer = ref(null)
 const isFullscreen = ref(false)
 
 const handleFullscreenChange = (value) => {
@@ -125,15 +147,6 @@ const removeFullscreenListeners = () => {
   document.removeEventListener('MSFullscreenChange', handleDocumentFullscreenChange)
 }
 
-watch(
-  () => [props.currentFileType, props.currentFile?.objectName || props.currentFile?.object_key || props.currentFile?.objectKey],
-  ([type, key]) => {
-    if (!props.currentFile) return
-    console.log('[ContentViewer] Render target:', { type, key })
-  },
-  { immediate: true }
-)
-
 onMounted(() => {
   addFullscreenListeners()
 })
@@ -144,9 +157,5 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.content-viewer-wrapper {
-  width: 100%;
-  height: 100%;
-  min-height: 400px;
-}
+/* No additional styles needed - using Tailwind */
 </style>

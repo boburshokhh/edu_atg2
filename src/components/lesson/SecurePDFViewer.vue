@@ -1,17 +1,16 @@
 <template>
   <div 
     ref="pdfContainer"
-    class="secure-pdf-viewer"
-    :class="{ 'fullscreen-mode': isFullscreen }"
+    class="w-full max-w-[800px] bg-white h-auto shadow-2xl relative"
   >
     <!-- Loading State -->
     <div 
       v-if="loading"
       class="pdf-loading"
     >
-      <el-icon class="is-loading rotating" :size="48">
-        <Refresh />
-      </el-icon>
+      <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 rotating">
+        refresh
+      </span>
       <p class="loading-text">Загрузка документа...</p>
     </div>
 
@@ -20,9 +19,9 @@
       v-else-if="error"
       class="pdf-error"
     >
-      <el-icon :size="64" class="error-icon">
-        <Document />
-      </el-icon>
+      <span class="material-symbols-outlined text-6xl text-red-400 mb-4">
+        description
+      </span>
       <h3 class="error-title">Ошибка загрузки документа</h3>
       <p class="error-message">{{ error }}</p>
       <el-button 
@@ -36,91 +35,20 @@
     <!-- PDF Canvas Container -->
     <div 
       v-else
-      class="pdf-viewer-content"
+      ref="pdfCanvasContainer"
+      class="pdf-canvas-container"
+      :style="{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }"
     >
-      <div 
-        ref="pdfCanvasContainer"
-        class="pdf-canvas-container"
-        :style="{ transform: `scale(${zoom / 100})`, transformOrigin: 'top left' }"
-      >
-        <canvas 
-          ref="pdfCanvas"
-          class="pdf-canvas"
-        />
-      </div>
-
-      <!-- Page Indicator (appears on hover) -->
-      <div
-        v-if="!loading && !error && totalPages > 0"
-        class="page-indicator"
-        @click.stop
-      >
-        <button
-          v-if="currentPage > 1"
-          class="page-nav-btn"
-          @click="previousPage"
-        >
-          <span class="material-symbols-outlined text-[16px]">chevron_left</span>
-        </button>
-        <span>Страница {{ currentPage }} из {{ totalPages }}</span>
-        <button
-          v-if="currentPage < totalPages"
-          class="page-nav-btn"
-          @click="nextPage"
-        >
-          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- PDF Controls (hidden in new design, controls are in header) -->
-    <div 
-      v-if="false && !loading && !error && totalPages > 0"
-      class="pdf-controls"
-    >
-      <div class="controls-left">
-        <el-button 
-          :icon="ArrowLeft" 
-          :disabled="currentPage <= 1"
-          size="small"
-          @click="previousPage"
-        >
-          Назад
-        </el-button>
-        <span class="page-info">
-          Страница {{ currentPage }} из {{ totalPages }}
-        </span>
-        <el-button 
-          :icon="ArrowRight" 
-          :disabled="currentPage >= totalPages"
-          size="small"
-          @click="nextPage"
-        >
-          Вперед
-        </el-button>
-      </div>
-      <div class="controls-right">
-        <el-button 
-          :icon="ZoomOut" 
-          :disabled="zoom <= 50"
-          size="small"
-          @click="zoomOut"
-        />
-        <el-tag class="zoom-tag">{{ zoom }}%</el-tag>
-        <el-button 
-          :icon="ZoomIn" 
-          :disabled="zoom >= 200"
-          size="small"
-          @click="zoomIn"
-        />
-      </div>
+      <canvas 
+        ref="pdfCanvas"
+        class="pdf-canvas"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick, toRaw } from 'vue'
-import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, Document, Refresh } from '@element-plus/icons-vue'
 import * as pdfjsLib from 'pdfjs-dist'
 
 // Настройка worker для PDF.js
@@ -155,7 +83,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['zoom-in', 'zoom-out', 'fullscreen-change'])
+const emit = defineEmits(['zoom-in', 'zoom-out', 'fullscreen-change', 'page-change'])
 
 // State
 const loading = ref(true)
@@ -463,6 +391,7 @@ const renderPage = async (pageNum) => {
     }
     
     currentPage.value = pageNum
+    emit('page-change', { page: pageNum, total: totalPages.value })
     
     console.log('[SecurePDFViewer] Page rendered successfully:', {
       page: pageNum,
@@ -507,35 +436,8 @@ const renderPage = async (pageNum) => {
   }
 }
 
-// Навигация по страницам
-const nextPage = async () => {
-  if (currentPage.value < totalPages.value) {
-    await renderPage(currentPage.value + 1)
-    scrollToTop()
-  }
-}
-
-const previousPage = async () => {
-  if (currentPage.value > 1) {
-    await renderPage(currentPage.value - 1)
-    scrollToTop()
-  }
-}
-
-const scrollToTop = () => {
-  if (pdfContainer.value) {
-    pdfContainer.value.scrollTop = 0
-  }
-}
-
-// Zoom
-const zoomIn = () => {
-  emit('zoom-in')
-}
-
-const zoomOut = () => {
-  emit('zoom-out')
-}
+// Навигация по страницам (убрана, контролы в header)
+// Zoom управляется через props.zoom из родителя
 
 // Перерисовка при изменении zoom
 watch(() => props.zoom, async (newZoom) => {
@@ -596,52 +498,18 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.secure-pdf-viewer {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 400px;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  background: white;
-}
-
-.secure-pdf-viewer.fullscreen-mode {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  min-height: 100vh;
-}
-
-.pdf-viewer-content {
-  position: relative;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
 .pdf-loading,
 .pdf-error {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
-  width: 100%;
-  gap: 1rem;
+  min-h-[400px] w-full gap-4 p-12;
 }
 
 .loading-text {
   color: #6b7280;
   font-size: 0.875rem;
-}
-
-.error-icon {
-  color: #ef4444;
 }
 
 .error-title {
@@ -662,15 +530,13 @@ onUnmounted(() => {
   justify-content: center;
   align-items: flex-start;
   width: 100%;
-  max-width: 800px;
+  padding: 3rem 0;
 }
 
 .pdf-canvas {
   display: block;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   background: white;
-  width: 100%;
-  max-width: 800px;
   /* Защита от выделения */
   user-select: none;
   -webkit-user-select: none;
@@ -681,88 +547,6 @@ onUnmounted(() => {
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
-}
-
-.page-indicator {
-  position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.95);
-  color: #1f2937;
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  opacity: 0;
-  transition: opacity 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  pointer-events: auto;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.dark .page-indicator {
-  background: rgba(30, 41, 59, 0.9);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.pdf-viewer-content:hover .page-indicator {
-  opacity: 1;
-}
-
-.page-nav-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: background-color 0.2s;
-  cursor: pointer;
-}
-
-.page-nav-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.pdf-controls {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid #e5e7eb;
-  padding: 0.75rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  z-index: 10;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.controls-left,
-.controls-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.page-info {
-  font-size: 0.875rem;
-  color: #6b7280;
-  padding: 0 0.5rem;
-}
-
-.zoom-tag {
-  min-width: 3rem;
-  text-align: center;
-  font-size: 0.875rem;
 }
 
 /* Защита от печати */
@@ -783,24 +567,6 @@ onUnmounted(() => {
   }
   to {
     transform: rotate(360deg);
-  }
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-  .pdf-controls {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .controls-left,
-  .controls-right {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .pdf-canvas-container {
-    padding: 0.5rem 0;
   }
 }
 </style>

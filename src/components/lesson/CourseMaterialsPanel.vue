@@ -1,15 +1,15 @@
 <template>
-  <div class="course-materials-sidebar bg-white dark:bg-[#1a2632] border-l border-gray-200 dark:border-slate-800 flex flex-col">
+  <div class="course-materials-sidebar bg-white border-l border-gray-200 flex flex-col">
     <!-- Compact Header -->
-    <div class="p-4 border-b border-gray-200 dark:border-slate-800 relative">
+    <div class="p-4 border-b border-gray-200 relative">
       <div class="flex items-center justify-between mb-1">
         <div class="flex-1 min-w-0">
-          <h2 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide mb-0.5">
+          <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-0.5">
             Материалы курса
           </h2>
           <div
             v-if="topicTitle"
-            class="text-xs font-medium text-gray-600 dark:text-slate-400 truncate"
+            class="text-xs font-medium text-gray-600 truncate"
           >
             {{ topicTitle }}
           </div>
@@ -32,15 +32,15 @@
         v-if="mainMaterials.length > 0"
         class="materials-section"
       >
-        <div class="px-4 py-2 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-800">
+        <div class="px-4 py-2 bg-gray-50 border-b border-gray-200">
           <div class="flex items-center gap-2">
             <el-icon
-              class="text-blue-600 dark:text-blue-400"
+              class="text-blue-600"
               :size="14"
             >
               <Document />
             </el-icon>
-            <span class="text-xs font-semibold text-gray-700 dark:text-slate-300">Основные материалы</span>
+            <span class="text-xs font-semibold text-gray-700">Основные материалы</span>
           </div>
         </div>
         
@@ -49,9 +49,9 @@
             v-for="(material, index) in mainMaterials"
             :key="`main-${index}`"
             :class="[
-              'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left border-l-3',
+              'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3',
               isActiveMaterial(material)
-                ? 'border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                ? 'border-blue-600 bg-blue-50'
                 : 'border-transparent'
             ]"
             @click="handleMaterialClick(material)"
@@ -90,13 +90,13 @@
                 :class="[
                   'text-xs font-medium mb-0.5 leading-tight',
                   isActiveMaterial(material)
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-900 dark:text-white'
+                    ? 'text-blue-600'
+                    : 'text-gray-900'
                 ]"
               >
                 {{ material.original_name || material.originalName }}
               </div>
-              <div class="text-xs text-gray-500 dark:text-slate-400">
+              <div class="text-xs text-gray-500">
                 {{ material.sizeFormatted || formatFileSize(material.file_size) }}
               </div>
             </div>
@@ -107,7 +107,7 @@
               class="flex-shrink-0"
             >
               <el-icon
-                class="text-blue-600 dark:text-blue-400"
+                class="text-blue-600"
                 :size="14"
               >
                 <CaretRight />
@@ -122,15 +122,15 @@
         v-if="additionalMaterials.length > 0"
         class="materials-section"
       >
-        <div class="px-4 py-2 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-800 border-t border-gray-200 dark:border-slate-800">
+        <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 border-t border-gray-200">
           <div class="flex items-center gap-2">
             <el-icon
-              class="text-purple-600 dark:text-purple-400"
+              class="text-purple-600"
               :size="14"
             >
               <Folder />
             </el-icon>
-            <span class="text-xs font-semibold text-gray-700 dark:text-slate-300">Дополнительные материалы</span>
+            <span class="text-xs font-semibold text-gray-700">Дополнительные материалы</span>
           </div>
         </div>
         
@@ -139,9 +139,9 @@
             v-for="(material, index) in additionalMaterials"
             :key="`additional-${index}`"
             :class="[
-              'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left border-l-3',
+              'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3',
               isActiveMaterial(material)
-                ? 'border-purple-600 dark:border-purple-400 bg-purple-50 dark:bg-purple-900/20'
+                ? 'border-purple-600 bg-purple-50'
                 : 'border-transparent'
             ]"
             @click="handleMaterialClick(material)"
@@ -161,10 +161,10 @@
               </div>
               <div 
                 v-else
-                class="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-slate-600 flex items-center justify-center"
+                class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center"
               >
                 <el-icon
-                  class="text-gray-400 dark:text-slate-500"
+                  class="text-gray-400"
                   :size="12"
                 >
                   <Document v-if="!isVideoFile(material)" />
@@ -179,13 +179,13 @@
                 :class="[
                   'text-xs font-medium mb-0.5 leading-tight',
                   isActiveMaterial(material)
-                    ? 'text-purple-600 dark:text-purple-400'
-                    : 'text-gray-900 dark:text-white'
+                    ? 'text-purple-600'
+                    : 'text-gray-900'
                 ]"
               >
                 {{ material.original_name || material.originalName }}
               </div>
-              <div class="text-xs text-gray-500 dark:text-slate-400">
+              <div class="text-xs text-gray-500">
                 {{ material.sizeFormatted || formatFileSize(material.file_size) }}
               </div>
             </div>
@@ -196,7 +196,7 @@
               class="flex-shrink-0"
             >
               <el-icon
-                class="text-purple-600 dark:text-purple-400"
+                class="text-purple-600"
                 :size="14"
               >
                 <CaretRight />
@@ -282,6 +282,8 @@ const handleToggleSidebar = () => {
 .course-materials-sidebar {
   display: flex;
   flex-direction: column;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
   width: 100%;
   max-width: 100%;
 }
@@ -346,25 +348,13 @@ const handleToggleSidebar = () => {
   background: #f1f1f1;
 }
 
-.dark .materials-list-container::-webkit-scrollbar-track {
-  background: #1e293b;
-}
-
 .materials-list-container::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: clamp(0.125rem, 0.375vw, 0.1875rem);
 }
 
-.dark .materials-list-container::-webkit-scrollbar-thumb {
-  background: #475569;
-}
-
 .materials-list-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
-}
-
-.dark .materials-list-container::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
 }
 
 /* Media Queries */

@@ -1,27 +1,27 @@
 <template>
-  <div class="lesson-content-app flex flex-1 h-full overflow-hidden bg-background-light dark:bg-background-dark">
-    <!-- Main Content Layout -->
+  <div class="lesson-content-app bg-background-light h-screen overflow-hidden flex flex-col">
     <div class="flex flex-1 h-full overflow-hidden">
-      <!-- Left Sidebar (Lessons) -->
-      <LessonSidebar
-        v-show="showSidebar"
-        :lessons="processedLessons"
-        :current-lesson-index="currentLessonIndex"
-        :current-topic-index="currentTopicIndex"
-        :completed-topics="completedTopics"
-        :passed-tests="passedTests"
-        :is-test-mode="isTestMode"
-        :course-title="courseTitle"
-        :course-progress="courseProgress"
-        :current-file="currentFile"
-        :station-id="stationId"
-        @select-lesson="handleSelectLesson"
-        @select-test="handleSelectTest"
-        @select-file="handleSelectFile"
-        @toggle-sidebar="handleToggleSidebar"
-      />
+      <!-- Left Sidebar -->
+      <transition name="slide">
+        <LessonSidebar
+          v-show="showSidebar"
+          :lessons="processedLessons"
+          :current-lesson-index="currentLessonIndex"
+          :current-topic-index="currentTopicIndex"
+          :current-file="currentFile"
+          :completed-topics="completedTopics"
+          :passed-tests="passedTests"
+          :is-test-mode="isTestMode"
+          :course-title="courseProgram?.title || station?.shortName || 'Курс обучения'"
+          :is-mobile="isMobile"
+          @select-lesson="handleSelectLesson"
+          @select-test="handleSelectTest"
+          @select-file="handleSelectFile"
+          @toggle-sidebar="handleToggleSidebar"
+        />
+      </transition>
 
-      <!-- Mobile Overlay for Left Sidebar -->
+      <!-- Mobile Overlay -->
       <div
         v-if="showSidebar && isMobile"
         class="mobile-overlay"
@@ -29,27 +29,24 @@
       />
 
       <!-- Main Content Area -->
-      <main class="flex-1 bg-white dark:bg-slate-900 flex flex-col h-full relative overflow-hidden">
-        <!-- Lesson Header -->
+      <main class="flex-1 bg-slate-100/50 flex flex-col h-full relative overflow-hidden">
+        <!-- Header -->
         <LessonHeader
-          :station-id="stationId"
-          :station="station"
-          :current-lesson="processedCurrentLesson"
-          :current-file="currentFile"
+          :current-file-name="currentFileName"
           :current-zoom="currentZoom"
           :is-topic-completed="isTopicCompleted"
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
           @mark-complete="markAsCompleted"
-          @toggle-menu="showSidebar = !showSidebar"
+          @toggle-sidebar="handleToggleSidebar"
         />
 
         <!-- Content Area -->
-        <div class="flex-1 overflow-auto p-8 flex justify-center bg-white dark:bg-slate-900 relative">
+        <div class="flex-1 overflow-hidden">
           <!-- Test Mode -->
           <div
             v-if="isTestMode"
-            class="test-container w-full max-w-4xl"
+            class="test-container h-full overflow-auto p-8"
           >
             <TestQuiz 
               v-if="currentLessonTest"
@@ -64,19 +61,36 @@
             />
           </div>
 
-          <!-- Content Viewer (PDF/Video/Other) -->
+          <!-- Content Viewer -->
           <ContentViewer
             v-else
             :current-file="currentFile"
             :current-file-type="currentFileType"
             :current-zoom="currentZoom"
+            :current-page="pdfCurrentPage"
+            :total-pages="pdfTotalPages"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
             @download-file="downloadFile"
+            @page-change="handlePageChange"
           />
         </div>
       </main>
     </div>
+
+    <!-- Mobile Menu Button -->
+    <el-button
+      v-if="isMobile || isTablet"
+      class="mobile-menu-btn mobile-menu-btn-left"
+      type="primary"
+      circle
+      @click="showSidebar = !showSidebar"
+    >
+      <el-icon class="mobile-menu-icon">
+        <Menu v-if="!showSidebar" />
+        <Close v-else />
+      </el-icon>
+    </el-button>
   </div>
 </template>
 
@@ -84,7 +98,18 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-// Icons removed - using Material Symbols now
+import { 
+  ZoomIn, 
+  ZoomOut, 
+  Check,
+  ArrowLeft,
+  ArrowRight,
+  Menu,
+  Close,
+  VideoPlay,
+  Document,
+  Folder
+} from '@element-plus/icons-vue'
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
 import LessonSidebar from '@/components/lesson/LessonSidebar.vue'
 import TestQuiz from '@/components/lesson/TestQuiz.vue'
@@ -108,6 +133,11 @@ const isTestMode = ref(false)
 const station = ref(null)
 const courseProgram = ref(null)
 const lessons = computed(() => courseProgram.value?.lessons || [])
+
+// Computed for course title
+const courseTitle = computed(() => {
+  return courseProgram.value?.title || station.value?.shortName || 'Курс обучения'
+})
 
 const loadStationAndProgram = async () => {
   try {
@@ -156,11 +186,6 @@ const processedCurrentLesson = computed(() => {
 
 const currentTopic = computed(() => currentLesson.value?.topics?.[currentTopicIndex.value])
 
-// Course title
-const courseTitle = computed(() => {
-  return station.value?.name || courseProgram.value?.title || 'Курс обучения'
-})
-
 // ID for tracking completed topics
 const currentTopicId = computed(() => `${stationId.value}-${currentLessonIndex.value}-${currentTopicIndex.value}`)
 
@@ -205,6 +230,11 @@ const currentFileType = computed(() => {
   }
   
   return 'unknown'
+})
+
+const currentFileName = computed(() => {
+  if (!currentFile.value) return ''
+  return currentFile.value.original_name || currentFile.value.originalName || currentFile.value.fileName || currentFile.value.file_name || 'Файл'
 })
 
 const downloadFile = async (file) => {
@@ -275,6 +305,10 @@ const isFullscreen = ref(false)
 const isMobile = ref(window.innerWidth < 768)
 const isTablet = ref(window.innerWidth >= 768 && window.innerWidth < 1024)
 const showSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном
+
+// PDF page tracking
+const pdfCurrentPage = ref(1)
+const pdfTotalPages = ref(0)
 
 // Handle window resize
 const handleResize = () => {
@@ -535,82 +569,6 @@ const openMaterial = (material) => {
   })
 }
 
-const isSelectingFile = ref(false) // Flag to prevent loadTopicMaterials from overriding selected file
-
-const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
-  // Set flag to prevent loadTopicMaterials from overriding
-  isSelectingFile.value = true
-  
-  // Set current lesson and topic first
-  currentLessonIndex.value = lessonIndex
-  currentTopicIndex.value = topicIndex
-  isTestMode.value = false
-  
-  // Process file similar to loadTopicMaterials
-  try {
-    const fileType = file.fileType || file.file_type
-    const objectKey = file.objectKey || file.object_key || file.objectName || file.object_name
-    const originalName = file.originalName || file.original_name || file.fileName || file.file_name || file.title || 'file'
-    const fileSize = file.fileSize ?? file.file_size ?? null
-    const mimeType = file.mimeType || file.mime_type || null
-
-    if (!objectKey) {
-      ElMessage.warning('Файл недоступен')
-      isSelectingFile.value = false
-      return
-    }
-
-    const nameForDetect = String(originalName || objectKey || '').toLowerCase()
-    
-    const contentType =
-      mimeType ||
-      (fileType === 'pdf' || nameForDetect.endsWith('.pdf')
-        ? 'application/pdf'
-        : fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
-          ? (nameForDetect.endsWith('.webm')
-            ? 'video/webm'
-            : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
-              ? 'video/ogg'
-              : nameForDetect.endsWith('.mov')
-                ? 'video/quicktime'
-                : 'video/mp4')
-          : 'application/octet-stream')
-
-    const isPdf = fileType === 'pdf' || contentType.includes('pdf') || nameForDetect.endsWith('.pdf')
-    
-    let fileUrl = null
-    if (!isPdf) {
-      fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
-    }
-
-    currentFile.value = {
-      id: file.id,
-      objectName: objectKey,
-      fileName: originalName,
-      original_name: originalName,
-      originalName: originalName,
-      file_size: fileSize,
-      url: fileUrl,
-      file_url: fileUrl,
-      type: contentType,
-      is_main_file: file.isMain ?? file.is_main ?? false
-    }
-
-    // Update route after setting file
-    updateRoute()
-    
-    // Reset flag after a short delay to allow watch to complete
-    await nextTick()
-    setTimeout(() => {
-      isSelectingFile.value = false
-    }, 200)
-  } catch (error) {
-    console.error('[LessonContentApp] Error loading file:', error)
-    ElMessage.error('Не удалось загрузить файл')
-    isSelectingFile.value = false
-  }
-}
-
 const markAsCompleted = () => {
   completedTopics.value.add(currentTopicId.value)
   localStorage.setItem('completedTopics', JSON.stringify([...completedTopics.value]))
@@ -674,6 +632,76 @@ const handleToggleSidebar = () => {
   showSidebar.value = !showSidebar.value
 }
 
+const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
+  currentLessonIndex.value = lessonIndex
+  currentTopicIndex.value = topicIndex
+  isTestMode.value = false
+  
+  // Обрабатываем файл аналогично loadTopicMaterials
+  try {
+    const fileType = file.fileType || file.file_type
+    const objectKey = file.objectKey || file.object_key || file.objectName || file.object_name
+    const originalName = file.originalName || file.original_name || file.fileName || file.file_name || file.title || 'file'
+    const fileSize = file.fileSize ?? file.file_size ?? null
+    const mimeType = file.mimeType || file.mime_type || null
+    const isMain = file.isMain ?? file.is_main ?? false
+
+    if (!objectKey) {
+      ElMessage.warning('Файл недоступен')
+      return
+    }
+
+    const nameForDetect = String(originalName || objectKey || '').toLowerCase()
+    
+    const contentType =
+      mimeType ||
+      (fileType === 'pdf' || nameForDetect.endsWith('.pdf')
+        ? 'application/pdf'
+        : fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
+          ? (nameForDetect.endsWith('.webm')
+            ? 'video/webm'
+            : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
+              ? 'video/ogg'
+              : nameForDetect.endsWith('.mov')
+                ? 'video/quicktime'
+                : 'video/mp4')
+          : 'application/octet-stream')
+
+    const isPdf = fileType === 'pdf' || contentType.includes('pdf') || nameForDetect.endsWith('.pdf')
+    
+    let fileUrl = null
+    if (!isPdf) {
+      // Для видео и других файлов: presigned URL с коротким TTL (1 час)
+      fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
+    }
+
+    currentFile.value = {
+      id: file.id,
+      objectName: objectKey,
+      fileName: originalName,
+      original_name: originalName,
+      originalName: originalName,
+      file_size: fileSize,
+      url: fileUrl,
+      file_url: fileUrl,
+      type: contentType,
+      is_main_file: !!isMain
+    }
+    
+    updateRoute()
+    if (isMobile.value) {
+      showSidebar.value = false
+    }
+  } catch (error) {
+    console.error('[LessonContentApp] Error processing selected file:', error)
+    ElMessage.error('Не удалось загрузить файл')
+  }
+}
+
+const handlePageChange = ({ page, total }) => {
+  pdfCurrentPage.value = page
+  pdfTotalPages.value = total
+}
 
 const handleTestCompleted = ({ score, isPassed }) => {
   const testToSave = isTestMode.value ? currentLessonTest.value : currentTopicTest.value
@@ -724,22 +752,13 @@ const savePassedTests = () => {
 }
 
 watch(() => [currentLessonIndex.value, currentTopicIndex.value], () => {
-  if (!isTestMode.value && !isSelectingFile.value) {
-    // Загружаем материалы для текущей темы
-    // Но не перезагружаем, если пользователь только что выбрал файл
+  if (!isTestMode.value) {
     loadTopicMaterials()
+    // Reset PDF page tracking
+    pdfCurrentPage.value = 1
+    pdfTotalPages.value = 0
   }
 }, { immediate: true })
-
-// Watch for file changes to update current file in sidebar
-watch(() => currentFile.value, (newFile) => {
-  if (newFile) {
-    console.log('[LessonContentApp] Current file updated:', {
-      objectName: newFile.objectName || newFile.object_key,
-      name: newFile.originalName || newFile.original_name
-    })
-  }
-})
 
 onMounted(async () => {
   const authResult = await authService.checkAuth()
@@ -794,17 +813,27 @@ onUnmounted(() => {
   height: 100vh;
 }
 
-/* Test Container */
-.test-container {
-  padding: clamp(0.75rem, 2vw, 1rem);
-  width: 100%;
-  max-width: 100%;
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+/* Transitions */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
 }
 
+.slide-enter-from {
+  transform: translateX(-100%);
+}
+
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+
+/* Test Container */
+.test-container {
+  padding: 2rem;
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+}
 
 /* Mobile Overlay */
 .mobile-overlay {
@@ -814,5 +843,37 @@ onUnmounted(() => {
   z-index: 30;
 }
 
+/* Mobile Menu Buttons */
+.mobile-menu-btn {
+  position: fixed;
+  bottom: clamp(1rem, 4vw, 1.5rem);
+  z-index: 40;
+  width: clamp(3rem, 8vw, 3.5rem);
+  height: clamp(3rem, 8vw, 3.5rem);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-menu-btn-left {
+  left: clamp(1rem, 4vw, 1.5rem);
+}
+
+.mobile-menu-btn-right {
+  right: clamp(1rem, 4vw, 1.5rem);
+}
+
+.mobile-menu-icon {
+  font-size: clamp(1rem, 3vw, 1.25rem);
+}
+
+
+
+/* Media Queries */
+/* Hide mobile menu on desktop */
+@media (min-width: 1025px) {
+  .mobile-menu-btn {
+    display: none !important;
+  }
+}
 </style>
 

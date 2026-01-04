@@ -1,15 +1,15 @@
 <template>
   <div 
     :class="[
-      'video-player-wrapper flex items-center justify-center w-full',
-      isFullscreen ? 'h-screen bg-black' : 'max-w-4xl mx-auto'
+      'w-full max-w-[800px] bg-white rounded-lg shadow-2xl overflow-hidden',
+      isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''
     ]"
     :style="isFullscreen ? {} : { 
       transform: `scale(${zoom / 100})`,
       transformOrigin: 'center center'
     }"
   >
-    <div :class="isFullscreen ? 'w-full h-full' : 'w-full max-w-full'">
+    <div :class="isFullscreen ? 'w-full h-full bg-black' : 'w-full'">
       <video
         ref="videoEl"
         :key="videoKey"

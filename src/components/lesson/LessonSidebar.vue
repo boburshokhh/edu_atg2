@@ -1,27 +1,28 @@
 <template>
   <aside
-    class="w-[340px] flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a2632] h-full flex-shrink-0 z-20 shadow-sm"
+    :class="[
+      'w-[340px] flex flex-col border-r border-slate-200 bg-white h-full flex-shrink-0 z-20 shadow-sm',
+      isMobile ? 'sidebar-mobile' : 'sidebar-desktop'
+    ]"
   >
     <!-- Course Header with Progress -->
     <div
-      class="px-6 py-6 border-b border-slate-100 dark:border-slate-700/50 flex-shrink-0 bg-white dark:bg-[#1a2632]"
+      class="px-6 py-6 border-b border-slate-100 flex-shrink-0 bg-white"
     >
-      <h1 class="text-[#111418] dark:text-white text-xl font-bold leading-tight tracking-tight mb-4">
-        {{ courseTitle }}
+      <h1 class="text-[#111418] text-xl font-bold leading-tight tracking-tight mb-4">
+        {{ courseTitle || 'Курс обучения' }}
       </h1>
       <div class="flex flex-col gap-2">
         <div class="flex justify-between items-end">
-          <p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
+          <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">
             Прогресс курса
           </p>
-          <p class="text-[#111418] dark:text-white text-sm font-bold">{{ courseProgress }}%</p>
+          <p class="text-[#111418] text-sm font-bold">{{ courseProgress }}%</p>
         </div>
-        <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
           <div class="h-full rounded-full bg-primary" :style="{ width: `${courseProgress}%` }"></div>
         </div>
-        <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">
-          {{ completedTopicsCount }}/{{ totalTopicsCount }} {{ totalTopicsCount === 1 ? 'урок завершен' : 'уроков завершено' }}
-        </p>
+        <p class="text-slate-500 text-xs mt-1">{{ completedCount }}/{{ totalCount }} Уроков завершено</p>
       </div>
     </div>
 
@@ -34,16 +35,16 @@
         :open="expandedLessons.includes(lessonIndex)"
       >
         <summary
-          class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors select-none"
+          class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-lg hover:bg-slate-50 transition-colors select-none"
           @click.prevent="toggleLesson(lessonIndex)"
         >
           <div class="flex items-center gap-3">
             <div
-              class="flex items-center justify-center w-6 h-6 rounded bg-slate-100 dark:bg-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300"
+              class="flex items-center justify-center w-6 h-6 rounded bg-slate-100 text-xs font-bold text-slate-600"
             >
               {{ lessonIndex + 1 }}
             </div>
-            <span class="text-sm font-bold text-slate-800 dark:text-white leading-none">
+            <span class="text-sm font-bold text-slate-800 leading-none">
               {{ lesson.title }}
             </span>
           </div>
@@ -55,48 +56,46 @@
           </span>
         </summary>
         <div
-          class="pl-3 border-l-2 border-slate-100 dark:border-slate-800 ml-3 pb-2 mt-1 flex flex-col gap-1"
+          class="pl-3 border-l-2 border-slate-100 ml-3 pb-2 mt-1 flex flex-col gap-1"
         >
-          <!-- Topics -->
           <details
             v-for="(topic, topicIndex) in lesson.topics"
             :key="topicIndex"
             class="group/topic"
-            :open="expandedTopics.includes(`${lessonIndex}-${topicIndex}`)"
+            :open="expandedTopics[`${lessonIndex}-${topicIndex}`] || isCurrentTopic(lessonIndex, topicIndex)"
           >
             <summary
-              class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-md hover:bg-slate-50 dark:hover:bg-white/5 transition-colors select-none"
+              class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-md hover:bg-slate-50 transition-colors select-none"
               @click.prevent="toggleTopic(lessonIndex, topicIndex)"
             >
-              <span
-                class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
-              >
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 {{ lessonIndex + 1 }}.{{ topicIndex + 1 }} {{ topic.title }}
               </span>
               <span
                 class="material-symbols-outlined text-slate-400 transition-transform text-[18px]"
-                :class="{ 'rotate-180': expandedTopics.includes(`${lessonIndex}-${topicIndex}`) }"
+                :class="{ 'rotate-180': expandedTopics[`${lessonIndex}-${topicIndex}`] || isCurrentTopic(lessonIndex, topicIndex) }"
               >
                 expand_more
               </span>
             </summary>
             <div class="flex flex-col gap-1 pl-2 mt-1">
               <!-- Files in topic -->
-              <div
-                v-for="(file, fileIndex) in getTopicFiles(lessonIndex, topicIndex)"
-                :key="fileIndex"
-                :class="[
-                  'flex items-start justify-between p-2 rounded-md cursor-pointer group/item transition-colors',
-                  isActiveFile(lessonIndex, topicIndex, file)
-                    ? 'bg-primary/10 border border-primary/20 shadow-sm'
-                    : 'hover:bg-slate-50 dark:hover:bg-white/5'
-                ]"
-                @click="selectFile(lessonIndex, topicIndex, file)"
-              >
+              <template v-if="(topic.files || []).length > 0">
+                <div
+                  v-for="(file, fileIndex) in (topic.files || [])"
+                  :key="`file-${file.id || fileIndex}`"
+                  :class="[
+                    'flex items-start justify-between p-2 rounded-md cursor-pointer transition-colors',
+                    isCurrentFile(lessonIndex, topicIndex, file)
+                      ? 'bg-primary/10 border border-primary/20 shadow-sm'
+                      : 'hover:bg-slate-50 group/item'
+                  ]"
+                  @click="selectFile(lessonIndex, topicIndex, file)"
+                >
                 <div
                   :class="[
                     'flex items-start gap-3',
-                    isActiveFile(lessonIndex, topicIndex, file)
+                    isCurrentFile(lessonIndex, topicIndex, file)
                       ? ''
                       : 'opacity-75 group-hover/item:opacity-100 transition-opacity'
                   ]"
@@ -104,9 +103,9 @@
                   <span
                     class="material-symbols-outlined text-[20px] mt-0.5"
                     :class="
-                      isActiveFile(lessonIndex, topicIndex, file)
+                      isCurrentFile(lessonIndex, topicIndex, file)
                         ? 'text-primary'
-                        : 'text-slate-400 group-hover/item:text-slate-600 dark:text-slate-500'
+                        : 'text-slate-400 group-hover/item:text-slate-600'
                     "
                   >
                     {{ getFileIcon(file) }}
@@ -115,41 +114,37 @@
                     <span
                       :class="[
                         'text-sm leading-snug',
-                        isActiveFile(lessonIndex, topicIndex, file)
+                        isCurrentFile(lessonIndex, topicIndex, file)
                           ? 'font-semibold text-primary'
-                          : 'font-medium text-slate-600 dark:text-slate-300 group-hover/item:text-slate-900 transition-colors'
+                          : 'font-medium text-slate-600 group-hover/item:text-slate-900 transition-colors'
                       ]"
                     >
-                      {{ file.originalName || file.original_name || file.fileName || 'Файл' }}
+                      {{ file.originalName || file.original_name || file.fileName || file.file_name || 'Файл' }}
                     </span>
                     <span
                       :class="[
-                        'text-[11px] mt-0.5 font-medium',
-                        isActiveFile(lessonIndex, topicIndex, file)
-                          ? 'text-primary/70'
+                        'text-[11px] mt-0.5',
+                        isCurrentFile(lessonIndex, topicIndex, file)
+                          ? 'text-primary/70 font-medium'
                           : 'text-slate-400'
                       ]"
                     >
-                      {{ getFileTypeLabel(file) }} • {{ topic.duration || '15 мин' }}
+                      {{ getFileLabel(file) }} • {{ formatDuration(file) }}
                     </span>
                   </div>
                 </div>
-                <div
-                  v-if="isActiveFile(lessonIndex, topicIndex, file)"
-                  class="w-1.5 h-1.5 rounded-full bg-primary mt-2 mr-1"
-                ></div>
+                <div v-if="isCurrentFile(lessonIndex, topicIndex, file)" class="w-1.5 h-1.5 rounded-full bg-primary mt-2 mr-1"></div>
                 <span
                   v-else-if="isFileCompleted(lessonIndex, topicIndex, file)"
                   class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
                 >
                   check
                 </span>
-              </div>
-
-              <!-- Empty state if no files -->
+                </div>
+              </template>
               <div
-                v-if="!getTopicFiles(lessonIndex, topicIndex) || getTopicFiles(lessonIndex, topicIndex).length === 0"
-                class="p-2 text-xs text-slate-400"
+                v-else
+                class="px-2 py-1 text-xs text-slate-400"
               >
                 Нет материалов
               </div>
@@ -159,38 +154,25 @@
           <!-- Lesson Test -->
           <div
             :class="[
-              'flex items-start justify-between p-2 rounded-md cursor-pointer group/item transition-colors border-t border-slate-200 dark:border-slate-800 mt-1',
+              'flex items-start justify-between p-2 rounded-md cursor-pointer transition-colors border-t border-slate-200 mt-1',
               isCurrentTest(lessonIndex)
-                ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
-                : 'hover:bg-slate-50 dark:hover:bg-white/5'
+                ? 'bg-purple-50 border-purple-200'
+                : 'hover:bg-slate-50'
             ]"
             @click="selectTest(lessonIndex)"
           >
-            <div
-              :class="[
-                'flex items-start gap-3',
-                isCurrentTest(lessonIndex)
-                  ? ''
-                  : 'opacity-75 group-hover/item:opacity-100 transition-opacity'
-              ]"
-            >
+            <div class="flex items-start gap-3">
               <span
                 class="material-symbols-outlined text-[20px] mt-0.5"
-                :class="
-                  isCurrentTest(lessonIndex)
-                    ? 'text-purple-600 dark:text-purple-400'
-                    : 'text-slate-400 group-hover/item:text-slate-600 dark:text-slate-500'
-                "
+                :class="isCurrentTest(lessonIndex) ? 'text-purple-600' : 'text-slate-400'"
               >
                 description
               </span>
               <div class="flex flex-col">
                 <span
                   :class="[
-                    'text-sm leading-snug',
-                    isCurrentTest(lessonIndex)
-                      ? 'font-semibold text-purple-600 dark:text-purple-400'
-                      : 'font-medium text-slate-600 dark:text-slate-300 group-hover/item:text-slate-900 transition-colors'
+                    'text-sm font-medium leading-snug',
+                    isCurrentTest(lessonIndex) ? 'text-purple-600' : 'text-slate-600'
                   ]"
                 >
                   Тест модуля {{ lessonIndex + 1 }}
@@ -209,16 +191,16 @@
       </details>
     </div>
 
-    <!-- User Profile Footer -->
-    <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#151f28]">
+    <!-- User Profile -->
+    <div class="p-4 border-t border-slate-100 bg-slate-50">
       <div class="flex items-center gap-3">
         <div
-          class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-xs"
+          class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs"
         >
           {{ userInitials }}
         </div>
         <div class="flex flex-col">
-          <p class="text-xs font-medium text-slate-900 dark:text-white">{{ userName }}</p>
+          <p class="text-xs font-medium text-slate-900">{{ userName }}</p>
           <p class="text-[10px] text-slate-500">{{ userRole }}</p>
         </div>
       </div>
@@ -243,6 +225,10 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  currentFile: {
+    type: Object,
+    default: null
+  },
   completedTopics: {
     type: Set,
     default: () => new Set()
@@ -257,29 +243,23 @@ const props = defineProps({
   },
   courseTitle: {
     type: String,
-    default: 'Курс обучения'
+    default: ''
   },
-  courseProgress: {
-    type: Number,
-    default: 0
-  },
-  currentFile: {
-    type: Object,
-    default: null
-  },
-  stationId: {
-    type: Number,
-    default: null
+  isMobile: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['select-lesson', 'select-test', 'toggle-sidebar', 'select-file'])
+const emit = defineEmits(['select-lesson', 'select-test', 'select-file', 'toggle-sidebar'])
 
 const expandedLessons = ref([props.currentLessonIndex])
-const expandedTopics = ref([])
+const expandedTopics = ref({})
 
 // User data
+const userDataVersion = ref(0)
 const userName = computed(() => {
+  userDataVersion.value
   const user = authService.getCurrentUser()
   if (user) {
     return user.full_name || user.username || 'Пользователь'
@@ -297,18 +277,19 @@ const userInitials = computed(() => {
 })
 
 const userRole = computed(() => {
+  userDataVersion.value
   const user = authService.getCurrentUser()
-  if (!user) return 'Студент'
+  const role = user ? user.role : 'user'
   const roles = {
     admin: 'Администратор',
     instructor: 'Инструктор',
     user: 'Студент'
   }
-  return roles[user.role] || 'Студент'
+  return roles[role] || 'Студент'
 })
 
-// Progress calculation
-const totalTopicsCount = computed(() => {
+// Course progress
+const totalCount = computed(() => {
   let total = 0
   props.lessons.forEach(lesson => {
     total += lesson.topics?.length || 0
@@ -316,8 +297,13 @@ const totalTopicsCount = computed(() => {
   return total
 })
 
-const completedTopicsCount = computed(() => {
+const completedCount = computed(() => {
   return props.completedTopics.size
+})
+
+const courseProgress = computed(() => {
+  if (totalCount.value === 0) return 0
+  return Math.round((completedCount.value / totalCount.value) * 100)
 })
 
 // Methods
@@ -325,10 +311,6 @@ const toggleLesson = (index) => {
   const idx = expandedLessons.value.indexOf(index)
   if (idx > -1) {
     expandedLessons.value.splice(idx, 1)
-    // Also collapse all topics in this lesson
-    expandedTopics.value = expandedTopics.value.filter(
-      key => !key.startsWith(`${index}-`)
-    )
   } else {
     expandedLessons.value.push(index)
   }
@@ -336,12 +318,7 @@ const toggleLesson = (index) => {
 
 const toggleTopic = (lessonIndex, topicIndex) => {
   const key = `${lessonIndex}-${topicIndex}`
-  const idx = expandedTopics.value.indexOf(key)
-  if (idx > -1) {
-    expandedTopics.value.splice(idx, 1)
-  } else {
-    expandedTopics.value.push(key)
-  }
+  expandedTopics.value[key] = !expandedTopics.value[key]
 }
 
 const selectTopic = (lessonIndex, topicIndex) => {
@@ -349,8 +326,6 @@ const selectTopic = (lessonIndex, topicIndex) => {
 }
 
 const selectFile = (lessonIndex, topicIndex, file) => {
-  // First select the topic, then the file
-  selectTopic(lessonIndex, topicIndex)
   emit('select-file', { lessonIndex, topicIndex, file })
 }
 
@@ -359,26 +334,27 @@ const selectTest = (lessonIndex) => {
 }
 
 const isCurrentTopic = (lessonIndex, topicIndex) => {
-  return (
-    lessonIndex === props.currentLessonIndex &&
-    topicIndex === props.currentTopicIndex &&
-    !props.isTestMode
-  )
+  return lessonIndex === props.currentLessonIndex && topicIndex === props.currentTopicIndex && !props.isTestMode
 }
 
 const isCurrentTest = (lessonIndex) => {
   return lessonIndex === props.currentLessonIndex && props.isTestMode
 }
 
-const isTopicCompleted = (lessonIndex, topicIndex) => {
-  // Check if topic is completed - format is: `${stationId}-${lessonIndex}-${topicIndex}`
-  if (props.stationId !== null && props.stationId !== undefined) {
-    const topicId = `${props.stationId}-${lessonIndex}-${topicIndex}`
-    return props.completedTopics.has(topicId)
-  }
-  // Fallback: check simple format
-  const topicId = `${lessonIndex}-${topicIndex}`
-  return props.completedTopics.has(topicId)
+const isCurrentFile = (lessonIndex, topicIndex, file) => {
+  if (!props.currentFile) return false
+  if (lessonIndex !== props.currentLessonIndex || topicIndex !== props.currentTopicIndex) return false
+  if (props.isTestMode) return false
+  
+  const fileKey = file.objectName || file.object_key || file.objectKey
+  const currentKey = props.currentFile.objectName || props.currentFile.object_key || props.currentFile.objectKey
+  
+  return fileKey === currentKey
+}
+
+const isFileCompleted = (lessonIndex, topicIndex, file) => {
+  // Можно добавить логику для отслеживания завершенных файлов
+  return false
 }
 
 const isLessonTestPassed = (lessonIndex) => {
@@ -386,90 +362,90 @@ const isLessonTestPassed = (lessonIndex) => {
   return props.passedTests.has(testId)
 }
 
-const getTopicFiles = (lessonIndex, topicIndex) => {
-  const lesson = props.lessons[lessonIndex]
-  if (!lesson || !lesson.topics) return []
-  const topic = lesson.topics[topicIndex]
-  if (!topic || !topic.files) return []
-  const files = topic.files || []
-  // Sort files: main files first, then by order_index
-  return [...files].sort((a, b) => {
-    const aMain = a.isMain ?? a.is_main ?? false
-    const bMain = b.isMain ?? b.is_main ?? false
-    if (aMain !== bMain) {
-      return aMain ? -1 : 1 // Main files first
-    }
-    const aOrder = a.orderIndex ?? a.order_index ?? 0
-    const bOrder = b.orderIndex ?? b.order_index ?? 0
-    return aOrder - bOrder
-  })
-}
-
-const isActiveFile = (lessonIndex, topicIndex, file) => {
-  if (!props.currentFile) return false
-  if (
-    lessonIndex !== props.currentLessonIndex ||
-    topicIndex !== props.currentTopicIndex
-  ) {
-    return false
-  }
-  const fileKey = file.objectKey || file.object_key || file.objectName || file.object_name
-  const currentKey =
-    props.currentFile.objectKey ||
-    props.currentFile.object_key ||
-    props.currentFile.objectName ||
-    props.currentFile.object_name
-  return fileKey === currentKey
-}
-
-const isFileCompleted = (lessonIndex, topicIndex, file) => {
-  // File is considered completed if topic is completed
-  return isTopicCompleted(lessonIndex, topicIndex)
-}
-
 const getFileIcon = (file) => {
-  const fileName = (file.originalName || file.original_name || file.fileName || '').toLowerCase()
   const fileType = (file.fileType || file.file_type || '').toLowerCase()
+  const fileName = (file.originalName || file.original_name || file.fileName || file.file_name || '').toLowerCase()
   
-  if (fileType === 'pdf' || fileName.endsWith('.pdf')) {
-    return 'picture_as_pdf'
-  }
   if (fileType === 'video' || fileName.endsWith('.mp4') || fileName.endsWith('.webm') || fileName.endsWith('.mov')) {
     return 'play_circle'
+  }
+  if (fileType === 'pdf' || fileName.endsWith('.pdf')) {
+    return 'picture_as_pdf'
   }
   return 'description'
 }
 
-const getFileTypeLabel = (file) => {
+const getFileLabel = (file) => {
   const isMain = file.isMain ?? file.is_main ?? false
-  return isMain ? 'Основной материал' : 'Дополнительный'
+  return isMain ? 'Основной материал' : 'Дополнительный материал'
+}
+
+const formatDuration = (file) => {
+  // Можно добавить реальную длительность из файла
+  return '5 мин'
 }
 
 // Watch for current lesson changes to auto-expand
-watch(
-  () => props.currentLessonIndex,
-  (newIndex) => {
-    if (!expandedLessons.value.includes(newIndex)) {
-      expandedLessons.value.push(newIndex)
-    }
-    // Auto-expand current topic
-    if (props.currentTopicIndex >= 0) {
-      const topicKey = `${newIndex}-${props.currentTopicIndex}`
-      if (!expandedTopics.value.includes(topicKey)) {
-        expandedTopics.value.push(topicKey)
-      }
-    }
-  },
-  { immediate: true }
-)
+watch(() => props.currentLessonIndex, (newIndex) => {
+  if (!expandedLessons.value.includes(newIndex)) {
+    expandedLessons.value.push(newIndex)
+  }
+  // Auto-expand current topic
+  if (props.currentTopicIndex >= 0) {
+    const key = `${newIndex}-${props.currentTopicIndex}`
+    expandedTopics.value[key] = true
+  }
+}, { immediate: true })
+
+// Refresh user data
+watch(() => authService.getCurrentUser(), () => {
+  userDataVersion.value++
+}, { immediate: true })
 </script>
 
 <style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #cbd5e1;
+}
+
 details > summary {
   list-style: none;
 }
 
 details > summary::-webkit-details-marker {
   display: none;
+}
+
+/* Desktop styles */
+.sidebar-desktop {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* Mobile styles */
+.sidebar-mobile {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 40;
+  overflow: hidden;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 </style>
