@@ -3,14 +3,13 @@
     <!-- PDF Container -->
     <div
       v-if="pdfData"
-      class="bg-white shadow-2xl transition-all duration-200 ease-out origin-top"
-      :style="{ width: zoom + '%' }"
+      class="bg-white shadow-2xl origin-top"
     >
       <VuePdfEmbed
         :source="pdfData"
-        :scale="zoom / 100"
-        text-layer
-        annotation-layer
+        :scale="debouncedZoom / 100"
+        :text-layer="!isZooming"
+        :annotation-layer="!isZooming"
         class="w-full h-auto"
         @loaded="handlePdfLoaded"
         @rendered="handlePdfRendered"
@@ -48,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 // Import required styles for PDF viewer
 import 'vue-pdf-embed/dist/styles/annotationLayer.css'
@@ -72,6 +71,11 @@ const totalPages = ref(0)
 const pdfData = ref(null)
 const isLoading = ref(false)
 const error = ref(null)
+
+// Debounced zoom для стабильности рендеринга
+const debouncedZoom = ref(props.zoom)
+const isZooming = ref(false)
+let zoomTimeout = null
 
 // API base URL
 const API_BASE_URL = '/api'
@@ -150,11 +154,39 @@ const handlePdfError = (err) => {
   error.value = err?.message || 'Ошибка отображения PDF'
 }
 
+// Watch zoom changes with debounce
+watch(() => props.zoom, (newZoom) => {
+  // Отключаем text/annotation layers во время зума для производительности
+  isZooming.value = true
+  
+  // Очищаем предыдущий таймер
+  if (zoomTimeout) {
+    clearTimeout(zoomTimeout)
+  }
+  
+  // Применяем зум сразу для отзывчивости
+  debouncedZoom.value = newZoom
+  
+  // Включаем layers обратно после завершения зума
+  zoomTimeout = setTimeout(() => {
+    isZooming.value = false
+    zoomTimeout = null
+  }, 150) // 150ms debounce для стабильности
+}, { immediate: true })
+
 watch(() => props.source, () => {
   currentPage.value = 1
   totalPages.value = 0
   loadPdf()
 }, { immediate: true })
+
+// Cleanup таймера при размонтировании
+onUnmounted(() => {
+  if (zoomTimeout) {
+    clearTimeout(zoomTimeout)
+    zoomTimeout = null
+  }
+})
 </script>
 
 <style scoped>
