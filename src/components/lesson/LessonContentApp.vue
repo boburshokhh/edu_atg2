@@ -29,7 +29,7 @@
       />
 
       <!-- Main Content Area -->
-      <main class="flex-1 bg-slate-100/50 flex flex-col h-full relative overflow-hidden">
+      <main class="flex-1 bg-slate-100/50 flex flex-col h-full relative">
         <!-- Header -->
         <LessonHeader
           :current-file-name="currentFileName"
