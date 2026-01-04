@@ -1,7 +1,10 @@
 <template>
   <div 
     ref="fullscreenContainer"
-    class="flex-1 overflow-auto p-8 flex justify-center bg-[#525659] relative custom-scrollbar"
+    :class="[
+      'flex-1 flex justify-center bg-[#525659] relative custom-scrollbar',
+      currentFileType === 'pdf' ? 'overflow-hidden' : 'overflow-auto p-8'
+    ]"
   >
       <!-- Video Player -->
       <OptimizedVideoPlayer

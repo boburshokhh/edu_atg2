@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 overflow-auto flex justify-center bg-[#525659] relative">
+  <div class="flex-1 h-full overflow-auto flex justify-center bg-[#525659] relative">
     <!-- Control Panel -->
     <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur rounded-lg shadow-lg px-4 py-2">
       <!-- Zoom Out -->
@@ -33,7 +33,7 @@
     <!-- PDF Container -->
     <div
       v-if="pdfData"
-      class="w-full max-w-[800px] py-8 px-4 flex justify-center"
+      class="w-full max-w-[800px] py-8 px-4 min-h-full flex justify-center"
     >
       <VuePdfEmbed
         :source="pdfData"
