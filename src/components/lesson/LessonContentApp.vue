@@ -497,14 +497,18 @@ const formatFileSize = (bytes) => {
 }
 
 const zoomIn = () => {
+  console.log('Zoom In clicked. Current zoom:', currentZoom.value)
   if (currentZoom.value < 200) {
     currentZoom.value += 10
+    console.log('New zoom:', currentZoom.value)
   }
 }
 
 const zoomOut = () => {
+  console.log('Zoom Out clicked. Current zoom:', currentZoom.value)
   if (currentZoom.value > 50) {
     currentZoom.value -= 10
+    console.log('New zoom:', currentZoom.value)
   }
 }
 
