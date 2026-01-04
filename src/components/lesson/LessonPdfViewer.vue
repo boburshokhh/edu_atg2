@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 h-full overflow-auto flex justify-center bg-[#525659] relative">
+  <div class="flex-1 h-full relative bg-[#525659] overflow-hidden">
     <!-- Control Panel -->
     <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur rounded-lg shadow-lg px-4 py-2">
       <!-- Zoom Out -->
@@ -30,47 +30,50 @@
       </span>
     </div>
 
-    <!-- PDF Container -->
-    <div
-      v-if="pdfData"
-      class="w-full max-w-[800px] py-8 px-4"
-    >
-      <VuePdfEmbed
-        :source="pdfData"
-        :scale="zoom / 100"
-        text-layer
-        annotation-layer
-        class="w-full"
-        @loaded="handlePdfLoaded"
-        @rendered="handlePdfRendered"
-        @loading-failed="handlePdfError"
-      />
-    </div>
-
-    <!-- Loading State -->
-    <div
-      v-else-if="isLoading"
-      class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
-    >
-      <div class="text-center">
-        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block animate-pulse">
-          description
-        </span>
-        <p class="text-slate-500">Загрузка PDF...</p>
+    <!-- Scrollable Content Area -->
+    <div class="h-full w-full overflow-y-auto custom-scrollbar flex justify-center">
+      <!-- PDF Container -->
+      <div
+        v-if="pdfData"
+        class="w-full max-w-[800px] px-4 pb-8 pt-20"
+      >
+        <VuePdfEmbed
+          :source="pdfData"
+          :scale="zoom / 100"
+          text-layer
+          annotation-layer
+          class="w-full shadow-lg"
+          @loaded="handlePdfLoaded"
+          @rendered="handlePdfRendered"
+          @loading-failed="handlePdfError"
+        />
       </div>
-    </div>
 
-    <!-- Error State -->
-    <div
-      v-else-if="error"
-      class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
-    >
-      <div class="text-center">
-        <span class="material-symbols-outlined text-6xl text-red-400 mb-4 block">
-          error
-        </span>
-        <p class="text-red-500 mb-2">Ошибка загрузки PDF</p>
-        <p class="text-sm text-slate-500">{{ error }}</p>
+      <!-- Loading State -->
+      <div
+        v-else-if="isLoading"
+        class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px] self-center"
+      >
+        <div class="text-center">
+          <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block animate-pulse">
+            description
+          </span>
+          <p class="text-slate-500">Загрузка PDF...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div
+        v-else-if="error"
+        class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px] self-center"
+      >
+        <div class="text-center">
+          <span class="material-symbols-outlined text-6xl text-red-400 mb-4 block">
+            error
+          </span>
+          <p class="text-red-500 mb-2">Ошибка загрузки PDF</p>
+          <p class="text-sm text-slate-500">{{ error }}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -186,4 +189,36 @@ watch(() => props.source, () => {
   loadPdf()
 }, { immediate: true })
 </script>
+
+<style scoped>
+/* Custom scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.1);
+  /* Ensure scrolling works in flex containers */
+  min-height: 0;
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+</style>
 

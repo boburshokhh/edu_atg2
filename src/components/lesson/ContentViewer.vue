@@ -3,7 +3,7 @@
     ref="fullscreenContainer"
     :class="[
       'flex-1 flex justify-center bg-[#525659] relative custom-scrollbar',
-      currentFileType === 'pdf' ? 'overflow-y-auto overflow-x-hidden h-full' : 'overflow-auto p-8'
+      currentFileType === 'pdf' ? 'overflow-hidden h-full' : 'overflow-auto p-8'
     ]"
     style="min-height: 0;"
   >
