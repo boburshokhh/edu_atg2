@@ -3,19 +3,33 @@
     <!-- PDF Container -->
     <div
       v-if="pdfData"
-      class="bg-white shadow-2xl origin-top transition-all duration-200 ease-out"
-      :style="{ width: zoom + '%' }"
+      class="pdf-container bg-white shadow-2xl"
+      :style="{ transform: `scale(${effectiveZoom / 100})`, transformOrigin: 'top center' }"
     >
       <VuePdfEmbed
+        :key="`pdf-${effectiveZoom}-${pdfKey}`"
         :source="pdfData"
-        :scale="debouncedZoom / 100"
-        :text-layer="!isZooming"
-        :annotation-layer="!isZooming"
+        :scale="1"
+        text-layer
+        annotation-layer
         class="w-full h-auto"
         @loaded="handlePdfLoaded"
         @rendered="handlePdfRendered"
         @loading-failed="handlePdfError"
       />
+    </div>
+    
+    <!-- Rendering State (for large zoom changes) -->
+    <div
+      v-if="isRendering && pdfData"
+      class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10"
+    >
+      <div class="text-center">
+        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block animate-pulse">
+          description
+        </span>
+        <p class="text-slate-500">Обновление масштаба...</p>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -48,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 // Import required styles for PDF viewer
 import 'vue-pdf-embed/dist/styles/annotationLayer.css'
@@ -72,11 +86,12 @@ const totalPages = ref(0)
 const pdfData = ref(null)
 const isLoading = ref(false)
 const error = ref(null)
+const isRendering = ref(false)
+const effectiveZoom = ref(props.zoom || 100)
+const pdfKey = ref(0)
 
-// Debounced zoom для стабильности рендеринга
-const debouncedZoom = ref(props.zoom)
-const isZooming = ref(false)
-let zoomTimeout = null
+// Debounce timer for zoom changes
+const zoomDebounceTimer = ref(null)
 
 // API base URL
 const API_BASE_URL = '/api'
@@ -148,6 +163,7 @@ const handlePdfLoaded = (pdfDoc) => {
 
 const handlePdfRendered = () => {
   // Document rendered successfully
+  isRendering.value = false
 }
 
 const handlePdfError = (err) => {
@@ -155,47 +171,61 @@ const handlePdfError = (err) => {
   error.value = err?.message || 'Ошибка отображения PDF'
 }
 
-// Watch zoom changes with debounce
-watch(() => props.zoom, (newZoom) => {
-  // Отключаем text/annotation layers во время зума для производительности
-  isZooming.value = true
-  
-  // Очищаем предыдущий таймер
-  if (zoomTimeout) {
-    clearTimeout(zoomTimeout)
-  }
-  
-  // Если это первое значение (инициализация), применяем сразу
-  if (debouncedZoom.value === 0 || Math.abs(debouncedZoom.value - newZoom) > 50) {
-     debouncedZoom.value = newZoom
-     isZooming.value = false
-     return
-  }
-
-  // Для обычного зума ждем окончания ввода
-  zoomTimeout = setTimeout(() => {
-    debouncedZoom.value = newZoom
-    isZooming.value = false
-    zoomTimeout = null
-  }, 300) // 300ms debounce для плавности (CSS transition обработает визуальную часть)
-}, { immediate: true })
-
+// Watch for source changes
 watch(() => props.source, () => {
   currentPage.value = 1
   totalPages.value = 0
   loadPdf()
 }, { immediate: true })
 
-// Cleanup таймера при размонтировании
-onUnmounted(() => {
-  if (zoomTimeout) {
-    clearTimeout(zoomTimeout)
-    zoomTimeout = null
+// Watch for zoom changes with debounce and rendering state
+watch(() => props.zoom, (newZoom, oldZoom) => {
+  // Clear existing debounce timer
+  if (zoomDebounceTimer.value) {
+    clearTimeout(zoomDebounceTimer.value)
   }
-})
+  
+  // Get previous zoom value (use effectiveZoom if oldZoom is undefined on first call)
+  const previousZoom = oldZoom !== undefined ? oldZoom : effectiveZoom.value
+  
+  // For large zoom changes (>150%), show rendering state
+  const zoomDiff = Math.abs(newZoom - previousZoom)
+  if (zoomDiff > 50 || newZoom > 150) {
+    isRendering.value = true
+  }
+  
+  // Debounce zoom changes to avoid excessive re-renders
+  zoomDebounceTimer.value = setTimeout(async () => {
+    effectiveZoom.value = newZoom
+    
+    // Force re-render by updating key for large changes
+    if (zoomDiff > 30) {
+      pdfKey.value += 1
+    }
+    
+    // Wait for next tick to ensure DOM is updated
+    await nextTick()
+    
+    // Clear rendering state after a short delay
+    if (isRendering.value) {
+      setTimeout(() => {
+        isRendering.value = false
+      }, 300)
+    }
+  }, 100) // 100ms debounce
+}, { immediate: true })
 </script>
 
 <style scoped>
-/* No additional styles needed - scrolling handled by parent ContentViewer */
+.pdf-container {
+  will-change: transform;
+  transition: transform 0.2s ease-out;
+}
+
+/* Optimize GPU rendering */
+.pdf-container {
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
 </style>
 
