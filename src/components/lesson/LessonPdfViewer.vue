@@ -32,23 +32,24 @@
 
     <!-- PDF Container -->
     <div
-      v-if="pdfSource"
+      v-if="pdfData"
       class="w-full max-w-[800px] py-8 px-4 flex justify-center"
     >
       <VuePdfEmbed
-        :source="pdfSource"
+        :source="pdfData"
         :scale="zoom / 100"
         text-layer
         annotation-layer
         class="w-full"
         @loaded="handlePdfLoaded"
         @rendered="handlePdfRendered"
+        @loading-failed="handlePdfError"
       />
     </div>
 
     <!-- Loading State -->
     <div
-      v-else
+      v-else-if="isLoading"
       class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
     >
       <div class="text-center">
@@ -56,6 +57,20 @@
           description
         </span>
         <p class="text-slate-500">Загрузка PDF...</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div
+      v-else-if="error"
+      class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex items-center justify-center min-h-[400px]"
+    >
+      <div class="text-center">
+        <span class="material-symbols-outlined text-6xl text-red-400 mb-4 block">
+          error
+        </span>
+        <p class="text-red-500 mb-2">Ошибка загрузки PDF</p>
+        <p class="text-sm text-slate-500">{{ error }}</p>
       </div>
     </div>
   </div>
@@ -84,15 +99,69 @@ const emit = defineEmits(['zoom-in', 'zoom-out', 'page-loaded'])
 
 const currentPage = ref(1)
 const totalPages = ref(0)
+const pdfData = ref(null)
+const isLoading = ref(false)
+const error = ref(null)
 
-const pdfSource = computed(() => {
-  if (!props.source) return null
+// API base URL
+const API_BASE_URL = '/api'
+
+// Get auth token from localStorage
+function getAuthToken() {
+  const token = localStorage.getItem('auth_token')
+  if (token) {
+    return `Bearer ${token.trim()}`
+  }
+  return null
+}
+
+// Load PDF with authentication
+async function loadPdf() {
+  if (!props.source) {
+    pdfData.value = null
+    return
+  }
+
   const key = props.source.objectName || props.source.object_key || props.source.objectKey
-  if (!key) return null
-  
-  // Use backend streaming endpoint
-  return `/api/files/stream/${encodeURIComponent(key)}`
-})
+  if (!key) {
+    pdfData.value = null
+    return
+  }
+
+  isLoading.value = true
+  error.value = null
+  pdfData.value = null
+
+  try {
+    const token = getAuthToken()
+    const url = `${API_BASE_URL}/files/stream/${encodeURIComponent(key)}`
+    
+    const headers = {}
+    if (token) {
+      headers['Authorization'] = token
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      credentials: 'include'
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    // Convert response to ArrayBuffer for vue-pdf-embed
+    const arrayBuffer = await response.arrayBuffer()
+    pdfData.value = arrayBuffer
+  } catch (err) {
+    console.error('[LessonPdfViewer] Error loading PDF:', err)
+    error.value = err.message || 'Не удалось загрузить PDF файл'
+    pdfData.value = null
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const handlePdfLoaded = (pdfDoc) => {
   if (pdfDoc && pdfDoc.numPages) {
@@ -106,9 +175,15 @@ const handlePdfRendered = () => {
   // Document rendered successfully
 }
 
+const handlePdfError = (err) => {
+  console.error('[LessonPdfViewer] PDF rendering error:', err)
+  error.value = err?.message || 'Ошибка отображения PDF'
+}
+
 watch(() => props.source, () => {
   currentPage.value = 1
   totalPages.value = 0
+  loadPdf()
 }, { immediate: true })
 </script>
 
