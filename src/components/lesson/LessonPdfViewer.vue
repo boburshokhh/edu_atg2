@@ -3,7 +3,8 @@
     <!-- PDF Container -->
     <div
       v-if="pdfData"
-      class="bg-white shadow-2xl origin-top"
+      class="bg-white shadow-2xl origin-top transition-all duration-200 ease-out"
+      :style="{ width: zoom + '%' }"
     >
       <VuePdfEmbed
         :source="pdfData"
@@ -164,14 +165,19 @@ watch(() => props.zoom, (newZoom) => {
     clearTimeout(zoomTimeout)
   }
   
-  // Применяем зум сразу для отзывчивости
-  debouncedZoom.value = newZoom
-  
-  // Включаем layers обратно после завершения зума
+  // Если это первое значение (инициализация), применяем сразу
+  if (debouncedZoom.value === 0 || Math.abs(debouncedZoom.value - newZoom) > 50) {
+     debouncedZoom.value = newZoom
+     isZooming.value = false
+     return
+  }
+
+  // Для обычного зума ждем окончания ввода
   zoomTimeout = setTimeout(() => {
+    debouncedZoom.value = newZoom
     isZooming.value = false
     zoomTimeout = null
-  }, 150) // 150ms debounce для стабильности
+  }, 300) // 300ms debounce для плавности (CSS transition обработает визуальную часть)
 }, { immediate: true })
 
 watch(() => props.source, () => {
