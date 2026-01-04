@@ -39,7 +39,7 @@
           @zoom-out="zoomOut"
           @mark-complete="markAsCompleted"
           @toggle-sidebar="handleToggleSidebar"
-        />
+      />
 
         <!-- Content Area -->
         <div class="flex-1 overflow-hidden">
@@ -71,9 +71,9 @@
             @zoom-out="zoomOut"
             @download-file="downloadFile"
           />
-        </div>
+              </div>
       </main>
-    </div>
+            </div>
 
     <!-- Mobile Menu Button -->
     <el-button
@@ -205,6 +205,15 @@ const currentFileType = computed(() => {
       f.file_name ||
       ''
   ).toLowerCase()
+  
+  // Определение PDF (приоритет)
+  if (
+    t.includes('pdf') ||
+    t === 'application/pdf' ||
+    name.endsWith('.pdf')
+  ) {
+    return 'pdf'
+  }
   
   // Определение видео
   if (
@@ -372,14 +381,14 @@ const loadTopicMaterials = async () => {
         const contentType =
           mimeType ||
           (fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
-            ? (nameForDetect.endsWith('.webm')
-              ? 'video/webm'
-              : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
-                ? 'video/ogg'
-                : nameForDetect.endsWith('.mov')
-                  ? 'video/quicktime'
-                  : 'video/mp4')
-            : 'application/octet-stream')
+              ? (nameForDetect.endsWith('.webm')
+                ? 'video/webm'
+                : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
+                  ? 'video/ogg'
+                  : nameForDetect.endsWith('.mov')
+                    ? 'video/quicktime'
+                    : 'video/mp4')
+              : 'application/octet-stream')
 
         // Для всех файлов: presigned URL с коротким TTL (1 час)
         const fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)

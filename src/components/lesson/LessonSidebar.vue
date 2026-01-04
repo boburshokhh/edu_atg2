@@ -55,12 +55,12 @@
             expand_more
           </span>
         </summary>
-        <div
+          <div
           class="pl-3 border-l-2 border-slate-100 ml-3 pb-2 mt-1 flex flex-col gap-1"
-        >
+          >
           <details
-            v-for="(topic, topicIndex) in lesson.topics"
-            :key="topicIndex"
+              v-for="(topic, topicIndex) in lesson.topics"
+              :key="topicIndex"
             class="group/topic"
             :open="expandedTopics[`${lessonIndex}-${topicIndex}`] || isCurrentTopic(lessonIndex, topicIndex)"
           >
@@ -92,7 +92,7 @@
                   ]"
                   @click="selectFile(lessonIndex, topicIndex, file)"
                 >
-                <div
+                <div 
                   :class="[
                     'flex items-start gap-3',
                     isCurrentFile(lessonIndex, topicIndex, file)
@@ -117,8 +117,8 @@
                         isCurrentFile(lessonIndex, topicIndex, file)
                           ? 'font-semibold text-primary'
                           : 'font-medium text-slate-600 group-hover/item:text-slate-900 transition-colors'
-                      ]"
-                    >
+                  ]"
+                >
                       {{ file.originalName || file.original_name || file.fileName || file.file_name || 'Файл' }}
                     </span>
                     <span
@@ -151,21 +151,21 @@
             </div>
           </details>
 
-          <!-- Lesson Test -->
+            <!-- Lesson Test -->
           <div
-            :class="[
+              :class="[
               'flex items-start justify-between p-2 rounded-md cursor-pointer transition-colors border-t border-slate-200 mt-1',
-              isCurrentTest(lessonIndex)
+                isCurrentTest(lessonIndex)
                 ? 'bg-purple-50 border-purple-200'
                 : 'hover:bg-slate-50'
-            ]"
-            @click="selectTest(lessonIndex)"
-          >
+              ]"
+              @click="selectTest(lessonIndex)"
+            >
             <div class="flex items-start gap-3">
               <span
                 class="material-symbols-outlined text-[20px] mt-0.5"
                 :class="isCurrentTest(lessonIndex) ? 'text-purple-600' : 'text-slate-400'"
-              >
+                >
                 description
               </span>
               <div class="flex flex-col">
@@ -181,28 +181,28 @@
               </div>
             </div>
             <span
-              v-if="isLessonTestPassed(lessonIndex)"
+                    v-if="isLessonTestPassed(lessonIndex)"
               class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
             >
               check
             </span>
-          </div>
+                </div>
         </div>
       </details>
-    </div>
+              </div>
 
     <!-- User Profile -->
     <div class="p-4 border-t border-slate-100 bg-slate-50">
       <div class="flex items-center gap-3">
         <div
           class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs"
-        >
+                >
           {{ userInitials }}
-        </div>
+              </div>
         <div class="flex flex-col">
           <p class="text-xs font-medium text-slate-900">{{ userName }}</p>
           <p class="text-[10px] text-slate-500">{{ userRole }}</p>
-        </div>
+          </div>
       </div>
     </div>
   </aside>

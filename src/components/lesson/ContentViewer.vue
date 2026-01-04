@@ -3,17 +3,26 @@
     ref="fullscreenContainer"
     class="flex-1 overflow-auto p-8 flex justify-center bg-[#525659] relative custom-scrollbar"
   >
-    <!-- Video Player -->
-    <OptimizedVideoPlayer
-      v-if="currentFile && currentFileType === 'video'"
-      :source="currentFile"
-      :zoom="currentZoom"
-      :is-fullscreen="isFullscreen"
-      @fullscreen-change="handleFullscreenChange"
-    />
+      <!-- Video Player -->
+      <OptimizedVideoPlayer
+        v-if="currentFile && currentFileType === 'video'"
+        :source="currentFile"
+        :zoom="currentZoom"
+        :is-fullscreen="isFullscreen"
+        @fullscreen-change="handleFullscreenChange"
+      />
 
-    <!-- Document Viewer (for unsupported files including PDF) -->
-    <div 
+      <!-- PDF Viewer -->
+      <LessonPdfViewer
+        v-else-if="currentFile && currentFileType === 'pdf'"
+        :source="currentFile"
+        :zoom="currentZoom"
+        @zoom-in="$emit('zoom-in')"
+        @zoom-out="$emit('zoom-out')"
+      />
+
+    <!-- Document Viewer (for unsupported files) -->
+      <div 
       v-else-if="currentFile"
       class="w-full max-w-[800px] bg-white h-auto shadow-2xl relative transition-transform origin-top"
       :style="{ transform: `scale(${currentZoom / 100})` }"
@@ -34,7 +43,7 @@
           <div class="text-slate-300 flex flex-col items-center gap-2">
             <span class="material-symbols-outlined text-4xl">image</span>
             <span class="text-sm">
-              {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
+          {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
             </span>
           </div>
         </div>
@@ -113,6 +122,7 @@ import { defineAsyncComponent } from 'vue'
 
 // Lazy load viewers
 const OptimizedVideoPlayer = defineAsyncComponent(() => import('./OptimizedVideoPlayer.vue'))
+const LessonPdfViewer = defineAsyncComponent(() => import('./LessonPdfViewer.vue'))
 
 const props = defineProps({
   currentFile: {

@@ -6,7 +6,7 @@
       <button
         class="p-2 hover:bg-slate-100 rounded-full text-slate-500"
         @click="handleToggleSidebar"
-      >
+        >
         <span class="material-symbols-outlined">menu</span>
       </button>
       <h2 class="font-medium text-slate-700">
