@@ -504,7 +504,10 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-h-[400px] w-full gap-4 p-12;
+  min-height: 400px;
+  width: 100%;
+  gap: 1rem;
+  padding: 3rem;
 }
 
 .loading-text {
