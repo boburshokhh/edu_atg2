@@ -36,19 +36,46 @@
     <!-- PDF Canvas Container -->
     <div 
       v-else
-      ref="pdfCanvasContainer"
-      class="pdf-canvas-container"
-      :style="{ transform: `scale(${zoom / 100})`, transformOrigin: 'top left' }"
+      class="pdf-viewer-content"
     >
-      <canvas 
-        ref="pdfCanvas"
-        class="pdf-canvas"
-      />
+      <div 
+        ref="pdfCanvasContainer"
+        class="pdf-canvas-container"
+        :style="{ transform: `scale(${zoom / 100})`, transformOrigin: 'top left' }"
+      >
+        <canvas 
+          ref="pdfCanvas"
+          class="pdf-canvas"
+        />
+      </div>
+
+      <!-- Page Indicator (appears on hover) -->
+      <div
+        v-if="!loading && !error && totalPages > 0"
+        class="page-indicator"
+        @click.stop
+      >
+        <button
+          v-if="currentPage > 1"
+          class="page-nav-btn"
+          @click="previousPage"
+        >
+          <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+        </button>
+        <span>Страница {{ currentPage }} из {{ totalPages }}</span>
+        <button
+          v-if="currentPage < totalPages"
+          class="page-nav-btn"
+          @click="nextPage"
+        >
+          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        </button>
+      </div>
     </div>
 
-    <!-- PDF Controls -->
+    <!-- PDF Controls (hidden in new design, controls are in header) -->
     <div 
-      v-if="!loading && !error && totalPages > 0"
+      v-if="false && !loading && !error && totalPages > 0"
       class="pdf-controls"
     >
       <div class="controls-left">
@@ -575,11 +602,10 @@ onUnmounted(() => {
   height: 100%;
   min-height: 400px;
   overflow: auto;
-  background: #f3f4f6;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem;
+  padding: 2rem;
 }
 
 .secure-pdf-viewer.fullscreen-mode {
@@ -587,6 +613,14 @@ onUnmounted(() => {
   inset: 0;
   z-index: 50;
   min-height: 100vh;
+}
+
+.pdf-viewer-content {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .pdf-loading,
@@ -627,13 +661,15 @@ onUnmounted(() => {
   justify-content: center;
   align-items: flex-start;
   width: 100%;
-  padding: 1rem 0;
+  max-width: 800px;
 }
 
 .pdf-canvas {
   display: block;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   background: white;
+  width: 100%;
+  max-width: 800px;
   /* Защита от выделения */
   user-select: none;
   -webkit-user-select: none;
@@ -644,6 +680,43 @@ onUnmounted(() => {
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
+}
+
+.page-indicator {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 41, 59, 0.9);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+}
+
+.pdf-viewer-content:hover .page-indicator {
+  opacity: 1;
+}
+
+.page-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.page-nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .pdf-controls {

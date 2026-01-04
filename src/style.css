@@ -99,6 +99,23 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #e2e8f0;
+    border-radius: 20px;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #334155;
+  }
   
   .animation-delay-200 {
     animation-delay: 200ms;

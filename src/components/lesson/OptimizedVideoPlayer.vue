@@ -1,8 +1,8 @@
 <template>
   <div 
     :class="[
-      'video-player-wrapper flex items-center justify-center',
-      isFullscreen ? 'h-screen bg-black' : ''
+      'video-player-wrapper flex items-center justify-center w-full',
+      isFullscreen ? 'h-screen bg-black' : 'max-w-4xl mx-auto'
     ]"
     :style="isFullscreen ? {} : { 
       transform: `scale(${zoom / 100})`,

@@ -1,238 +1,234 @@
 <template>
-  <div class="lesson-sidebar bg-white border-r border-gray-200 flex flex-col">
-    <!-- Compact Header -->
-    <div class="p-4 border-b border-gray-200 relative">
-      <div class="flex items-center justify-between mb-1">
-        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">
-          Содержание
-        </h2>
-        <el-button
-          :icon="Fold"
-          circle
-          size="small"
-          class="sidebar-toggle-btn"
-          title="Свернуть сайдбар"
-          @click="handleToggleSidebar"
-        />
+  <aside
+    class="w-[340px] flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a2632] h-full flex-shrink-0 z-20 shadow-sm"
+  >
+    <!-- Course Header with Progress -->
+    <div
+      class="px-6 py-6 border-b border-slate-100 dark:border-slate-700/50 flex-shrink-0 bg-white dark:bg-[#1a2632]"
+    >
+      <h1 class="text-[#111418] dark:text-white text-xl font-bold leading-tight tracking-tight mb-4">
+        {{ courseTitle }}
+      </h1>
+      <div class="flex flex-col gap-2">
+        <div class="flex justify-between items-end">
+          <p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
+            Прогресс курса
+          </p>
+          <p class="text-[#111418] dark:text-white text-sm font-bold">{{ courseProgress }}%</p>
+        </div>
+        <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+          <div class="h-full rounded-full bg-primary" :style="{ width: `${courseProgress}%` }"></div>
+        </div>
+        <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">
+          {{ completedTopicsCount }}/{{ totalTopicsCount }} {{ totalTopicsCount === 1 ? 'урок завершен' : 'уроков завершено' }}
+        </p>
       </div>
-      <button 
-        class="text-xs text-blue-600 hover:text-blue-700 font-medium"
-        @click="toggleAllLessons"
-      >
-        {{ allExpanded ? 'Свернуть' : 'Развернуть' }}
-      </button>
     </div>
 
     <!-- Lessons List -->
-    <div class="lessons-list-container">
-      <div
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col">
+      <details
         v-for="(lesson, lessonIndex) in lessons"
         :key="lessonIndex"
-        class="border-b border-gray-100"
+        class="group mb-1"
+        :open="expandedLessons.includes(lessonIndex)"
       >
-        <!-- Compact Lesson Header -->
-        <button
-          class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors group"
-          @click="toggleLesson(lessonIndex)"
+        <summary
+          class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors select-none"
+          @click.prevent="toggleLesson(lessonIndex)"
         >
-          <div class="flex-1 text-left min-w-0">
-            <div class="text-xs font-semibold text-blue-600 mb-0.5">
-              Модуль {{ lessonIndex + 1 }}
+          <div class="flex items-center gap-3">
+            <div
+              class="flex items-center justify-center w-6 h-6 rounded bg-slate-100 dark:bg-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300"
+            >
+              {{ lessonIndex + 1 }}
             </div>
-            <div class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+            <span class="text-sm font-bold text-slate-800 dark:text-white leading-none">
               {{ lesson.title }}
-            </div>
-            <div class="text-xs text-gray-500 mt-0.5">
-              {{ lesson.topics?.length || 0 }} {{ lesson.topics?.length === 1 ? 'тема' : 'тем' }}
-            </div>
+            </span>
           </div>
-          <el-icon 
-            :class="[
-              'text-gray-400 transition-transform duration-200 flex-shrink-0 ml-2',
-              expandedLessons.includes(lessonIndex) ? 'rotate-180' : ''
-            ]"
-            :size="14"
+          <span
+            class="material-symbols-outlined text-slate-400 transition-transform text-[20px]"
+            :class="{ 'rotate-180': expandedLessons.includes(lessonIndex) }"
           >
-            <ArrowDown />
-          </el-icon>
-        </button>
+            expand_more
+          </span>
+        </summary>
+        <div
+          class="pl-3 border-l-2 border-slate-100 dark:border-slate-800 ml-3 pb-2 mt-1 flex flex-col gap-1"
+        >
+          <!-- Topics -->
+          <details
+            v-for="(topic, topicIndex) in lesson.topics"
+            :key="topicIndex"
+            class="group/topic"
+            :open="expandedTopics.includes(`${lessonIndex}-${topicIndex}`)"
+          >
+            <summary
+              class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-md hover:bg-slate-50 dark:hover:bg-white/5 transition-colors select-none"
+              @click.prevent="toggleTopic(lessonIndex, topicIndex)"
+            >
+              <span
+                class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+              >
+                {{ lessonIndex + 1 }}.{{ topicIndex + 1 }} {{ topic.title }}
+              </span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform text-[18px]"
+                :class="{ 'rotate-180': expandedTopics.includes(`${lessonIndex}-${topicIndex}`) }"
+              >
+                expand_more
+              </span>
+            </summary>
+            <div class="flex flex-col gap-1 pl-2 mt-1">
+              <!-- Files in topic -->
+              <div
+                v-for="(file, fileIndex) in getTopicFiles(lessonIndex, topicIndex)"
+                :key="fileIndex"
+                :class="[
+                  'flex items-start justify-between p-2 rounded-md cursor-pointer group/item transition-colors',
+                  isActiveFile(lessonIndex, topicIndex, file)
+                    ? 'bg-primary/10 border border-primary/20 shadow-sm'
+                    : 'hover:bg-slate-50 dark:hover:bg-white/5'
+                ]"
+                @click="selectFile(lessonIndex, topicIndex, file)"
+              >
+                <div
+                  :class="[
+                    'flex items-start gap-3',
+                    isActiveFile(lessonIndex, topicIndex, file)
+                      ? ''
+                      : 'opacity-75 group-hover/item:opacity-100 transition-opacity'
+                  ]"
+                >
+                  <span
+                    class="material-symbols-outlined text-[20px] mt-0.5"
+                    :class="
+                      isActiveFile(lessonIndex, topicIndex, file)
+                        ? 'text-primary'
+                        : 'text-slate-400 group-hover/item:text-slate-600 dark:text-slate-500'
+                    "
+                  >
+                    {{ getFileIcon(file) }}
+                  </span>
+                  <div class="flex flex-col">
+                    <span
+                      :class="[
+                        'text-sm leading-snug',
+                        isActiveFile(lessonIndex, topicIndex, file)
+                          ? 'font-semibold text-primary'
+                          : 'font-medium text-slate-600 dark:text-slate-300 group-hover/item:text-slate-900 transition-colors'
+                      ]"
+                    >
+                      {{ file.originalName || file.original_name || file.fileName || 'Файл' }}
+                    </span>
+                    <span
+                      :class="[
+                        'text-[11px] mt-0.5 font-medium',
+                        isActiveFile(lessonIndex, topicIndex, file)
+                          ? 'text-primary/70'
+                          : 'text-slate-400'
+                      ]"
+                    >
+                      {{ getFileTypeLabel(file) }} • {{ topic.duration || '15 мин' }}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  v-if="isActiveFile(lessonIndex, topicIndex, file)"
+                  class="w-1.5 h-1.5 rounded-full bg-primary mt-2 mr-1"
+                ></div>
+                <span
+                  v-else-if="isFileCompleted(lessonIndex, topicIndex, file)"
+                  class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
+                >
+                  check
+                </span>
+              </div>
 
-        <!-- Compact Topics -->
-        <el-collapse-transition>
+              <!-- Empty state if no files -->
+              <div
+                v-if="!getTopicFiles(lessonIndex, topicIndex) || getTopicFiles(lessonIndex, topicIndex).length === 0"
+                class="p-2 text-xs text-slate-400"
+              >
+                Нет материалов
+              </div>
+            </div>
+          </details>
+
+          <!-- Lesson Test -->
           <div
-            v-show="expandedLessons.includes(lessonIndex)"
-            class="bg-gray-50"
+            :class="[
+              'flex items-start justify-between p-2 rounded-md cursor-pointer group/item transition-colors border-t border-slate-200 dark:border-slate-800 mt-1',
+              isCurrentTest(lessonIndex)
+                ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+                : 'hover:bg-slate-50 dark:hover:bg-white/5'
+            ]"
+            @click="selectTest(lessonIndex)"
           >
-            <!-- Topics -->
-            <button
-              v-for="(topic, topicIndex) in lesson.topics"
-              :key="topicIndex"
+            <div
               :class="[
-                'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3',
-                isCurrentTopic(lessonIndex, topicIndex)
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-transparent'
-              ]"
-              @click="selectTopic(lessonIndex, topicIndex)"
-            >
-              <!-- Compact Status Icon -->
-              <div class="flex-shrink-0 mt-0.5">
-                <div 
-                  v-if="isTopicCompleted(lessonIndex, topicIndex)"
-                  class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"
-                >
-                  <el-icon
-                    class="text-white"
-                    :size="12"
-                  >
-                    <Check />
-                  </el-icon>
-                </div>
-                <div 
-                  v-else-if="isCurrentTopic(lessonIndex, topicIndex)"
-                  class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"
-                >
-                  <el-icon
-                    class="text-white"
-                    :size="12"
-                  >
-                    <VideoPlay />
-                  </el-icon>
-                </div>
-                <div 
-                  v-else
-                  class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center"
-                >
-                  <div class="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                </div>
-              </div>
-
-              <!-- Compact Topic Info -->
-              <div class="flex-1 min-w-0">
-                <div 
-                  :class="[
-                    'text-xs font-medium mb-0.5 leading-tight',
-                    isCurrentTopic(lessonIndex, topicIndex)
-                      ? 'text-blue-600'
-                      : 'text-gray-900'
-                  ]"
-                >
-                  {{ lessonIndex + 1 }}.{{ topicIndex + 1 }}: {{ topic.title }}
-                </div>
-                <div class="text-xs text-gray-500">
-                  {{ topic.duration || '15 мин' }}
-                </div>
-              </div>
-
-              <!-- Play Icon for current -->
-              <div
-                v-if="isCurrentTopic(lessonIndex, topicIndex)"
-                class="flex-shrink-0"
-              >
-                <el-icon
-                  class="text-blue-600"
-                  :size="14"
-                >
-                  <CaretRight />
-                </el-icon>
-              </div>
-            </button>
-
-            <!-- Lesson Test -->
-            <button
-              :class="[
-                'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3 border-t border-gray-200',
+                'flex items-start gap-3',
                 isCurrentTest(lessonIndex)
-                  ? 'border-purple-600 bg-purple-50'
-                  : 'border-transparent'
+                  ? ''
+                  : 'opacity-75 group-hover/item:opacity-100 transition-opacity'
               ]"
-              @click="selectTest(lessonIndex)"
             >
-              <!-- Test Icon -->
-              <div class="flex-shrink-0 mt-0.5">
-                <div 
-                  v-if="isLessonTestPassed(lessonIndex)"
-                  class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"
-                >
-                  <el-icon
-                    class="text-white"
-                    :size="12"
-                  >
-                    <Check />
-                  </el-icon>
-                </div>
-                <div 
-                  v-else-if="isCurrentTest(lessonIndex)"
-                  class="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center"
-                >
-                  <el-icon
-                    class="text-white"
-                    :size="12"
-                  >
-                    <Document />
-                  </el-icon>
-                </div>
-                <div 
-                  v-else
-                  class="w-5 h-5 rounded-lg border-2 border-purple-300 flex items-center justify-center"
-                >
-                  <el-icon
-                    class="text-purple-500"
-                    :size="12"
-                  >
-                    <Document />
-                  </el-icon>
-                </div>
-              </div>
-
-              <!-- Test Info -->
-              <div class="flex-1 min-w-0">
-                <div 
+              <span
+                class="material-symbols-outlined text-[20px] mt-0.5"
+                :class="
+                  isCurrentTest(lessonIndex)
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-slate-400 group-hover/item:text-slate-600 dark:text-slate-500'
+                "
+              >
+                description
+              </span>
+              <div class="flex flex-col">
+                <span
                   :class="[
-                    'text-xs font-medium mb-0.5 leading-tight flex items-center gap-1',
+                    'text-sm leading-snug',
                     isCurrentTest(lessonIndex)
-                      ? 'text-purple-600'
-                      : 'text-gray-900'
+                      ? 'font-semibold text-purple-600 dark:text-purple-400'
+                      : 'font-medium text-slate-600 dark:text-slate-300 group-hover/item:text-slate-900 transition-colors'
                   ]"
                 >
-                  <span>Тест модуля {{ lessonIndex + 1 }}</span>
-                  <el-tag
-                    v-if="isLessonTestPassed(lessonIndex)"
-                    type="success"
-                    size="small"
-                    class="ml-1"
-                  >
-                    ✓
-                  </el-tag>
-                </div>
-                <div class="text-xs text-gray-500">
-                  Проверка знаний
-                </div>
+                  Тест модуля {{ lessonIndex + 1 }}
+                </span>
+                <span class="text-[11px] text-slate-400 mt-0.5">Проверка знаний</span>
               </div>
-
-              <!-- Arrow Icon for current -->
-              <div
-                v-if="isCurrentTest(lessonIndex)"
-                class="flex-shrink-0"
-              >
-                <el-icon
-                  class="text-purple-600"
-                  :size="14"
-                >
-                  <CaretRight />
-                </el-icon>
-              </div>
-            </button>
+            </div>
+            <span
+              v-if="isLessonTestPassed(lessonIndex)"
+              class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
+            >
+              check
+            </span>
           </div>
-        </el-collapse-transition>
+        </div>
+      </details>
+    </div>
+
+    <!-- User Profile Footer -->
+    <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#151f28]">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-xs"
+        >
+          {{ userInitials }}
+        </div>
+        <div class="flex flex-col">
+          <p class="text-xs font-medium text-slate-900 dark:text-white">{{ userName }}</p>
+          <p class="text-[10px] text-slate-500">{{ userRole }}</p>
+        </div>
       </div>
     </div>
-  </div>
+  </aside>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { ArrowDown, Check, VideoPlay, CaretRight, Document, Fold } from '@element-plus/icons-vue'
+import authService from '@/services/auth'
 
 const props = defineProps({
   lessons: {
@@ -258,31 +254,93 @@ const props = defineProps({
   isTestMode: {
     type: Boolean,
     default: false
+  },
+  courseTitle: {
+    type: String,
+    default: 'Курс обучения'
+  },
+  courseProgress: {
+    type: Number,
+    default: 0
+  },
+  currentFile: {
+    type: Object,
+    default: null
+  },
+  stationId: {
+    type: Number,
+    default: null
   }
 })
 
-const emit = defineEmits(['select-lesson', 'select-test', 'toggle-sidebar'])
+const emit = defineEmits(['select-lesson', 'select-test', 'toggle-sidebar', 'select-file'])
 
 const expandedLessons = ref([props.currentLessonIndex])
-const allExpanded = ref(false)
+const expandedTopics = ref([])
+
+// User data
+const userName = computed(() => {
+  const user = authService.getCurrentUser()
+  if (user) {
+    return user.full_name || user.username || 'Пользователь'
+  }
+  return 'Пользователь'
+})
+
+const userInitials = computed(() => {
+  const name = userName.value
+  const parts = name.split(' ')
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return name.charAt(0).toUpperCase()
+})
+
+const userRole = computed(() => {
+  const user = authService.getCurrentUser()
+  if (!user) return 'Студент'
+  const roles = {
+    admin: 'Администратор',
+    instructor: 'Инструктор',
+    user: 'Студент'
+  }
+  return roles[user.role] || 'Студент'
+})
+
+// Progress calculation
+const totalTopicsCount = computed(() => {
+  let total = 0
+  props.lessons.forEach(lesson => {
+    total += lesson.topics?.length || 0
+  })
+  return total
+})
+
+const completedTopicsCount = computed(() => {
+  return props.completedTopics.size
+})
 
 // Methods
 const toggleLesson = (index) => {
   const idx = expandedLessons.value.indexOf(index)
   if (idx > -1) {
     expandedLessons.value.splice(idx, 1)
+    // Also collapse all topics in this lesson
+    expandedTopics.value = expandedTopics.value.filter(
+      key => !key.startsWith(`${index}-`)
+    )
   } else {
     expandedLessons.value.push(index)
   }
 }
 
-const toggleAllLessons = () => {
-  if (allExpanded.value) {
-    expandedLessons.value = [props.currentLessonIndex]
-    allExpanded.value = false
+const toggleTopic = (lessonIndex, topicIndex) => {
+  const key = `${lessonIndex}-${topicIndex}`
+  const idx = expandedTopics.value.indexOf(key)
+  if (idx > -1) {
+    expandedTopics.value.splice(idx, 1)
   } else {
-    expandedLessons.value = props.lessons.map((_, index) => index)
-    allExpanded.value = true
+    expandedTopics.value.push(key)
   }
 }
 
@@ -290,16 +348,22 @@ const selectTopic = (lessonIndex, topicIndex) => {
   emit('select-lesson', { lessonIndex, topicIndex })
 }
 
+const selectFile = (lessonIndex, topicIndex, file) => {
+  // First select the topic, then the file
+  selectTopic(lessonIndex, topicIndex)
+  emit('select-file', { lessonIndex, topicIndex, file })
+}
+
 const selectTest = (lessonIndex) => {
   emit('select-test', { lessonIndex })
 }
 
-const handleToggleSidebar = () => {
-  emit('toggle-sidebar')
-}
-
 const isCurrentTopic = (lessonIndex, topicIndex) => {
-  return lessonIndex === props.currentLessonIndex && topicIndex === props.currentTopicIndex && !props.isTestMode
+  return (
+    lessonIndex === props.currentLessonIndex &&
+    topicIndex === props.currentTopicIndex &&
+    !props.isTestMode
+  )
 }
 
 const isCurrentTest = (lessonIndex) => {
@@ -307,150 +371,105 @@ const isCurrentTest = (lessonIndex) => {
 }
 
 const isTopicCompleted = (lessonIndex, topicIndex) => {
+  // Check if topic is completed - format is: `${stationId}-${lessonIndex}-${topicIndex}`
+  if (props.stationId !== null && props.stationId !== undefined) {
+    const topicId = `${props.stationId}-${lessonIndex}-${topicIndex}`
+    return props.completedTopics.has(topicId)
+  }
+  // Fallback: check simple format
   const topicId = `${lessonIndex}-${topicIndex}`
   return props.completedTopics.has(topicId)
 }
 
 const isLessonTestPassed = (lessonIndex) => {
-  // Проверяем, есть ли пройденный тест для этого модуля
-  const testId = `test-module-${lessonIndex + 1}` // Например test-module-1, test-module-2
+  const testId = `test-module-${lessonIndex + 1}`
   return props.passedTests.has(testId)
 }
 
-// Watch for current lesson changes to auto-expand
-watch(() => props.currentLessonIndex, (newIndex) => {
-  if (!expandedLessons.value.includes(newIndex)) {
-    expandedLessons.value.push(newIndex)
+const getTopicFiles = (lessonIndex, topicIndex) => {
+  const lesson = props.lessons[lessonIndex]
+  if (!lesson || !lesson.topics) return []
+  const topic = lesson.topics[topicIndex]
+  if (!topic || !topic.files) return []
+  const files = topic.files || []
+  // Sort files: main files first, then by order_index
+  return [...files].sort((a, b) => {
+    const aMain = a.isMain ?? a.is_main ?? false
+    const bMain = b.isMain ?? b.is_main ?? false
+    if (aMain !== bMain) {
+      return aMain ? -1 : 1 // Main files first
+    }
+    const aOrder = a.orderIndex ?? a.order_index ?? 0
+    const bOrder = b.orderIndex ?? b.order_index ?? 0
+    return aOrder - bOrder
+  })
+}
+
+const isActiveFile = (lessonIndex, topicIndex, file) => {
+  if (!props.currentFile) return false
+  if (
+    lessonIndex !== props.currentLessonIndex ||
+    topicIndex !== props.currentTopicIndex
+  ) {
+    return false
   }
-}, { immediate: true })
+  const fileKey = file.objectKey || file.object_key || file.objectName || file.object_name
+  const currentKey =
+    props.currentFile.objectKey ||
+    props.currentFile.object_key ||
+    props.currentFile.objectName ||
+    props.currentFile.object_name
+  return fileKey === currentKey
+}
+
+const isFileCompleted = (lessonIndex, topicIndex, file) => {
+  // File is considered completed if topic is completed
+  return isTopicCompleted(lessonIndex, topicIndex)
+}
+
+const getFileIcon = (file) => {
+  const fileName = (file.originalName || file.original_name || file.fileName || '').toLowerCase()
+  const fileType = (file.fileType || file.file_type || '').toLowerCase()
+  
+  if (fileType === 'pdf' || fileName.endsWith('.pdf')) {
+    return 'picture_as_pdf'
+  }
+  if (fileType === 'video' || fileName.endsWith('.mp4') || fileName.endsWith('.webm') || fileName.endsWith('.mov')) {
+    return 'play_circle'
+  }
+  return 'description'
+}
+
+const getFileTypeLabel = (file) => {
+  const isMain = file.isMain ?? file.is_main ?? false
+  return isMain ? 'Основной материал' : 'Дополнительный'
+}
+
+// Watch for current lesson changes to auto-expand
+watch(
+  () => props.currentLessonIndex,
+  (newIndex) => {
+    if (!expandedLessons.value.includes(newIndex)) {
+      expandedLessons.value.push(newIndex)
+    }
+    // Auto-expand current topic
+    if (props.currentTopicIndex >= 0) {
+      const topicKey = `${newIndex}-${props.currentTopicIndex}`
+      if (!expandedTopics.value.includes(topicKey)) {
+        expandedTopics.value.push(topicKey)
+      }
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
-.lesson-sidebar {
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  width: 100%;
-  max-width: 100%;
+details > summary {
+  list-style: none;
 }
 
-/* Desktop styles */
-.sidebar-desktop {
-  position: sticky;
-  top: clamp(3.5rem, 10vw, 4rem);
-  height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
-  max-height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
-  overflow: hidden;
-  width: clamp(16rem, 25vw, 20rem);
-  min-width: clamp(16rem, 25vw, 20rem);
-  max-width: clamp(16rem, 25vw, 20rem);
-}
-
-/* Mobile styles */
-.sidebar-mobile {
-  position: fixed;
-  left: 0;
-  top: clamp(3.5rem, 10vw, 4rem);
-  height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
-  z-index: 40;
-  overflow: hidden;
-  width: clamp(16rem, 80vw, 20rem);
-  max-width: 85vw;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-}
-
-.lessons-list-container {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0;
-  width: 100%;
-}
-
-.rotate-180 {
-  transform: rotate(180deg);
-}
-
-.sidebar-toggle-btn {
-  flex-shrink: 0;
-  margin-left: clamp(0.25rem, 1vw, 0.5rem);
-  width: clamp(1.75rem, 4vw, 2rem);
-  height: clamp(1.75rem, 4vw, 2rem);
-}
-
-/* Кастомный скроллбар для сайдбара */
-.lessons-list-container::-webkit-scrollbar {
-  width: clamp(0.25rem, 0.75vw, 0.375rem);
-}
-
-.lessons-list-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.lessons-list-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: clamp(0.125rem, 0.375vw, 0.1875rem);
-}
-
-.lessons-list-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Media Queries */
-/* Mobile phones (max-width: 480px) */
-@media (max-width: 480px) {
-  .sidebar-mobile {
-    width: 85vw;
-    max-width: 85vw;
-  }
-
-  .sidebar-desktop {
-    width: clamp(14rem, 30vw, 18rem);
-    min-width: clamp(14rem, 30vw, 18rem);
-    max-width: clamp(14rem, 30vw, 18rem);
-  }
-}
-
-/* Tablets (max-width: 768px) */
-@media (max-width: 768px) {
-  .sidebar-mobile {
-    width: clamp(18rem, 75vw, 22rem);
-    max-width: 80vw;
-  }
-
-  .sidebar-desktop {
-    width: clamp(16rem, 28vw, 20rem);
-    min-width: clamp(16rem, 28vw, 20rem);
-    max-width: clamp(16rem, 28vw, 20rem);
-  }
-}
-
-/* Small laptops (max-width: 1024px) */
-@media (max-width: 1024px) {
-  .sidebar-desktop {
-    width: clamp(16rem, 30vw, 20rem);
-    min-width: clamp(16rem, 30vw, 20rem);
-    max-width: clamp(16rem, 30vw, 20rem);
-  }
-}
-
-/* Desktop (min-width: 1025px) */
-@media (min-width: 1025px) {
-  .sidebar-desktop {
-    width: clamp(18rem, 22vw, 20rem);
-    min-width: clamp(18rem, 22vw, 20rem);
-    max-width: clamp(18rem, 22vw, 20rem);
-  }
-}
-
-/* Wide monitors (min-width: 1440px) */
-@media (min-width: 1440px) {
-  .sidebar-desktop {
-    width: 20rem;
-    min-width: 20rem;
-    max-width: 20rem;
-  }
+details > summary::-webkit-details-marker {
+  display: none;
 }
 </style>
-
