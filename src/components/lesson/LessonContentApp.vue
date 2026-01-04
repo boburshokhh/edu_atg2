@@ -42,7 +42,7 @@
       />
 
         <!-- Content Area -->
-        <div class="flex-1 overflow-hidden">
+        <div class="flex-1">
           <!-- Test Mode -->
           <div
             v-if="isTestMode"

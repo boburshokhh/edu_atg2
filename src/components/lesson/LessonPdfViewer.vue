@@ -33,7 +33,7 @@
     <!-- PDF Container -->
     <div
       v-if="pdfData"
-      class="w-full max-w-[800px] py-8 px-4 min-h-full flex justify-center"
+      class="w-full max-w-[800px] py-8 px-4"
     >
       <VuePdfEmbed
         :source="pdfData"
