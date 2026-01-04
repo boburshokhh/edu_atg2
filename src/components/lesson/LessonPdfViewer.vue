@@ -1,25 +1,17 @@
 <template>
-  <div class="relative mb-12 flex flex-col items-center group">
-    <!-- Control Panel -->
-    <!-- Page Indicator -->
-    <div v-if="totalPages > 0" class="sticky top-4 z-10 flex justify-center mb-4 px-4 pointer-events-none w-full">
-      <div class="bg-white/90 backdrop-blur rounded-lg shadow-lg px-3 py-1.5 md:px-4 md:py-2 pointer-events-auto">
-        <span class="text-xs md:text-sm font-medium text-slate-700 whitespace-nowrap">
-          {{ currentPage }} / {{ totalPages }}
-        </span>
-      </div>
-    </div>
-
+  <div class="relative mb-12 flex flex-col items-center group w-full">
     <!-- PDF Container -->
     <div
       v-if="pdfData"
-      class="bg-white shadow-2xl"
+      class="bg-white shadow-2xl transition-all duration-200 ease-out origin-top"
+      :style="{ width: zoom + '%' }"
     >
       <VuePdfEmbed
         :source="pdfData"
         :scale="zoom / 100"
         text-layer
         annotation-layer
+        class="w-full h-auto"
         @loaded="handlePdfLoaded"
         @rendered="handlePdfRendered"
         @loading-failed="handlePdfError"
