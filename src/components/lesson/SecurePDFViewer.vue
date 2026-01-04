@@ -606,6 +606,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 2rem;
+  background: white;
 }
 
 .secure-pdf-viewer.fullscreen-mode {
@@ -687,8 +688,8 @@ onUnmounted(() => {
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(30, 41, 59, 0.9);
-  color: white;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1f2937;
   padding: 0.5rem 1rem;
   border-radius: 9999px;
   font-size: 0.875rem;
@@ -699,6 +700,14 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   pointer-events: auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dark .page-indicator {
+  background: rgba(30, 41, 59, 0.9);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .pdf-viewer-content:hover .page-indicator {

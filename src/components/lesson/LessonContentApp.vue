@@ -29,7 +29,7 @@
       />
 
       <!-- Main Content Area -->
-      <main class="flex-1 bg-slate-100/50 dark:bg-black/20 flex flex-col h-full relative overflow-hidden">
+      <main class="flex-1 bg-white dark:bg-slate-900 flex flex-col h-full relative overflow-hidden">
         <!-- Lesson Header -->
         <LessonHeader
           :station-id="stationId"
@@ -45,7 +45,7 @@
         />
 
         <!-- Content Area -->
-        <div class="flex-1 overflow-auto p-8 flex justify-center bg-[#525659] dark:bg-[#0f1113] relative">
+        <div class="flex-1 overflow-auto p-8 flex justify-center bg-white dark:bg-slate-900 relative">
           <!-- Test Mode -->
           <div
             v-if="isTestMode"
