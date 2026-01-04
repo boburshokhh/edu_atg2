@@ -67,12 +67,9 @@
             :current-file="currentFile"
             :current-file-type="currentFileType"
             :current-zoom="currentZoom"
-            :current-page="pdfCurrentPage"
-            :total-pages="pdfTotalPages"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
             @download-file="downloadFile"
-            @page-change="handlePageChange"
           />
         </div>
       </main>
@@ -209,15 +206,6 @@ const currentFileType = computed(() => {
       ''
   ).toLowerCase()
   
-  // Определение PDF (приоритет)
-  if (
-    t.includes('pdf') ||
-    t === 'application/pdf' ||
-    name.endsWith('.pdf')
-  ) {
-    return 'pdf'
-  }
-  
   // Определение видео
   if (
     t.includes('video') ||
@@ -240,17 +228,7 @@ const currentFileName = computed(() => {
 const downloadFile = async (file) => {
   if (!file) return
   
-  // Безопасность: запрещаем скачивание PDF документов
-  const fileType = (file.type || '').toLowerCase()
-  const fileName = (file.original_name || file.originalName || '').toLowerCase()
-  const isPdf = fileType.includes('pdf') || fileType === 'application/pdf' || fileName.endsWith('.pdf')
-  
-  if (isPdf) {
-    ElMessage.warning('Скачивание конфиденциальных PDF документов запрещено')
-    return
-  }
-  
-  // Для других типов файлов разрешаем скачивание (видео, изображения и т.д.)
+  // Разрешаем скачивание всех типов файлов
   const direct = file.url || file.file_url
   if (direct) {
     window.open(direct, '_blank')
@@ -306,9 +284,6 @@ const isMobile = ref(window.innerWidth < 768)
 const isTablet = ref(window.innerWidth >= 768 && window.innerWidth < 1024)
 const showSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном
 
-// PDF page tracking
-const pdfCurrentPage = ref(1)
-const pdfTotalPages = ref(0)
 
 // Handle window resize
 const handleResize = () => {
@@ -396,30 +371,18 @@ const loadTopicMaterials = async () => {
         // Определяем Content-Type: приоритет у mimeType из БД, затем по типу/расширению
         const contentType =
           mimeType ||
-          (fileType === 'pdf' || nameForDetect.endsWith('.pdf')
-            ? 'application/pdf'
-            : fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
-              ? (nameForDetect.endsWith('.webm')
-                ? 'video/webm'
-                : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
-                  ? 'video/ogg'
-                  : nameForDetect.endsWith('.mov')
-                    ? 'video/quicktime'
-                    : 'video/mp4')
-              : 'application/octet-stream')
+          (fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
+            ? (nameForDetect.endsWith('.webm')
+              ? 'video/webm'
+              : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
+                ? 'video/ogg'
+                : nameForDetect.endsWith('.mov')
+                  ? 'video/quicktime'
+                  : 'video/mp4')
+            : 'application/octet-stream')
 
-        // Безопасность: для PDF используем streaming endpoint, для других - presigned URLs с коротким TTL
-        const isPdf = fileType === 'pdf' || contentType.includes('pdf') || nameForDetect.endsWith('.pdf')
-        
-        let fileUrl = null
-        if (isPdf) {
-          // PDF: используем streaming endpoint (безопаснее, нет прямого доступа)
-          // URL будет формироваться в SecurePDFViewer компоненте
-          fileUrl = null // Не нужен presigned URL для PDF
-        } else {
-          // Для видео и других файлов: presigned URL с коротким TTL (1 час вместо 7 дней)
-          fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
-        }
+        // Для всех файлов: presigned URL с коротким TTL (1 час)
+        const fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
 
         return {
           id: f.id,
@@ -655,25 +618,18 @@ const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
     
     const contentType =
       mimeType ||
-      (fileType === 'pdf' || nameForDetect.endsWith('.pdf')
-        ? 'application/pdf'
-        : fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
-          ? (nameForDetect.endsWith('.webm')
-            ? 'video/webm'
-            : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
-              ? 'video/ogg'
-              : nameForDetect.endsWith('.mov')
-                ? 'video/quicktime'
-                : 'video/mp4')
-          : 'application/octet-stream')
+      (fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
+        ? (nameForDetect.endsWith('.webm')
+          ? 'video/webm'
+          : nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv')
+            ? 'video/ogg'
+            : nameForDetect.endsWith('.mov')
+              ? 'video/quicktime'
+              : 'video/mp4')
+        : 'application/octet-stream')
 
-    const isPdf = fileType === 'pdf' || contentType.includes('pdf') || nameForDetect.endsWith('.pdf')
-    
-    let fileUrl = null
-    if (!isPdf) {
-      // Для видео и других файлов: presigned URL с коротким TTL (1 час)
-      fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
-    }
+    // Для всех файлов: presigned URL с коротким TTL (1 час)
+    const fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
 
     currentFile.value = {
       id: file.id,
@@ -696,11 +652,6 @@ const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
     console.error('[LessonContentApp] Error processing selected file:', error)
     ElMessage.error('Не удалось загрузить файл')
   }
-}
-
-const handlePageChange = ({ page, total }) => {
-  pdfCurrentPage.value = page
-  pdfTotalPages.value = total
 }
 
 const handleTestCompleted = ({ score, isPassed }) => {
@@ -754,9 +705,6 @@ const savePassedTests = () => {
 watch(() => [currentLessonIndex.value, currentTopicIndex.value], () => {
   if (!isTestMode.value) {
     loadTopicMaterials()
-    // Reset PDF page tracking
-    pdfCurrentPage.value = 1
-    pdfTotalPages.value = 0
   }
 }, { immediate: true })
 

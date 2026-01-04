@@ -3,60 +3,36 @@
     ref="fullscreenContainer"
     class="flex-1 overflow-auto p-8 flex justify-center bg-[#525659] relative"
   >
-    <template v-if="currentFile">
-      <!-- PDF Viewer -->
-      <SecurePDFViewer
-        v-if="currentFileType === 'pdf'"
-        :file="currentFile"
-        :zoom="currentZoom"
-        :is-fullscreen="isFullscreen"
-        @zoom-in="$emit('zoom-in')"
-        @zoom-out="$emit('zoom-out')"
-        @page-change="$emit('page-change', $event)"
-      />
+    <!-- Video Player -->
+    <OptimizedVideoPlayer
+      v-if="currentFile && currentFileType === 'video'"
+      :source="currentFile"
+      :zoom="currentZoom"
+      :is-fullscreen="isFullscreen"
+      @fullscreen-change="handleFullscreenChange"
+    />
 
-      <!-- Video Player -->
-      <OptimizedVideoPlayer
-        v-else-if="currentFileType === 'video'"
-        :source="currentFile"
-        :zoom="currentZoom"
-        :is-fullscreen="isFullscreen"
-        @fullscreen-change="handleFullscreenChange"
-      />
-
-      <!-- Unsupported File Type -->
-      <div 
-        v-else
-        class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex flex-col items-center justify-center min-h-[400px]"
+    <!-- Unsupported File Type -->
+    <div 
+      v-else-if="currentFile"
+      class="w-full max-w-[800px] bg-white rounded-lg shadow-2xl p-12 flex flex-col items-center justify-center min-h-[400px]"
+    >
+      <span class="material-symbols-outlined text-6xl text-slate-400 mb-4">
+        description
+      </span>
+      <h3 class="text-lg font-semibold text-slate-700 mb-2">
+        Неподдерживаемый формат файла
+      </h3>
+      <p class="text-sm text-slate-500 mb-4">
+        {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
+      </p>
+      <el-button 
+        type="primary" 
+        @click="$emit('download-file', currentFile)"
       >
-        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4">
-          description
-        </span>
-        <h3 class="text-lg font-semibold text-slate-700 mb-2">
-          Неподдерживаемый формат файла
-        </h3>
-        <p class="text-sm text-slate-500 mb-4">
-          {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
-        </p>
-        <el-button 
-          v-if="currentFileType !== 'pdf'"
-          type="primary" 
-          @click="$emit('download-file', currentFile)"
-        >
-          Скачать файл
-        </el-button>
-        <el-alert
-          v-else
-          type="info"
-          :closable="false"
-          show-icon
-        >
-          <template #title>
-            <span>Скачивание конфиденциальных документов запрещено</span>
-          </template>
-        </el-alert>
-      </div>
-    </template>
+        Скачать файл
+      </el-button>
+    </div>
 
     <!-- No Content Placeholder -->
     <div
@@ -71,13 +47,6 @@
       </div>
     </div>
 
-    <!-- Page Indicator (for PDF) -->
-    <div
-      v-if="currentFileType === 'pdf' && totalPages > 0"
-      class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg flex gap-4 text-sm font-medium opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-default"
-    >
-      <span>Страница {{ currentPage }} из {{ totalPages }}</span>
-    </div>
   </div>
 </template>
 
@@ -86,7 +55,6 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { defineAsyncComponent } from 'vue'
 
 // Lazy load viewers
-const SecurePDFViewer = defineAsyncComponent(() => import('./SecurePDFViewer.vue'))
 const OptimizedVideoPlayer = defineAsyncComponent(() => import('./OptimizedVideoPlayer.vue'))
 
 const props = defineProps({
@@ -101,14 +69,6 @@ const props = defineProps({
   currentZoom: {
     type: Number,
     default: 100
-  },
-  currentPage: {
-    type: Number,
-    default: 1
-  },
-  totalPages: {
-    type: Number,
-    default: 0
   }
 })
 
