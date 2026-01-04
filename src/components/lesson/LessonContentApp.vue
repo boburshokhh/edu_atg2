@@ -29,18 +29,20 @@
       />
 
       <!-- Main Content Area -->
-      <main class="flex-1 bg-slate-100/50 flex flex-col h-full relative min-h-0">
+      <main ref="fullscreenContainer" class="flex-1 bg-slate-100/50 flex flex-col h-full relative min-h-0">
         <!-- Header -->
         <LessonHeader
           :current-file-name="currentFileName"
           :current-zoom="currentZoom"
           :is-topic-completed="isTopicCompleted"
           :is-comments-open="isCommentsOpen"
+          :is-fullscreen="isFullscreen"
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
           @mark-complete="markAsCompleted"
           @toggle-sidebar="handleToggleSidebar"
           @toggle-comments="handleToggleComments"
+          @toggle-fullscreen="toggleFullscreen"
       />
 
         <!-- Content Area -->
@@ -312,6 +314,7 @@ const courseProgress = computed(() => {
 
 // UI State
 const isFullscreen = ref(false)
+const fullscreenContainer = ref(null)
 const isMobile = ref(window.innerWidth < 768)
 const isTablet = ref(window.innerWidth >= 768 && window.innerWidth < 1024)
 const showSidebar = ref(window.innerWidth >= 1024) // По умолчанию виден на десктопе, скрыт на мобильном

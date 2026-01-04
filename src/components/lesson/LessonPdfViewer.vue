@@ -1,31 +1,9 @@
 <template>
   <div class="w-full max-w-[800px] relative mb-12 flex flex-col group">
     <!-- Control Panel -->
-    <div class="sticky top-4 z-10 flex items-center justify-center mb-4 px-4">
-      <div class="flex items-center gap-2 bg-white/90 backdrop-blur rounded-lg shadow-lg px-3 py-1.5 md:px-4 md:py-2">
-        <!-- Zoom Out -->
-        <button
-          class="p-1 hover:bg-slate-100 rounded text-slate-600 transition-colors"
-          @click="$emit('zoom-out')"
-          :disabled="zoom <= 50"
-        >
-          <ZoomOut :size="18" class="md:w-5 md:h-5" />
-        </button>
-        
-        <!-- Zoom Display -->
-        <span class="text-xs md:text-sm font-medium w-10 md:w-12 text-center text-slate-700">{{ zoom }}%</span>
-        
-        <!-- Zoom In -->
-        <button
-          class="p-1 hover:bg-slate-100 rounded text-slate-600 transition-colors"
-          @click="$emit('zoom-in')"
-          :disabled="zoom >= 200"
-        >
-          <ZoomIn :size="18" class="md:w-5 md:h-5" />
-        </button>
-        
-        <!-- Page Indicator -->
-        <div class="h-4 md:h-6 w-px bg-slate-300 mx-1"></div>
+    <!-- Page Indicator -->
+    <div v-if="totalPages > 0" class="sticky top-4 z-10 flex justify-center mb-4 px-4 pointer-events-none">
+      <div class="bg-white/90 backdrop-blur rounded-lg shadow-lg px-3 py-1.5 md:px-4 md:py-2 pointer-events-auto">
         <span class="text-xs md:text-sm font-medium text-slate-700 whitespace-nowrap">
           {{ currentPage }} / {{ totalPages }}
         </span>
@@ -81,7 +59,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
-import { ZoomIn, ZoomOut } from 'lucide-vue-next'
 // Import required styles for PDF viewer
 import 'vue-pdf-embed/dist/styles/annotationLayer.css'
 import 'vue-pdf-embed/dist/styles/textLayer.css'
@@ -97,7 +74,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['zoom-in', 'zoom-out', 'page-loaded'])
+const emit = defineEmits(['page-loaded'])
 
 const currentPage = ref(1)
 const totalPages = ref(0)

@@ -49,6 +49,16 @@
       </div>
 
       <button
+        class="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+        @click="$emit('toggle-fullscreen')"
+        :title="isFullscreen ? 'Выйти из полноэкранного режима' : 'На весь экран'"
+      >
+        <span class="material-symbols-outlined text-[20px] md:text-[24px]">
+          {{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}
+        </span>
+      </button>
+
+      <button
         v-if="!isTopicCompleted"
         class="bg-primary hover:bg-blue-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors shadow-sm hover:shadow active:scale-95 transform duration-100"
         @click="$emit('mark-complete')"
@@ -99,10 +109,14 @@ const props = defineProps({
   isCommentsOpen: {
     type: Boolean,
     default: false
+  },
+  isFullscreen: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['zoom-in', 'zoom-out', 'mark-complete', 'toggle-sidebar', 'toggle-comments'])
+const emit = defineEmits(['zoom-in', 'zoom-out', 'mark-complete', 'toggle-sidebar', 'toggle-comments', 'toggle-fullscreen'])
 
 const handleToggleSidebar = () => {
   emit('toggle-sidebar')
