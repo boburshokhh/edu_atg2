@@ -34,8 +34,10 @@
           </el-select>
           <el-checkbox
             v-model="newTopicFileIsMain"
+            :disabled="newTopicFileType !== 'pdf'"
           >
             Основной материал
+            <span v-if="newTopicFileType !== 'pdf'" class="text-xs text-gray-400 ml-1">(только PDF)</span>
           </el-checkbox>
         </div>
         <div class="flex gap-2">
@@ -73,10 +75,12 @@
           width="120"
         >
           <template #default="{ row }">
-            <el-switch
+            <el-checkbox
               v-model="row.isMain"
+              :disabled="row.fileType !== 'pdf'"
               @change="() => updateTopicFile(row, { isMain: row.isMain })"
             />
+            <span v-if="row.fileType !== 'pdf'" class="text-xs text-gray-400 ml-1">(только PDF)</span>
           </template>
         </el-table-column>
         <el-table-column
@@ -148,6 +152,7 @@
 </template>
 
 <script setup>
+import { watch } from 'vue'
 import { Upload } from '@element-plus/icons-vue'
 import { useStationEditorContext } from '../context'
 
@@ -163,5 +168,12 @@ const {
   deleteTopicFile,
   previewTopicFile
 } = useStationEditorContext()
+
+// Auto-reset isMain when file type changes to non-PDF
+watch(newTopicFileType, (newType) => {
+  if (newType !== 'pdf' && newTopicFileIsMain.value) {
+    newTopicFileIsMain.value = false
+  }
+})
 </script>
 

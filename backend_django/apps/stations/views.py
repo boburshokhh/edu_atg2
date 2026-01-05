@@ -664,21 +664,12 @@ class StationCourseProgramTopicFileCreateView(APIView):
             return JsonResponse({"error": "Missing objectKey"}, status=400)
         if file_type not in ("pdf", "video", "document"):
             return JsonResponse({"error": "Invalid fileType"}, status=400)
+        # Only PDF files can be marked as main
         if is_main and file_type != "pdf":
             is_main = False
 
         with transaction.atomic():
-            # Ensure only one main PDF per topic
-            if is_main and file_type == "pdf":
-                with connection.cursor() as cur:
-                    cur.execute(
-                        """
-                        update course_program_topic_files
-                        set is_main = false
-                        where course_program_topic_id = %s and file_type = 'pdf' and is_main = true and is_active = true
-                        """,
-                        [topic_id],
-                    )
+            # Allow multiple main files per topic (removed single-main restriction)
 
             with connection.cursor() as cur:
                 cur.execute(
@@ -752,19 +743,10 @@ class StationCourseProgramTopicFileUpdateView(APIView):
 
             if is_main is not None:
                 is_main_bool = bool(is_main)
-                if is_main_bool and str(file_type) == "pdf":
-                    with connection.cursor() as cur:
-                        cur.execute(
-                            """
-                            update course_program_topic_files
-                            set is_main = false
-                            where course_program_topic_id = %s and file_type = 'pdf' and is_main = true and is_active = true
-                            """,
-                            [topic_id],
-                        )
-                elif is_main_bool:
-                    # Only pdf can be main
+                # Only PDF files can be marked as main
+                if is_main_bool and str(file_type) != "pdf":
                     is_main_bool = False
+                # Allow multiple main files per topic (removed single-main restriction)
             else:
                 is_main_bool = None
 
