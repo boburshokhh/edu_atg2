@@ -1304,9 +1304,8 @@
             </el-select>
             <el-checkbox
               v-model="newTopicFileIsMain"
-              :disabled="newTopicFileType !== 'pdf'"
             >
-              Главный PDF
+              Основной материал
             </el-checkbox>
           </div>
           <div class="flex gap-2">
@@ -1340,13 +1339,12 @@
           />
           <el-table-column
             prop="isMain"
-            label="Main"
-            width="90"
+            label="Основной"
+            width="120"
           >
             <template #default="{ row }">
               <el-switch
                 v-model="row.isMain"
-                :disabled="row.fileType !== 'pdf'"
                 @change="() => updateTopicFile(row, { isMain: row.isMain })"
               />
             </template>
@@ -1604,7 +1602,7 @@ const handleTopicFileUpload = async (event) => {
     const objectKey = await stationService.uploadFile(file, folder)
 
     const fileType = newTopicFileType.value
-    const isMain = fileType === 'pdf' ? !!newTopicFileIsMain.value : false
+    const isMain = !!newTopicFileIsMain.value
 
     const resp = await stationService.createCourseProgramTopicFile(route.params.id, activeTopic.value.id, {
       title: file.name,
@@ -1619,7 +1617,7 @@ const handleTopicFileUpload = async (event) => {
 
     const created = resp?.data
     if (created) {
-      // Refresh list to enforce main flag consistency
+      // Refresh list to get updated data
       topicFiles.value = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
       // Also keep topic object updated in-memory (for file counts)
       activeTopic.value.files = topicFiles.value.filter(f => f.isActive !== false)
@@ -1637,7 +1635,7 @@ const updateTopicFile = async (row, patch) => {
   if (!activeTopic.value?.id) return
   try {
     await stationService.updateCourseProgramTopicFile(route.params.id, activeTopic.value.id, row.id, patch)
-    // Reload list (main pdf uniqueness)
+    // Reload list to get updated data
     topicFiles.value = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
     activeTopic.value.files = topicFiles.value.filter(f => f.isActive !== false)
   } catch (e) {
