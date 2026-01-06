@@ -1,14 +1,14 @@
 <template>
   <div 
     :class="[
-      'educational-video-player',
+      'educational-video-player relative w-full bg-black rounded-lg overflow-hidden shadow-2xl',
       isFullscreen ? 'fullscreen' : '',
       containerClass
     ]"
   >
     <div 
       ref="playerContainer"
-      class="plyr-container"
+      class="plyr-container relative w-full aspect-video"
       :style="containerStyle"
     >
       <video
@@ -18,7 +18,7 @@
         :preload="preload"
         playsinline
         crossorigin="anonymous"
-        class="video-element"
+        class="video-element w-full h-full object-contain"
       >
         <p>Ваш браузер не поддерживает воспроизведение видео.</p>
       </video>
@@ -27,20 +27,20 @@
     <!-- Loading overlay -->
     <div
       v-if="isLoading"
-      class="loading-overlay"
+      class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10"
     >
-      <div class="loading-spinner" />
-      <p class="loading-text">{{ loadingText }}</p>
+      <div class="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+      <p class="mt-4 text-white text-sm">{{ loadingText }}</p>
     </div>
 
     <!-- Error overlay -->
     <div
       v-if="error"
-      class="error-overlay"
+      class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10"
     >
-      <div class="error-content">
+      <div class="text-center text-white p-6">
         <svg
-          class="error-icon"
+          class="w-12 h-12 mx-auto mb-4 text-red-500"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -52,9 +52,9 @@
             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <p class="error-message">{{ error }}</p>
+        <p class="mb-4 text-base">{{ error }}</p>
         <button
-          class="retry-button"
+          class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition-colors text-sm font-medium"
           @click="retry"
         >
           Повторить
@@ -68,7 +68,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Plyr from 'plyr'
 import 'plyr/dist/plyr.css'
-import { createVideoSource, isHlsUrl } from '@/services/videoStreamService'
+import { createVideoSource } from '@/services/videoStreamService'
 
 const props = defineProps({
   // Источник видео: может быть URL (string) или объект с информацией
@@ -228,7 +228,7 @@ const plyrConfig = computed(() => {
       seek: true
     },
     previewThumbnails: {
-      enabled: false // Можно включить, если есть поддержка
+      enabled: false
     },
     captions: {
       active: false,
@@ -544,14 +544,6 @@ defineExpose({
 </script>
 
 <style scoped>
-.educational-video-player {
-  position: relative;
-  width: 100%;
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
 .educational-video-player.fullscreen {
   position: fixed;
   top: 0;
@@ -560,87 +552,6 @@ defineExpose({
   height: 100vh;
   z-index: 9999;
   border-radius: 0;
-}
-
-.plyr-container {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-}
-
-.video-element {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.loading-overlay,
-.error-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-text {
-  margin-top: 16px;
-  color: #fff;
-  font-size: 14px;
-}
-
-.error-content {
-  text-align: center;
-  color: #fff;
-  padding: 24px;
-}
-
-.error-icon {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 16px;
-  color: #ef4444;
-}
-
-.error-message {
-  margin-bottom: 16px;
-  font-size: 16px;
-}
-
-.retry-button {
-  padding: 8px 16px;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-
-.retry-button:hover {
-  background: #2563eb;
 }
 
 /* Plyr стилизация */
@@ -665,19 +576,28 @@ defineExpose({
 }
 
 :deep(.plyr__control--overlaid) {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(59, 130, 246, 0.9);
   border-radius: 50%;
 }
 
 :deep(.plyr__control--overlaid:hover) {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(37, 99, 235, 1);
 }
 
-/* Адаптивность */
-@media (max-width: 768px) {
-  .plyr-container {
-    aspect-ratio: 16 / 9;
-  }
+:deep(.plyr--full-ui input[type=range]) {
+  color: #3B82F6;
+}
+
+:deep(.plyr__control.plyr__tab-focus) {
+  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.5);
+}
+
+:deep(.plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before) {
+  background: #3B82F6;
+}
+
+/* Dark mode styles */
+.dark :deep(.plyr__controls) {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
 }
 </style>
-

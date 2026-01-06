@@ -380,53 +380,26 @@
     </div>
 
     <!-- Video Player -->
-    <el-dialog
+    <VideoPlayer
       v-model="showVideoPlayer"
-      :title="currentVideo?.original_name || currentVideo?.originalName || 'Видеоурок'"
-      width="90%"
-      :before-close="handleVideoClose"
+      :video-url="currentVideo?.file_url || currentVideo?.url || ''"
+      :video-title="currentVideo?.original_name || currentVideo?.originalName || 'Видеоурок'"
+      :video-description="currentVideo?.original_name || ''"
+      :video-id="currentVideo?.objectName"
+      :lessons="allVideos"
+      :current-index="currentVideoIndex"
+      @video-end="handleVideoEnd"
       @close="handleVideoClose"
-    >
-      <EducationalVideoPlayer
-        v-if="currentVideo"
-        :source="currentVideo"
-        :require-auth="false"
-        :save-progress="true"
-        :progress-key="`video_${currentVideo.objectName || currentVideo.id}`"
-        @ended="handleVideoEnd"
-      />
-      <template #footer>
-        <div class="flex items-center justify-between w-full">
-          <el-button
-            :disabled="currentVideoIndex === 0"
-            @click="playPreviousVideo"
-          >
-            <el-icon class="mr-2">
-              <ArrowLeft />
-            </el-icon>
-            Предыдущее видео
-          </el-button>
-          <el-button
-            type="primary"
-            :disabled="currentVideoIndex >= allVideos.length - 1"
-            @click="playNextVideo"
-          >
-            Следующее видео
-            <el-icon class="ml-2">
-              <ArrowRight />
-            </el-icon>
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
+      @next="playNextVideo"
+      @previous="playPreviousVideo"
+    />
 </template>
 
 <script>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import useNotify from '@/composables/useNotify'
-import EducationalVideoPlayer from '@/components/video/EducationalVideoPlayer.vue'
-import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import VideoPlayer from '@/components/course/VideoPlayer.vue'
 import CourseCurriculum from '@/components/course/CourseCurriculum.vue'
 import courseMaterials from '@/data/courseMaterials.json'
 import minioService from '@/services/minioService'
@@ -438,10 +411,8 @@ import { ClockIcon, PlayCircleIcon, DocumentTextIcon, BookOpenIcon, ChevronRight
 export default {
   name: 'StationCourses',
   components: {
-    EducationalVideoPlayer,
+    VideoPlayer,
     CourseCurriculum,
-    ArrowLeft,
-    ArrowRight,
     ClockIcon,
     PlayCircleIcon,
     DocumentTextIcon,

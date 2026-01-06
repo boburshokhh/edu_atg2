@@ -1,215 +1,186 @@
 <template>
-  <div class="course-materials-sidebar bg-white border-l border-gray-200 flex flex-col">
-    <!-- Compact Header -->
-    <div class="p-4 border-b border-gray-200 relative">
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex-1 min-w-0">
-          <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-0.5">
-            Материалы курса
-          </h2>
-          <div
-            v-if="topicTitle"
-            class="text-xs font-medium text-gray-600 truncate"
-          >
-            {{ topicTitle }}
-          </div>
-        </div>
-        <el-button
-          :icon="Fold"
-          circle
-          size="small"
-          class="sidebar-toggle-btn"
-          title="Свернуть сайдбар"
-          @click="handleToggleSidebar"
-        />
+  <aside
+    :class="[
+      'w-80 flex flex-col shrink-0 overflow-y-auto transition-colors duration-200 border-l hidden xl:flex',
+      isDark 
+        ? 'bg-gray-800 border-gray-700' 
+        : 'bg-white border-gray-200'
+    ]"
+  >
+    <!-- Header -->
+    <div 
+      :class="[
+        'p-4 border-b sticky top-0 z-10 transition-colors duration-200',
+        isDark 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-200'
+      ]"
+    >
+      <div class="flex items-center justify-between">
+        <h2 
+          :class="[
+            'font-bold text-lg tracking-tight uppercase',
+            isDark ? 'text-gray-100' : 'text-gray-900'
+          ]"
+        >
+          Материалы курса
+        </h2>
+        <button 
+          :class="[
+            'p-1 rounded transition-colors',
+            isDark 
+              ? 'hover:bg-gray-700 text-gray-500' 
+              : 'hover:bg-gray-100 text-gray-500'
+          ]"
+          @click="$emit('toggle-sidebar')"
+        >
+          <span class="material-symbols-outlined text-sm">menu</span>
+        </button>
       </div>
+      <p 
+        v-if="topicTitle"
+        :class="[
+          'text-xs mt-1',
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        ]"
+      >
+        {{ topicTitle }}
+      </p>
     </div>
 
-    <!-- Materials List -->
-    <div class="materials-list-container">
-      <!-- Основные материалы -->
-      <div
-        v-if="mainMaterials.length > 0"
-        class="materials-section"
-      >
-        <div class="px-4 py-2 bg-gray-50 border-b border-gray-200">
-          <div class="flex items-center gap-2">
-            <el-icon
-              class="text-blue-600"
-              :size="14"
-            >
-              <Document />
-            </el-icon>
-            <span class="text-xs font-semibold text-gray-700">Основные материалы</span>
-          </div>
+    <!-- Materials Content -->
+    <div class="p-4 space-y-6">
+      <!-- Main Materials -->
+      <div v-if="mainMaterials.length > 0">
+        <div class="flex items-center gap-2 text-primary mb-3">
+          <span class="material-symbols-outlined text-lg">description</span>
+          <h3 class="text-sm font-semibold uppercase tracking-wider">Основные материалы</h3>
         </div>
-        
-        <div class="materials-items">
-          <button
-            v-for="(material, index) in mainMaterials"
-            :key="`main-${index}`"
+        <div class="space-y-3 pl-2">
+          <a
+            v-for="material in mainMaterials"
+            :key="material.id || material.objectName"
+            href="#"
             :class="[
-              'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3',
+              'flex items-start gap-3 p-2 rounded-lg border transition-all group',
               isActiveMaterial(material)
-                ? 'border-blue-600 bg-blue-50'
-                : 'border-transparent'
+                ? isDark 
+                  ? 'bg-blue-900/20 border-blue-800' 
+                  : 'bg-blue-50 border-blue-100'
+                : isDark
+                  ? 'bg-gray-700/50 border-gray-600 hover:shadow-sm'
+                  : 'bg-blue-50 border-blue-100 hover:shadow-sm'
             ]"
-            @click="handleMaterialClick(material)"
+            @click.prevent="selectMaterial(material)"
           >
-            <!-- Material Icon -->
-            <div class="flex-shrink-0 mt-0.5">
-              <div 
-                v-if="isActiveMaterial(material)"
-                class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"
-              >
-                <el-icon
-                  class="text-white"
-                  :size="12"
-                >
-                  <Check v-if="isActiveMaterial(material)" />
-                  <Document v-else />
-                </el-icon>
-              </div>
-              <div 
-                v-else
-                class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center"
-              >
-                <el-icon
-                  class="text-gray-400"
-                  :size="12"
-                >
-                  <Document v-if="!isVideoFile(material)" />
-                  <VideoPlay v-else />
-                </el-icon>
-              </div>
+            <div 
+              :class="[
+                'p-1.5 rounded shadow-sm group-hover:text-blue-600 transition-colors',
+                isDark 
+                  ? 'bg-blue-800 text-primary' 
+                  : 'bg-white text-primary'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xl">
+                {{ getMaterialIcon(material) }}
+              </span>
             </div>
-
-            <!-- Material Info -->
             <div class="flex-1 min-w-0">
-              <div 
+              <p 
                 :class="[
-                  'text-xs font-medium mb-0.5 leading-tight',
-                  isActiveMaterial(material)
-                    ? 'text-blue-600'
-                    : 'text-gray-900'
+                  'text-sm font-medium group-hover:underline truncate',
+                  isDark ? 'text-blue-400' : 'text-primary'
                 ]"
               >
-                {{ material.original_name || material.originalName }}
-              </div>
-              <div class="text-xs text-gray-500">
-                {{ material.sizeFormatted || formatFileSize(material.file_size) }}
-              </div>
-            </div>
-
-            <!-- Active Icon -->
-            <div
-              v-if="isActiveMaterial(material)"
-              class="flex-shrink-0"
-            >
-              <el-icon
-                class="text-blue-600"
-                :size="14"
+                {{ material.original_name || material.originalName || 'Файл' }}
+              </p>
+              <p 
+                :class="[
+                  'text-xs mt-0.5',
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                ]"
               >
-                <CaretRight />
-              </el-icon>
+                {{ formatFileSize(material.file_size) }} • {{ getMaterialType(material) }}
+              </p>
             </div>
-          </button>
+            <span 
+              :class="[
+                'material-symbols-outlined text-primary text-sm opacity-0 group-hover:opacity-100 transition-opacity',
+                isDark ? 'text-blue-400' : ''
+              ]"
+            >
+              download
+            </span>
+          </a>
         </div>
       </div>
 
-      <!-- Дополнительные материалы -->
-      <div
-        v-if="additionalMaterials.length > 0"
-        class="materials-section"
-      >
-        <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 border-t border-gray-200">
-          <div class="flex items-center gap-2">
-            <el-icon
-              class="text-purple-600"
-              :size="14"
-            >
-              <Folder />
-            </el-icon>
-            <span class="text-xs font-semibold text-gray-700">Дополнительные материалы</span>
-          </div>
+      <!-- Additional Materials -->
+      <div v-if="additionalMaterials.length > 0">
+        <div 
+          :class="[
+            'flex items-center gap-2 mb-3',
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          ]"
+        >
+          <span class="material-symbols-outlined text-lg">folder_open</span>
+          <h3 class="text-sm font-semibold uppercase tracking-wider">Дополнительные материалы</h3>
         </div>
-        
-        <div class="materials-items">
-          <button
-            v-for="(material, index) in additionalMaterials"
-            :key="`additional-${index}`"
+        <div class="space-y-4 pl-2">
+          <div
+            v-for="material in additionalMaterials"
+            :key="material.id || material.objectName"
             :class="[
-              'w-full px-4 py-2.5 flex items-start gap-2.5 hover:bg-gray-100 transition-colors text-left border-l-3',
-              isActiveMaterial(material)
-                ? 'border-purple-600 bg-purple-50'
-                : 'border-transparent'
+              'group flex items-start gap-3 cursor-pointer',
+              isActiveMaterial(material) ? 'opacity-100' : ''
             ]"
-            @click="handleMaterialClick(material)"
+            @click="selectMaterial(material)"
           >
-            <!-- Material Icon -->
-            <div class="flex-shrink-0 mt-0.5">
-              <div 
-                v-if="isActiveMaterial(material)"
-                class="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center"
-              >
-                <el-icon
-                  class="text-white"
-                  :size="12"
-                >
-                  <Check />
-                </el-icon>
-              </div>
-              <div 
-                v-else
-                class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center"
-              >
-                <el-icon
-                  class="text-gray-400"
-                  :size="12"
-                >
-                  <Document v-if="!isVideoFile(material)" />
-                  <VideoPlay v-else />
-                </el-icon>
-              </div>
+            <div 
+              :class="[
+                'mt-0.5 transition-colors',
+                isVideoMaterial(material)
+                  ? isDark 
+                    ? 'text-gray-500 group-hover:text-red-400' 
+                    : 'text-gray-400 group-hover:text-red-500'
+                  : isDark
+                    ? 'text-gray-500 group-hover:text-primary'
+                    : 'text-gray-400 group-hover:text-primary'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xl">
+                {{ getMaterialIcon(material) }}
+              </span>
             </div>
-
-            <!-- Material Info -->
-            <div class="flex-1 min-w-0">
-              <div 
+            <div class="flex-1">
+              <p 
                 :class="[
-                  'text-xs font-medium mb-0.5 leading-tight',
-                  isActiveMaterial(material)
-                    ? 'text-purple-600'
-                    : 'text-gray-900'
+                  'text-sm font-medium leading-tight transition-colors',
+                  isVideoMaterial(material)
+                    ? 'group-hover:text-red-500'
+                    : 'group-hover:text-primary',
+                  isDark ? 'text-gray-100' : 'text-gray-900'
                 ]"
               >
-                {{ material.original_name || material.originalName }}
-              </div>
-              <div class="text-xs text-gray-500">
-                {{ material.sizeFormatted || formatFileSize(material.file_size) }}
-              </div>
-            </div>
-
-            <!-- Active Icon -->
-            <div
-              v-if="isActiveMaterial(material)"
-              class="flex-shrink-0"
-            >
-              <el-icon
-                class="text-purple-600"
-                :size="14"
+                {{ material.original_name || material.originalName || 'Файл' }}
+              </p>
+              <p 
+                :class="[
+                  'text-xs mt-1',
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                ]"
               >
-                <CaretRight />
-              </el-icon>
+                {{ formatFileSize(material.file_size) }}
+              </p>
             </div>
-          </button>
+          </div>
         </div>
       </div>
 
       <!-- Empty State -->
       <div
         v-if="mainMaterials.length === 0 && additionalMaterials.length === 0"
-        class="px-4 py-8 text-center"
+        class="py-8 text-center"
       >
         <el-empty
           description="Нет доступных материалов"
@@ -217,12 +188,10 @@
         />
       </div>
     </div>
-  </div>
+  </aside>
 </template>
 
 <script setup>
-import { Document, VideoPlay, Check, CaretRight, Folder, Fold } from '@element-plus/icons-vue'
-
 const props = defineProps({
   mainMaterials: {
     type: Array,
@@ -239,20 +208,55 @@ const props = defineProps({
   topicTitle: {
     type: String,
     default: ''
+  },
+  isDark: {
+    type: Boolean,
+    default: false
   }
 })
 
 const emit = defineEmits(['select-material', 'toggle-sidebar'])
 
-const isVideoFile = (file) => {
-  if (!file) return false
-  const fileName = (file.original_name || file.originalName || '').toLowerCase()
-  const fileType = (file.type || '').toLowerCase()
+const isVideoMaterial = (material) => {
+  if (!material) return false
+  const fileName = (material.original_name || material.originalName || '').toLowerCase()
+  const fileType = (material.type || '').toLowerCase()
   return fileName.endsWith('.mp4') || 
          fileName.endsWith('.webm') || 
          fileName.endsWith('.ogg') ||
          fileName.endsWith('.mov') ||
          fileType.includes('video')
+}
+
+const getMaterialIcon = (material) => {
+  if (isVideoMaterial(material)) {
+    return 'play_circle_outline'
+  }
+  const fileName = (material.original_name || material.originalName || '').toLowerCase()
+  if (fileName.endsWith('.pdf')) {
+    return 'picture_as_pdf'
+  }
+  return 'description'
+}
+
+const getMaterialType = (material) => {
+  if (isVideoMaterial(material)) {
+    return 'Видео'
+  }
+  const fileName = (material.original_name || material.originalName || '').toLowerCase()
+  if (fileName.endsWith('.pdf')) {
+    return 'PDF'
+  }
+  if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+    return 'Word'
+  }
+  if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+    return 'Excel'
+  }
+  if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
+    return 'PowerPoint'
+  }
+  return 'Файл'
 }
 
 const formatFileSize = (bytes) => {
@@ -269,147 +273,27 @@ const isActiveMaterial = (material) => {
          (material.objectName === props.currentFile.objectName)
 }
 
-const handleMaterialClick = (material) => {
+const selectMaterial = (material) => {
   emit('select-material', material)
-}
-
-const handleToggleSidebar = () => {
-  emit('toggle-sidebar')
 }
 </script>
 
 <style scoped>
-.course-materials-sidebar {
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  border-left: 1px solid #e5e7eb;
-  width: 100%;
-  max-width: 100%;
+/* Custom scrollbar */
+aside::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* Desktop styles */
-.materials-sidebar-desktop {
-  position: sticky;
-  top: clamp(3.5rem, 10vw, 4rem);
-  height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
-  max-height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
-  overflow: hidden;
-  width: clamp(16rem, 25vw, 20rem);
-  min-width: clamp(16rem, 25vw, 20rem);
-  max-width: clamp(16rem, 25vw, 20rem);
+aside::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Mobile styles */
-.materials-sidebar-mobile {
-  position: fixed;
-  right: 0;
-  top: clamp(3.5rem, 10vw, 4rem);
-  height: calc(100vh - clamp(3.5rem, 10vw, 4rem));
-  z-index: 40;
-  overflow: hidden;
-  width: clamp(16rem, 80vw, 20rem);
-  max-width: 85vw;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+aside::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
 }
 
-.materials-list-container {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0;
-  width: 100%;
-}
-
-.materials-section {
-  border-b: 1px solid #f3f4f6;
-  width: 100%;
-}
-
-.materials-items {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.sidebar-toggle-btn {
-  flex-shrink: 0;
-  margin-left: clamp(0.25rem, 1vw, 0.5rem);
-  width: clamp(1.75rem, 4vw, 2rem);
-  height: clamp(1.75rem, 4vw, 2rem);
-}
-
-/* Кастомный скроллбар для сайдбара */
-.materials-list-container::-webkit-scrollbar {
-  width: clamp(0.25rem, 0.75vw, 0.375rem);
-}
-
-.materials-list-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.materials-list-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: clamp(0.125rem, 0.375vw, 0.1875rem);
-}
-
-.materials-list-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Media Queries */
-/* Mobile phones (max-width: 480px) */
-@media (max-width: 480px) {
-  .materials-sidebar-mobile {
-    width: 85vw;
-    max-width: 85vw;
-  }
-
-  .materials-sidebar-desktop {
-    width: clamp(14rem, 30vw, 18rem);
-    min-width: clamp(14rem, 30vw, 18rem);
-    max-width: clamp(14rem, 30vw, 18rem);
-  }
-}
-
-/* Tablets (max-width: 768px) */
-@media (max-width: 768px) {
-  .materials-sidebar-mobile {
-    width: clamp(18rem, 75vw, 22rem);
-    max-width: 80vw;
-  }
-
-  .materials-sidebar-desktop {
-    width: clamp(16rem, 28vw, 20rem);
-    min-width: clamp(16rem, 28vw, 20rem);
-    max-width: clamp(16rem, 28vw, 20rem);
-  }
-}
-
-/* Small laptops (max-width: 1024px) */
-@media (max-width: 1024px) {
-  .materials-sidebar-desktop {
-    width: clamp(16rem, 30vw, 20rem);
-    min-width: clamp(16rem, 30vw, 20rem);
-    max-width: clamp(16rem, 30vw, 20rem);
-  }
-}
-
-/* Desktop (min-width: 1025px) */
-@media (min-width: 1025px) {
-  .materials-sidebar-desktop {
-    width: clamp(18rem, 22vw, 20rem);
-    min-width: clamp(18rem, 22vw, 20rem);
-    max-width: clamp(18rem, 22vw, 20rem);
-  }
-}
-
-/* Wide monitors (min-width: 1440px) */
-@media (min-width: 1440px) {
-  .materials-sidebar-desktop {
-    width: 20rem;
-    min-width: 20rem;
-    max-width: 20rem;
-  }
+aside::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.8);
 }
 </style>

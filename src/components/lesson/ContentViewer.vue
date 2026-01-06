@@ -1,134 +1,236 @@
 <template>
-  <div 
-    :class="[
-      'flex-1 overflow-auto bg-[#525659] p-4 sm:p-6 md:p-8 flex justify-center items-start relative custom-scrollbar min-h-0'
-    ]"
-  >
-    <!-- Loading State -->
-    <transition name="fade">
-      <div
-        v-if="isLoading"
-        class="w-full max-w-5xl bg-white rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]"
-      >
-        <div class="text-center">
-          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-          <p class="text-slate-500">{{ loadingText }}</p>
-        </div>
+  <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <!-- Top Toolbar -->
+    <div 
+      :class="[
+        'p-2 border-b flex items-center justify-between shadow-sm z-10 transition-colors duration-200',
+        isDark 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-200'
+      ]"
+    >
+      <div class="flex items-center gap-2">
+        <button
+          :class="[
+            'p-1.5 rounded transition-colors',
+            isDark 
+              ? 'hover:bg-gray-700 text-gray-400' 
+              : 'hover:bg-gray-100 text-gray-500'
+          ]"
+          title="Уменьшить"
+          @click="zoomOut"
+        >
+          <span class="material-symbols-outlined text-sm">remove_circle_outline</span>
+        </button>
+        <span 
+          :class="[
+            'text-sm font-mono min-w-[3rem] text-center',
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          ]"
+        >
+          {{ zoom }}%
+        </span>
+        <button
+          :class="[
+            'p-1.5 rounded transition-colors',
+            isDark 
+              ? 'hover:bg-gray-700 text-gray-400' 
+              : 'hover:bg-gray-100 text-gray-500'
+          ]"
+          title="Увеличить"
+          @click="zoomIn"
+        >
+          <span class="material-symbols-outlined text-sm">add_circle_outline</span>
+        </button>
       </div>
-    </transition>
+      <button
+        :class="[
+          'p-1.5 rounded transition-colors',
+          isDark 
+            ? 'hover:bg-gray-700 text-gray-400' 
+            : 'hover:bg-gray-100 text-gray-500'
+        ]"
+        title="Полноэкранный режим"
+        @click="toggleViewerFullscreen"
+      >
+        <span class="material-symbols-outlined text-sm">
+          {{ isViewerFullscreen ? 'fullscreen_exit' : 'fullscreen' }}
+        </span>
+      </button>
+    </div>
 
-    <!-- Content with transitions -->
-    <transition name="content-fade" mode="out-in">
+    <!-- Content Area -->
+    <div 
+      ref="contentContainer"
+      :class="[
+        'flex-1 overflow-auto p-4 md:p-8 flex items-center justify-center custom-scrollbar',
+        isDark ? 'bg-black/40' : 'bg-gray-100'
+      ]"
+    >
       <!-- Video Player -->
       <div
-        v-if="currentFile && currentFileType === 'video' && !isLoading"
-        key="video"
+        v-if="currentFile && currentFileType === 'video'"
         class="w-full max-w-5xl mx-auto"
+        :style="{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }"
       >
         <EducationalVideoPlayer
           :source="currentFile"
           :save-progress="true"
           :progress-key="`lesson_${currentFile.id || currentFile.objectKey}`"
           class="w-full"
-          @ready="handleVideoReady"
-          @error="handleVideoError"
         />
       </div>
 
       <!-- PDF Viewer -->
       <div
-        v-else-if="currentFile && currentFileType === 'pdf' && !isLoading"
-        key="pdf"
-        class="w-full max-w-5xl mx-auto"
+        v-else-if="currentFile && currentFileType === 'pdf'"
+        :style="{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }"
       >
         <LessonPdfViewer
           :source="currentFile"
-          @page-loaded="handlePdfLoaded"
         />
       </div>
 
       <!-- Document Viewer (for unsupported files) -->
       <div 
-        v-else-if="currentFile && !isLoading"
-        key="document"
-        class="w-full max-w-3xl bg-white h-auto min-h-[60vh] md:min-h-[80vh] shadow-2xl relative mb-8 md:mb-12 flex flex-col group"
+        v-else-if="currentFile"
+        :class="[
+          'w-full max-w-5xl aspect-[16/9] shadow-2xl rounded-sm p-8 md:p-16 flex flex-col justify-between relative border transition-transform duration-200',
+          isDark 
+            ? 'bg-gray-800 text-gray-100 border-gray-700' 
+            : 'bg-white text-gray-900 border-gray-200'
+        ]"
+        :style="{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }"
       >
-      <div class="w-full h-full p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col gap-6 md:gap-8 lg:gap-10 opacity-80" aria-label="Simulated Document Page">
-        <!-- Title Skeleton -->
-        <div class="w-3/4 h-10 bg-slate-200 rounded animate-pulse"></div>
+        <div class="flex flex-col items-center justify-center flex-1 space-y-10 text-center">
+          <!-- ATG Logo placeholder -->
+          <div class="flex flex-col items-center">
+            <div class="relative">
+              <svg class="w-32 h-20 text-blue-700" fill="currentColor" viewBox="0 0 100 60">
+                <path 
+                  d="M10,50 L25,10 L40,50 M35,50 L50,10 L80,10 L80,20 L65,20 L65,50 L90,50 L90,30" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  stroke-width="6"
+                />
+                <path d="M15,5 L60,5 M20,0 L50,0" stroke="#9CA3AF" stroke-linecap="round" stroke-width="3" />
+              </svg>
+            </div>
+          </div>
 
-        <!-- Text Paragraph Skeleton -->
-        <div class="space-y-4">
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-11/12 h-4 bg-slate-100 rounded"></div>
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-2/3 h-4 bg-slate-100 rounded"></div>
-        </div>
+          <div class="space-y-4 w-full">
+            <h1 class="text-3xl md:text-5xl font-bold text-blue-900">
+              <span :class="isDark ? 'text-gray-100' : 'text-gray-900'">Файл:</span>
+              {{ currentFile.original_name || currentFile.originalName || 'Документ' }}
+            </h1>
+            <div class="h-1 w-full bg-blue-900 rounded-full"></div>
+            <h2 class="text-xl md:text-2xl font-semibold text-blue-600">
+              Предварительный просмотр недоступен
+            </h2>
+          </div>
 
-        <!-- Diagram Area -->
-        <div class="w-full h-72 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center transition-colors group-hover:bg-slate-100/50">
-          <div class="text-slate-300 flex flex-col items-center gap-3">
-            <span class="material-symbols-outlined text-5xl">image</span>
-            <span class="text-sm font-medium">
-              {{ currentFile.original_name || currentFile.originalName || 'Файл' }}
-            </span>
+          <div class="mt-8">
+            <el-button 
+              type="primary" 
+              size="large"
+              @click="$emit('download-file', currentFile)"
+            >
+              <span class="material-symbols-outlined mr-2">download</span>
+              Скачать файл
+            </el-button>
           </div>
         </div>
-
-        <!-- More Text Skeletons -->
-        <div class="space-y-4">
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-1/2 h-4 bg-slate-100 rounded"></div>
-        </div>
-
-        <!-- Second Diagram/Image Area -->
-        <div class="w-full h-56 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center transition-colors group-hover:bg-slate-100/50">
-          <div class="text-slate-300 flex flex-col items-center gap-3">
-            <span class="material-symbols-outlined text-5xl">bar_chart</span>
-            <span class="text-sm font-medium">Content Section</span>
-          </div>
-        </div>
-
-        <!-- Final Text Block -->
-        <div class="space-y-4 mt-auto">
-          <div class="w-full h-4 bg-slate-100 rounded"></div>
-          <div class="w-5/6 h-4 bg-slate-100 rounded"></div>
-        </div>
       </div>
-
-      <!-- Floating Page Indicator - visible on hover of container -->
-      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-full shadow-2xl flex gap-4 text-sm font-semibold z-10 cursor-default select-none opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-        <span class="flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-[18px]">description</span>
-          Page 1 of 5
-        </span>
-      </div>
-    </div>
 
       <!-- No Content Placeholder -->
       <div
-        v-else-if="!isLoading"
-        key="empty"
-        class="w-full max-w-3xl bg-white rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]"
+        v-else
+        :class="[
+          'w-full max-w-3xl rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]',
+          isDark ? 'bg-gray-800' : 'bg-white'
+        ]"
       >
         <div class="text-center">
-          <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block">
+          <span 
+            :class="[
+              'material-symbols-outlined text-6xl mb-4 block',
+              isDark ? 'text-gray-600' : 'text-slate-400'
+            ]"
+          >
             description
           </span>
-          <p class="text-slate-500">Выберите материал для просмотра</p>
+          <p :class="isDark ? 'text-gray-400' : 'text-slate-500'">
+            Выберите материал для просмотра
+          </p>
         </div>
       </div>
-    </transition>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div 
+      :class="[
+        'p-4 flex justify-between items-center shrink-0 z-20 border-t transition-colors duration-200',
+        isDark 
+          ? 'bg-gray-800 border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.2)]' 
+          : 'bg-white border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]'
+      ]"
+    >
+      <!-- Previous Button -->
+      <button
+        :class="[
+          'flex items-center px-4 py-2 text-sm font-medium rounded-md border transition-colors',
+          !hasPrevious 
+            ? 'opacity-50 cursor-not-allowed' 
+            : '',
+          isDark 
+            ? 'text-gray-300 bg-gray-800 border-gray-600 hover:bg-gray-700' 
+            : 'text-gray-500 bg-white border-gray-200 hover:bg-gray-50'
+        ]"
+        :disabled="!hasPrevious"
+        @click="$emit('previous')"
+      >
+        <span class="material-symbols-outlined text-sm mr-1">arrow_back_ios</span>
+        Назад
+      </button>
+
+      <!-- Complete Button -->
+      <button
+        v-if="!isTopicCompleted"
+        class="hidden md:flex items-center px-6 py-2 text-sm font-bold text-white bg-green-500 rounded-md hover:bg-green-600 shadow-sm transition-all transform active:scale-95"
+        @click="$emit('mark-complete')"
+      >
+        <span class="material-symbols-outlined text-sm mr-2">check</span>
+        Завершить
+      </button>
+      <button
+        v-else
+        class="hidden md:flex items-center px-6 py-2 text-sm font-bold text-white bg-green-600 rounded-md cursor-default opacity-80"
+        disabled
+      >
+        <span class="material-symbols-outlined text-sm mr-2">check_circle</span>
+        Завершено
+      </button>
+
+      <!-- Next Button -->
+      <button
+        :class="[
+          'flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-blue-600 shadow-sm transition-colors',
+          !hasNext ? 'opacity-50 cursor-not-allowed' : ''
+        ]"
+        :disabled="!hasNext"
+        @click="$emit('next')"
+      >
+        Далее
+        <span class="material-symbols-outlined text-sm ml-1">arrow_forward_ios</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, defineAsyncComponent } from 'vue'
+import { ref, defineAsyncComponent } from 'vue'
 
 // Lazy load viewers
 const EducationalVideoPlayer = defineAsyncComponent(() => import('../video/EducationalVideoPlayer.vue'))
@@ -142,59 +244,73 @@ const props = defineProps({
   currentFileType: {
     type: String,
     default: 'unknown'
+  },
+  isDark: {
+    type: Boolean,
+    default: false
+  },
+  isTopicCompleted: {
+    type: Boolean,
+    default: false
+  },
+  hasPrevious: {
+    type: Boolean,
+    default: false
+  },
+  hasNext: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['download-file'])
+const emit = defineEmits(['download-file', 'previous', 'next', 'mark-complete'])
 
-// Loading state
-const isLoading = ref(false)
-const loadingText = ref('Загрузка...')
+// Zoom state
+const zoom = ref(100)
+const contentContainer = ref(null)
+const isViewerFullscreen = ref(false)
 
-// Watch for file changes to show loading
-watch(() => [props.currentFile, props.currentFileType], ([newFile, newType], [oldFile, oldType]) => {
-  if (newFile && newFile !== oldFile) {
-    isLoading.value = true
-    if (newType === 'video') {
-      loadingText.value = 'Загрузка видео...'
-    } else if (newType === 'pdf') {
-      loadingText.value = 'Загрузка PDF...'
-    } else {
-      loadingText.value = 'Загрузка файла...'
+const zoomIn = () => {
+  zoom.value = Math.min(200, zoom.value + 10)
+}
+
+const zoomOut = () => {
+  zoom.value = Math.max(50, zoom.value - 10)
+}
+
+const toggleViewerFullscreen = () => {
+  if (!contentContainer.value) return
+  
+  if (!isViewerFullscreen.value) {
+    if (contentContainer.value.requestFullscreen) {
+      contentContainer.value.requestFullscreen()
+    } else if (contentContainer.value.webkitRequestFullscreen) {
+      contentContainer.value.webkitRequestFullscreen()
     }
-    
-    // Hide loading after a short delay (content will handle its own loading)
-    setTimeout(() => {
-      isLoading.value = false
-    }, 300)
-  } else if (!newFile) {
-    isLoading.value = false
+    isViewerFullscreen.value = true
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen()
+    }
+    isViewerFullscreen.value = false
   }
-}, { immediate: false })
-
-// Handlers
-const handleVideoReady = () => {
-  isLoading.value = false
 }
 
-const handleVideoError = () => {
-  isLoading.value = false
-  loadingText.value = 'Ошибка загрузки видео'
-}
-
-const handlePdfLoaded = () => {
-  isLoading.value = false
+// Listen for fullscreen changes
+if (typeof document !== 'undefined') {
+  document.addEventListener('fullscreenchange', () => {
+    isViewerFullscreen.value = !!document.fullscreenElement
+  })
 }
 </script>
 
 <style scoped>
-/* Custom scrollbar - matching advanced-course-viewer */
+/* Custom scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
-  /* Ensure scrolling works in flex containers */
-  min-height: 0;
-  /* Smooth scrolling */
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
@@ -216,39 +332,8 @@ const handlePdfLoaded = () => {
   background-color: #94a3b8;
 }
 
-/* Transitions */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.content-fade-enter-active {
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-
-.content-fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.content-fade-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.content-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .custom-scrollbar {
-    padding: 1rem;
-  }
+/* Dark mode scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.5);
 }
 </style>

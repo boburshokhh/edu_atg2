@@ -1,6 +1,29 @@
 <template>
-  <div ref="fullscreenContainer" class="lesson-content-app bg-background-light h-screen overflow-hidden flex flex-col">
-    <div class="flex flex-1 h-full overflow-hidden">
+  <div 
+    ref="fullscreenContainer" 
+    :class="[
+      'lesson-content-app h-screen overflow-hidden flex flex-col transition-colors duration-200',
+      isDark ? 'dark bg-gray-900' : 'bg-gray-50'
+    ]"
+  >
+    <!-- Header -->
+    <LessonHeader
+      :current-file-name="currentFileName"
+      :is-topic-completed="isTopicCompleted"
+      :is-comments-open="isCommentsOpen"
+      :is-fullscreen="isFullscreen"
+      :is-dark="isDark"
+      :current-lesson-index="currentLessonIndex"
+      :course-title="courseTitle"
+      @mark-complete="markAsCompleted"
+      @toggle-sidebar="handleToggleSidebar"
+      @toggle-comments="handleToggleComments"
+      @toggle-fullscreen="toggleFullscreen"
+      @toggle-dark-mode="toggleDarkMode"
+    />
+
+    <!-- Main Layout -->
+    <div class="flex flex-1 overflow-hidden relative">
       <!-- Left Sidebar -->
       <transition name="slide">
         <LessonSidebar
@@ -12,8 +35,9 @@
           :completed-topics="completedTopics"
           :passed-tests="passedTests"
           :is-test-mode="isTestMode"
-          :course-title="courseProgram?.title || station?.shortName || 'Курс обучения'"
+          :course-title="courseTitle"
           :is-mobile="isMobile"
+          :is-dark="isDark"
           @select-lesson="handleSelectLesson"
           @select-test="handleSelectTest"
           @select-file="handleSelectFile"
@@ -29,22 +53,12 @@
       />
 
       <!-- Main Content Area -->
-      <main class="flex-1 bg-slate-100/50 flex flex-col h-full relative min-h-0">
-        <!-- Header -->
-        <LessonHeader
-          :current-file-name="currentFileName"
-          :is-topic-completed="isTopicCompleted"
-          :is-comments-open="isCommentsOpen"
-          :is-fullscreen="isFullscreen"
-          :breadcrumbs="breadcrumbs"
-          :lesson-progress="topicProgress"
-          :show-progress="!!currentFile"
-          @mark-complete="markAsCompleted"
-          @toggle-sidebar="handleToggleSidebar"
-          @toggle-comments="handleToggleComments"
-          @toggle-fullscreen="toggleFullscreen"
-      />
-
+      <main 
+        :class="[
+          'flex-1 flex flex-col h-full relative min-h-0 transition-colors duration-200',
+          isDark ? 'bg-black/40' : 'bg-gray-100'
+        ]"
+      >
         <!-- Content Area -->
         <div class="flex-1 min-h-0 flex flex-col">
           <!-- Test Mode -->
@@ -70,10 +84,31 @@
             v-else
             :current-file="currentFile"
             :current-file-type="currentFileType"
+            :is-dark="isDark"
+            :is-topic-completed="isTopicCompleted"
+            :has-previous="hasPreviousLesson"
+            :has-next="hasNextLesson"
             @download-file="downloadFile"
+            @previous="previousLesson"
+            @next="nextLesson"
+            @mark-complete="markAsCompleted"
           />
-              </div>
+        </div>
       </main>
+
+      <!-- Right Sidebar - Materials -->
+      <transition name="slide-right">
+        <CourseMaterialsPanel
+          v-if="showMaterialsSidebar && !isFullscreen && !isTestMode"
+          :main-materials="mainMaterials"
+          :additional-materials="additionalMaterials"
+          :current-file="currentFile"
+          :topic-title="currentTopic?.title || ''"
+          :is-dark="isDark"
+          @select-material="openMaterial"
+          @toggle-sidebar="showMaterialsSidebar = false"
+        />
+      </transition>
 
       <!-- Comments Sidebar -->
       <CommentsSidebar
@@ -92,7 +127,7 @@
         class="mobile-overlay"
         @click="isCommentsOpen = false"
       />
-            </div>
+    </div>
 
     <!-- Mobile Menu Button -->
     <el-button
@@ -111,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
@@ -122,6 +157,7 @@ import LessonHeader from '@/components/lesson/LessonHeader.vue'
 import LessonSidebar from '@/components/lesson/LessonSidebar.vue'
 import TestQuiz from '@/components/lesson/TestQuiz.vue'
 import CommentsSidebar from '@/components/lesson/CommentsSidebar.vue'
+import CourseMaterialsPanel from '@/components/lesson/CourseMaterialsPanel.vue'
 import testsData from '@/data/testsData.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'
@@ -133,6 +169,27 @@ const ContentViewer = defineAsyncComponent(() => import('@/components/lesson/Con
 
 const route = useRoute()
 const router = useRouter()
+
+// Dark mode
+const isDark = ref(false)
+const toggleDarkMode = () => {
+  isDark.value = !isDark.value
+  localStorage.setItem('darkMode', isDark.value ? 'true' : 'false')
+  if (isDark.value) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+
+// Load dark mode preference
+const loadDarkModePreference = () => {
+  const saved = localStorage.getItem('darkMode')
+  isDark.value = saved === 'true'
+  if (isDark.value) {
+    document.documentElement.classList.add('dark')
+  }
+}
 
 // Route params
 const stationId = computed(() => parseInt(route.params.id))
@@ -169,10 +226,9 @@ const loadStationAndProgram = async () => {
 // Функция для удаления префикса "Урок N" из названия
 const getLessonTitle = (title) => {
   if (!title) return ''
-  // Убираем паттерны: "Урок N:", "Урок № N:", "Урок N " и т.д.
   return title
-    .replace(/^Урок\s*№?\s*\d+\s*:?\s*/i, '') // Убираем "Урок N:" или "Урок № N:"
-    .replace(/^Урок\s*№?\s*\d+\s*/i, '') // Убираем "Урок N " или "Урок № N "
+    .replace(/^Урок\s*№?\s*\d+\s*:?\s*/i, '')
+    .replace(/^Урок\s*№?\s*\d+\s*/i, '')
     .trim()
 }
 
@@ -186,15 +242,6 @@ const processedLessons = computed(() => {
 
 const currentLesson = computed(() => lessons.value[currentLessonIndex.value])
 
-// Обработанный текущий урок без префикса "Урок N"
-const processedCurrentLesson = computed(() => {
-  if (!currentLesson.value) return null
-  return {
-    ...currentLesson.value,
-    title: getLessonTitle(currentLesson.value.title)
-  }
-})
-
 const currentTopic = computed(() => currentLesson.value?.topics?.[currentTopicIndex.value])
 
 // ID for tracking completed topics
@@ -204,39 +251,6 @@ const currentTopicId = computed(() => `${stationId.value}-${currentLessonIndex.v
 const currentFile = ref(null)
 const mainMaterials = ref([])
 const additionalMaterials = ref([])
-
-// File cache for performance
-const fileCache = ref(new Map())
-
-// Breadcrumbs for navigation
-const breadcrumbs = computed(() => {
-  const crumbs = []
-  if (courseProgram.value?.title) {
-    crumbs.push({
-      label: courseProgram.value.title,
-      path: `/station/${stationId.value}/courses`
-    })
-  }
-  if (currentLesson.value) {
-    crumbs.push({
-      label: getLessonTitle(currentLesson.value.title),
-      path: null
-    })
-  }
-  if (currentTopic.value) {
-    crumbs.push({
-      label: currentTopic.value.title,
-      path: null
-    })
-  }
-  return crumbs
-})
-
-// Topic progress (for video files)
-const topicProgress = computed(() => {
-  // This can be enhanced to track actual video progress
-  return isTopicCompleted.value ? 100 : 0
-})
 
 const currentFileType = computed(() => {
   const f = currentFile.value
@@ -250,7 +264,6 @@ const currentFileType = computed(() => {
       ''
   ).toLowerCase()
   
-  // Определение PDF (приоритет)
   if (
     t.includes('pdf') ||
     t === 'application/pdf' ||
@@ -259,7 +272,6 @@ const currentFileType = computed(() => {
     return 'pdf'
   }
   
-  // Определение видео
   if (
     t.includes('video') ||
     name.endsWith('.mp4') ||
@@ -281,7 +293,6 @@ const currentFileName = computed(() => {
 const downloadFile = async (file) => {
   if (!file) return
   
-  // Разрешаем скачивание всех типов файлов
   const direct = file.url || file.file_url
   if (direct) {
     window.open(direct, '_blank')
@@ -293,16 +304,12 @@ const downloadFile = async (file) => {
     return
   }
   try {
-    // Уменьшенный TTL для временных ссылок (1 час вместо 7 дней)
     const url = await minioService.getPresignedDownloadUrl(key, 60 * 60, file.type || null)
     window.open(url, '_blank')
   } catch (e) {
     ElMessage.error('Не удалось открыть файл')
   }
 }
-
-// Comments
-const comments = ref([])
 
 // Tests
 const passedTests = ref(new Set())
@@ -335,18 +342,19 @@ const courseProgress = computed(() => {
 const fullscreenContainer = ref(null)
 const { isFullscreen, toggleFullscreen } = useFullscreen(fullscreenContainer)
 const { isMobile, isTablet, isDesktop } = useBreakpoints()
-const showSidebar = ref(isDesktop.value) // По умолчанию виден на десктопе, скрыт на мобильном
-const isCommentsOpen = ref(isDesktop.value) // По умолчанию открыт на десктопе
+const showSidebar = ref(isDesktop.value)
+const showMaterialsSidebar = ref(isDesktop.value)
+const isCommentsOpen = ref(false)
 
 // Handle breakpoint changes
 watch([isMobile, isTablet, isDesktop], ([mobile, tablet, desktop]) => {
-  // При переходе на десктоп показываем сайдбар
   if (desktop) {
     showSidebar.value = true
+    showMaterialsSidebar.value = true
   }
-  // При переходе на мобильный/планшет скрываем сайдбары
   if (mobile || tablet) {
     showSidebar.value = false
+    showMaterialsSidebar.value = false
     isCommentsOpen.value = false
   }
 })
@@ -371,45 +379,24 @@ const hasNextLesson = computed(() => {
 })
 
 // Methods
-
 const loadTopicMaterials = async () => {
   try {
     if (!currentLesson.value || !currentTopic.value) {
-      // Очищаем материалы если нет урока/темы
       mainMaterials.value = []
       additionalMaterials.value = []
       currentFile.value = null
       return
     }
 
-    // Проверяем кэш
-    const cacheKey = `${currentLessonIndex.value}-${currentTopicIndex.value}`
-    if (fileCache.value.has(cacheKey)) {
-      const cached = fileCache.value.get(cacheKey)
-      mainMaterials.value = cached.mainMaterials
-      additionalMaterials.value = cached.additionalMaterials
-      currentFile.value = cached.currentFile
-      return
-    }
-
-    // Загружаем материалы только из БД (course_program_topic_files)
     const dbFiles = Array.isArray(currentTopic.value?.files) ? currentTopic.value.files : []
     
     if (dbFiles.length === 0) {
-      // Нет файлов в БД - показываем пустое состояние
       mainMaterials.value = []
       additionalMaterials.value = []
       currentFile.value = null
-      // Кэшируем пустое состояние
-      fileCache.value.set(cacheKey, {
-        mainMaterials: [],
-        additionalMaterials: [],
-        currentFile: null
-      })
       return
     }
 
-    // ✅ ПАРАЛЛЕЛЬНАЯ загрузка всех файлов из БД
     const filePromises = dbFiles.map(async (f) => {
       try {
         const fileType = f.fileType || f.file_type
@@ -425,7 +412,6 @@ const loadTopicMaterials = async () => {
 
         const nameForDetect = String(originalName || objectKey || '').toLowerCase()
         
-        // Определяем Content-Type: приоритет у mimeType из БД, затем по типу/расширению
         const contentType =
           mimeType ||
           (fileType === 'video' || nameForDetect.endsWith('.mp4') || nameForDetect.endsWith('.webm') || nameForDetect.endsWith('.ogg') || nameForDetect.endsWith('.ogv') || nameForDetect.endsWith('.mov')
@@ -438,7 +424,6 @@ const loadTopicMaterials = async () => {
                     : 'video/mp4')
               : 'application/octet-stream')
 
-        // Для всех файлов: presigned URL с коротким TTL (1 час)
         const fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
 
         return {
@@ -451,7 +436,6 @@ const loadTopicMaterials = async () => {
           url: fileUrl,
           file_url: fileUrl,
           type: contentType,
-          // is_main_file определяется только из БД (isMain), независимо от типа файла
           is_main_file: !!isMain
         }
       } catch (e) {
@@ -460,20 +444,17 @@ const loadTopicMaterials = async () => {
       }
     })
 
-    // ✅ Ждем все файлы параллельно
     const results = await Promise.allSettled(filePromises)
     const allFiles = results
       .filter(r => r.status === 'fulfilled' && r.value !== null)
       .map(r => r.value)
 
-    // Разделяем на основные и дополнительные
     const mainFiles = allFiles.filter(f => f.is_main_file)
     const additionals = allFiles.filter(f => !f.is_main_file)
 
     mainMaterials.value = mainFiles
     additionalMaterials.value = additionals
 
-    // Устанавливаем текущий файл (приоритет у основных файлов)
     if (mainFiles.length > 0) {
       currentFile.value = mainFiles[0]
     } else if (additionals.length > 0) {
@@ -481,39 +462,13 @@ const loadTopicMaterials = async () => {
     } else {
       currentFile.value = null
     }
-
-    // Кэшируем результаты
-    fileCache.value.set(cacheKey, {
-      mainMaterials: mainFiles,
-      additionalMaterials: additionals,
-      currentFile: currentFile.value
-    })
   } catch (error) {
     console.error('[LessonContentApp] Error loading topic materials:', error)
     ElMessage.error('Не удалось загрузить материалы урока')
-    // Очищаем состояние при ошибке
     mainMaterials.value = []
     additionalMaterials.value = []
     currentFile.value = null
   }
-}
-
-const isVideoFile = (file) => {
-  if (!file) return false
-  const fileName = (file.original_name || file.originalName || '').toLowerCase()
-  const fileType = (file.type || '').toLowerCase()
-  return fileName.endsWith('.mp4') || 
-         fileName.endsWith('.webm') || 
-         fileName.endsWith('.ogg') ||
-         fileName.endsWith('.mov') ||
-         fileType.includes('video')
-}
-
-const formatFileSize = (bytes) => {
-  if (!bytes) return 'N/A'
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
 }
 
 const openMaterial = (material) => {
@@ -592,24 +547,6 @@ const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
   currentTopicIndex.value = topicIndex
   isTestMode.value = false
   
-  // Проверяем кэш
-  const cacheKey = `${lessonIndex}-${topicIndex}`
-  if (fileCache.value.has(cacheKey)) {
-    const cached = fileCache.value.get(cacheKey)
-    // Ищем файл в кэше
-    const cachedFile = [...cached.mainMaterials, ...cached.additionalMaterials]
-      .find(f => (f.objectName || f.objectKey) === (file.objectKey || file.object_key || file.objectName))
-    if (cachedFile) {
-      currentFile.value = cachedFile
-      updateRoute()
-      if (isMobile.value) {
-        showSidebar.value = false
-      }
-      return
-    }
-  }
-  
-  // Обрабатываем файл аналогично loadTopicMaterials
   try {
     const fileType = file.fileType || file.file_type
     const objectKey = file.objectKey || file.object_key || file.objectName || file.object_name
@@ -637,7 +574,6 @@ const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
               : 'video/mp4')
         : 'application/octet-stream')
 
-    // Для всех файлов: presigned URL с коротким TTL (1 час)
     const fileUrl = await minioService.getPresignedDownloadUrl(objectKey, 60 * 60, contentType)
 
     currentFile.value = {
@@ -718,6 +654,8 @@ watch(() => [currentLessonIndex.value, currentTopicIndex.value], () => {
 }, { immediate: true })
 
 onMounted(async () => {
+  loadDarkModePreference()
+  
   const authResult = await authService.checkAuth()
   if (!authResult.isAuthenticated) {
     ElMessage.warning('Для доступа к уроку необходимо войти в систему')
@@ -819,9 +757,6 @@ onMounted(async () => {
   font-size: clamp(1rem, 3vw, 1.25rem);
 }
 
-
-
-/* Media Queries */
 /* Hide mobile menu on desktop */
 @media (min-width: 1025px) {
   .mobile-menu-btn {
@@ -829,4 +764,3 @@ onMounted(async () => {
   }
 }
 </style>
-

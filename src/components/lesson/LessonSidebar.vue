@@ -1,228 +1,256 @@
 <template>
   <aside
     :class="[
-      'flex flex-col border-r border-slate-200 bg-white h-full flex-shrink-0 z-20 shadow-sm transition-all duration-300',
-      isMobile ? 'sidebar-mobile w-full' : 'sidebar-desktop w-full md:w-[300px] lg:w-[340px]'
+      'w-80 flex flex-col shrink-0 overflow-y-auto transition-colors duration-200 border-r z-20',
+      isDark 
+        ? 'bg-gray-800 border-gray-700' 
+        : 'bg-white border-gray-200',
+      isMobile ? 'sidebar-mobile' : 'sidebar-desktop hidden lg:flex'
     ]"
   >
-    <!-- Course Header with Progress -->
-    <div
-      class="px-6 py-6 border-b border-slate-100 flex-shrink-0 bg-white"
+    <!-- Header -->
+    <div 
+      :class="[
+        'p-4 border-b sticky top-0 z-10 transition-colors duration-200',
+        isDark 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-200'
+      ]"
     >
-      <h1 class="text-[#111418] text-lg md:text-xl font-bold leading-tight tracking-tight mb-4">
-        {{ courseTitle || 'Курс обучения' }}
-      </h1>
-      <div class="flex flex-col gap-2">
-        <div class="flex justify-between items-end">
-          <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">
-            Прогресс курса
-          </p>
-          <p class="text-[#111418] text-sm font-bold">{{ courseProgress }}%</p>
-        </div>
-        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-          <div class="h-full rounded-full bg-primary" :style="{ width: `${courseProgress}%` }"></div>
-        </div>
-        <p class="text-slate-500 text-xs mt-1">{{ completedCount }}/{{ totalCount }} Уроков завершено</p>
+      <div class="flex items-center justify-between mb-2">
+        <h2 
+          :class="[
+            'font-bold text-lg tracking-tight uppercase',
+            isDark ? 'text-gray-100' : 'text-gray-900'
+          ]"
+        >
+          Содержание
+        </h2>
+        <button 
+          :class="[
+            'p-1 rounded transition-colors',
+            isDark 
+              ? 'hover:bg-gray-700 text-gray-500' 
+              : 'hover:bg-gray-100 text-gray-500'
+          ]"
+        >
+          <span class="material-symbols-outlined text-sm">filter_list</span>
+        </button>
       </div>
+      <button 
+        class="text-sm text-primary font-medium hover:underline"
+        @click="expandAll"
+      >
+        Развернуть всё
+      </button>
     </div>
 
-    <!-- Lessons List -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col">
-      <details
-        v-for="(lesson, lessonIndex) in lessons"
+    <!-- Modules List -->
+    <div class="py-2">
+      <div 
+        v-for="(lesson, lessonIndex) in lessons" 
         :key="lessonIndex"
-        class="group mb-1"
-        :open="expandedLessons.includes(lessonIndex)"
+        :class="[
+          'border-b last:border-0',
+          isDark ? 'border-gray-700' : 'border-gray-100'
+        ]"
       >
-        <summary
-          class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-lg hover:bg-slate-50 transition-colors select-none"
-          @click.prevent="toggleLesson(lessonIndex)"
+        <!-- Module Header -->
+        <div
+          :class="[
+            'px-4 py-3 flex items-start justify-between cursor-pointer transition-colors group',
+            isDark 
+              ? 'hover:bg-gray-700/50' 
+              : 'hover:bg-gray-50'
+          ]"
+          @click="toggleLesson(lessonIndex)"
         >
-          <div class="flex items-center gap-3">
-            <div
-              class="flex items-center justify-center w-6 h-6 rounded bg-slate-100 text-xs font-bold text-slate-600"
-            >
-              {{ lessonIndex + 1 }}
-            </div>
-            <span class="text-sm font-bold text-slate-800 leading-none">
-              {{ lesson.title }}
+          <div>
+            <span class="text-xs font-semibold text-primary uppercase tracking-wider">
+              Модуль {{ lessonIndex + 1 }}
             </span>
-          </div>
-          <span
-            class="material-symbols-outlined text-slate-400 transition-transform text-[20px]"
-            :class="{ 'rotate-180': expandedLessons.includes(lessonIndex) }"
-          >
-            expand_more
-          </span>
-        </summary>
-          <div
-          class="pl-3 border-l-2 border-slate-100 ml-3 pb-2 mt-1 flex flex-col gap-1"
-          >
-          <details
-              v-for="(topic, topicIndex) in lesson.topics"
-              :key="topicIndex"
-            class="group/topic"
-            :open="expandedTopics[`${lessonIndex}-${topicIndex}`] || isCurrentTopic(lessonIndex, topicIndex)"
-          >
-            <summary
-              class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-md hover:bg-slate-50 transition-colors select-none"
-              @click.prevent="toggleTopic(lessonIndex, topicIndex)"
+            <h3 
+              :class="[
+                'text-sm font-semibold mt-0.5',
+                (!lesson.topics || lesson.topics.length === 0) ? 'opacity-60' : '',
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              ]"
             >
-              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {{ lessonIndex + 1 }}.{{ topicIndex + 1 }} {{ topic.title }}
-              </span>
-              <span
-                class="material-symbols-outlined text-slate-400 transition-transform text-[18px]"
-                :class="{ 'rotate-180': expandedTopics[`${lessonIndex}-${topicIndex}`] || isCurrentTopic(lessonIndex, topicIndex) }"
-              >
-                expand_more
-              </span>
-            </summary>
-            <div class="flex flex-col gap-1 pl-2 mt-1">
-              <!-- Files in topic -->
-              <template v-if="(topic.files || []).length > 0">
-                <transition-group
-                  name="file-list"
-                  tag="div"
-                  class="flex flex-col gap-1"
-                >
-                  <div
-                    v-for="(file, fileIndex) in (topic.files || [])"
-                    :key="`file-${file.id || fileIndex}`"
-                    :class="[
-                      'flex items-start justify-between p-2 rounded-md cursor-pointer transition-all duration-200',
-                      isCurrentFile(lessonIndex, topicIndex, file)
-                        ? 'bg-primary/10 border border-primary/20 shadow-sm scale-[1.02]'
-                        : 'hover:bg-slate-50 group/item hover:scale-[1.01]'
-                    ]"
-                    @click="selectFile(lessonIndex, topicIndex, file)"
-                  >
-                <div 
-                  :class="[
-                    'flex items-start gap-3',
-                    isCurrentFile(lessonIndex, topicIndex, file)
-                      ? ''
-                      : 'opacity-75 group-hover/item:opacity-100 transition-opacity'
-                  ]"
-                >
-                  <span
-                    class="material-symbols-outlined text-[20px] mt-0.5"
-                    :class="
-                      isCurrentFile(lessonIndex, topicIndex, file)
-                        ? 'text-primary'
-                        : 'text-slate-400 group-hover/item:text-slate-600'
-                    "
-                  >
-                    {{ getFileIcon(file) }}
-                  </span>
-                  <div class="flex flex-col">
-                    <span
-                      :class="[
-                        'text-sm leading-snug',
-                        isCurrentFile(lessonIndex, topicIndex, file)
-                          ? 'font-semibold text-primary'
-                          : 'font-medium text-slate-600 group-hover/item:text-slate-900 transition-colors'
-                  ]"
-                >
-                      {{ file.originalName || file.original_name || file.fileName || file.file_name || 'Файл' }}
-                    </span>
-                    <span
-                      :class="[
-                        'text-[11px] mt-0.5',
-                        isCurrentFile(lessonIndex, topicIndex, file)
-                          ? 'text-primary/70 font-medium'
-                          : 'text-slate-400'
-                      ]"
-                    >
-                      {{ getFileLabel(file) }} • {{ formatDuration(file) }}
-                    </span>
-                  </div>
-                </div>
-                    <div v-if="isCurrentFile(lessonIndex, topicIndex, file)" class="w-1.5 h-1.5 rounded-full bg-primary mt-2 mr-1 animate-pulse"></div>
-                    <transition name="check-fade">
-                      <span
-                        v-if="isFileCompleted(lessonIndex, topicIndex, file) && !isCurrentFile(lessonIndex, topicIndex, file)"
-                        class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
-                      >
-                        check
-                      </span>
-                    </transition>
-                  </div>
-                </transition-group>
-              </template>
-              <div
-                v-else
-                class="px-2 py-1 text-xs text-slate-400"
-              >
-                Нет материалов
-              </div>
-            </div>
-          </details>
+              {{ lesson.title }}
+            </h3>
+            <p 
+              :class="[
+                'text-xs mt-1',
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              ]"
+            >
+              {{ lesson.topics?.length || 0 }} темы
+            </p>
+          </div>
+          <span 
+            :class="[
+              'material-symbols-outlined transition-colors',
+              isDark 
+                ? 'text-gray-500 group-hover:text-primary' 
+                : 'text-gray-400 group-hover:text-primary'
+            ]"
+          >
+            {{ expandedLessons.includes(lessonIndex) ? 'expand_less' : 'expand_more' }}
+          </span>
+        </div>
 
-            <!-- Lesson Test -->
-          <transition name="test-fade">
+        <!-- Topics List -->
+        <div 
+          v-if="expandedLessons.includes(lessonIndex) && lesson.topics?.length > 0"
+          :class="[
+            isDark ? 'bg-gray-900/10' : 'bg-gray-50/50'
+          ]"
+        >
+          <!-- Topics -->
+          <div
+            v-for="(topic, topicIndex) in lesson.topics"
+            :key="topicIndex"
+          >
+            <!-- Topic Item -->
             <div
               :class="[
-                'flex items-start justify-between p-2 rounded-md cursor-pointer transition-all duration-200 border-t border-slate-200 mt-1',
-                isCurrentTest(lessonIndex)
-                  ? 'bg-purple-50 border-purple-200 shadow-sm scale-[1.02]'
-                  : 'hover:bg-slate-50 hover:scale-[1.01]'
+                'flex items-start gap-3 px-4 py-3 cursor-pointer border-l-4 transition-all',
+                isCurrentTopic(lessonIndex, topicIndex)
+                  ? isDark 
+                    ? 'bg-blue-900/20 border-primary' 
+                    : 'bg-blue-50 border-primary'
+                  : isDark
+                    ? 'hover:bg-gray-700/50 border-transparent'
+                    : 'hover:bg-gray-100 border-transparent'
               ]"
-              @click="selectTest(lessonIndex)"
+              @click="selectTopic(lessonIndex, topicIndex)"
             >
-            <div class="flex items-start gap-3">
-              <span
-                class="material-symbols-outlined text-[20px] mt-0.5"
-                :class="isCurrentTest(lessonIndex) ? 'text-purple-600' : 'text-slate-400'"
-                >
-                description
-              </span>
-              <div class="flex flex-col">
-                <span
+              <div 
+                :class="[
+                  'mt-0.5',
+                  isTopicCompleted(lessonIndex, topicIndex) 
+                    ? 'text-primary' 
+                    : isDark ? 'text-gray-500' : 'text-gray-400'
+                ]"
+              >
+                <span class="material-symbols-outlined text-lg">
+                  {{ isTopicCompleted(lessonIndex, topicIndex) ? 'check_circle' : 'radio_button_unchecked' }}
+                </span>
+              </div>
+              <div class="flex-1">
+                <p 
                   :class="[
-                    'text-sm font-medium leading-snug',
-                    isCurrentTest(lessonIndex) ? 'text-purple-600' : 'text-slate-600'
+                    'text-sm font-medium',
+                    isCurrentTopic(lessonIndex, topicIndex) 
+                      ? 'text-primary' 
+                      : isDark ? 'text-gray-100' : 'text-gray-900'
                   ]"
                 >
-                  Тест модуля {{ lessonIndex + 1 }}
-                </span>
-                <span class="text-[11px] text-slate-400 mt-0.5">Проверка знаний</span>
-              </div>
-            </div>
-              <transition name="check-fade">
-                <span
-                  v-if="isLessonTestPassed(lessonIndex)"
-                  class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
+                  {{ topic.title }}
+                </p>
+                <p 
+                  :class="[
+                    'text-xs mt-0.5',
+                    isDark ? 'text-gray-400' : 'text-gray-500'
+                  ]"
                 >
-                  check
-                </span>
-              </transition>
-            </div>
-          </transition>
-        </div>
-      </details>
+                  {{ topic.files?.length || 0 }} материалов
+                </p>
               </div>
+              <span 
+                v-if="isCurrentTopic(lessonIndex, topicIndex)"
+                class="material-symbols-outlined text-primary text-sm ml-auto"
+              >
+                play_arrow
+              </span>
+            </div>
 
-    <!-- User Profile -->
-    <div class="p-4 border-t border-slate-100 bg-slate-50">
-      <div class="flex items-center gap-3">
-        <div
-          class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs"
-                >
-          {{ userInitials }}
+            <!-- Files in Topic (collapsible) -->
+            <div 
+              v-if="isCurrentTopic(lessonIndex, topicIndex) && topic.files?.length > 0"
+              :class="[
+                'pl-12 pb-2',
+                isDark ? 'bg-gray-900/20' : 'bg-gray-100/50'
+              ]"
+            >
+              <div
+                v-for="(file, fileIndex) in topic.files"
+                :key="fileIndex"
+                :class="[
+                  'flex items-center gap-2 px-3 py-2 text-xs cursor-pointer rounded-md mx-2 transition-colors',
+                  isCurrentFile(lessonIndex, topicIndex, file)
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : isDark 
+                      ? 'hover:bg-gray-700 text-gray-400'
+                      : 'hover:bg-gray-200 text-gray-600'
+                ]"
+                @click.stop="selectFile(lessonIndex, topicIndex, file)"
+              >
+                <span class="material-symbols-outlined text-sm">
+                  {{ getFileIcon(file) }}
+                </span>
+                <span class="truncate flex-1">
+                  {{ file.originalName || file.original_name || file.fileName || 'Файл' }}
+                </span>
               </div>
-        <div class="flex flex-col">
-          <p class="text-xs font-medium text-slate-900">{{ userName }}</p>
-          <p class="text-[10px] text-slate-500">{{ userRole }}</p>
+            </div>
           </div>
+
+          <!-- Module Test -->
+          <div
+            :class="[
+              'flex items-start gap-3 px-4 py-3 cursor-pointer border-l-4 transition-all',
+              isCurrentTest(lessonIndex)
+                ? isDark 
+                  ? 'bg-purple-900/20 border-purple-500' 
+                  : 'bg-purple-50 border-purple-500'
+                : isDark
+                  ? 'hover:bg-gray-700/50 border-transparent'
+                  : 'hover:bg-gray-100 border-transparent'
+            ]"
+            @click="selectTest(lessonIndex)"
+          >
+            <div 
+              :class="[
+                'mt-0.5',
+                isLessonTestPassed(lessonIndex) 
+                  ? 'text-purple-500' 
+                  : isDark ? 'text-gray-500' : 'text-gray-400'
+              ]"
+            >
+              <span class="material-symbols-outlined text-lg">
+                {{ isLessonTestPassed(lessonIndex) ? 'check_circle' : 'assignment' }}
+              </span>
+            </div>
+            <div class="flex-1">
+              <p 
+                :class="[
+                  'text-sm font-medium',
+                  isCurrentTest(lessonIndex) 
+                    ? 'text-purple-600' 
+                    : isDark ? 'text-gray-100' : 'text-gray-900'
+                ]"
+              >
+                Тест модуля {{ lessonIndex + 1 }}
+              </p>
+              <p 
+                :class="[
+                  'text-xs mt-0.5',
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                ]"
+              >
+                Проверка знаний
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </aside>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
-import authService from '@/services/auth'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   lessons: {
@@ -260,63 +288,16 @@ const props = defineProps({
   isMobile: {
     type: Boolean,
     default: false
+  },
+  isDark: {
+    type: Boolean,
+    default: false
   }
 })
 
 const emit = defineEmits(['select-lesson', 'select-test', 'select-file', 'toggle-sidebar'])
 
 const expandedLessons = ref([props.currentLessonIndex])
-const expandedTopics = ref({})
-
-// User data
-const userDataVersion = ref(0)
-const userName = computed(() => {
-  userDataVersion.value
-  const user = authService.getCurrentUser()
-  if (user) {
-    return user.full_name || user.username || 'Пользователь'
-  }
-  return 'Пользователь'
-})
-
-const userInitials = computed(() => {
-  const name = userName.value
-  const parts = name.split(' ')
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase()
-  }
-  return name.charAt(0).toUpperCase()
-})
-
-const userRole = computed(() => {
-  userDataVersion.value
-  const user = authService.getCurrentUser()
-  const role = user ? user.role : 'user'
-  const roles = {
-    admin: 'Администратор',
-    instructor: 'Инструктор',
-    user: 'Студент'
-  }
-  return roles[role] || 'Студент'
-})
-
-// Course progress
-const totalCount = computed(() => {
-  let total = 0
-  props.lessons.forEach(lesson => {
-    total += lesson.topics?.length || 0
-  })
-  return total
-})
-
-const completedCount = computed(() => {
-  return props.completedTopics.size
-})
-
-const courseProgress = computed(() => {
-  if (totalCount.value === 0) return 0
-  return Math.round((completedCount.value / totalCount.value) * 100)
-})
 
 // Methods
 const toggleLesson = (index) => {
@@ -328,18 +309,15 @@ const toggleLesson = (index) => {
   }
 }
 
-const toggleTopic = (lessonIndex, topicIndex) => {
-  const key = `${lessonIndex}-${topicIndex}`
-  expandedTopics.value[key] = !expandedTopics.value[key]
+const expandAll = () => {
+  expandedLessons.value = props.lessons.map((_, i) => i)
 }
 
 const selectTopic = (lessonIndex, topicIndex) => {
   emit('select-lesson', { lessonIndex, topicIndex })
 }
 
-const selectFile = async (lessonIndex, topicIndex, file) => {
-  // Smooth scroll to current file if needed
-  await nextTick()
+const selectFile = (lessonIndex, topicIndex, file) => {
   emit('select-file', { lessonIndex, topicIndex, file })
 }
 
@@ -348,7 +326,9 @@ const selectTest = (lessonIndex) => {
 }
 
 const isCurrentTopic = (lessonIndex, topicIndex) => {
-  return lessonIndex === props.currentLessonIndex && topicIndex === props.currentTopicIndex && !props.isTestMode
+  return lessonIndex === props.currentLessonIndex && 
+         topicIndex === props.currentTopicIndex && 
+         !props.isTestMode
 }
 
 const isCurrentTest = (lessonIndex) => {
@@ -366,9 +346,10 @@ const isCurrentFile = (lessonIndex, topicIndex, file) => {
   return fileKey === currentKey
 }
 
-const isFileCompleted = (lessonIndex, topicIndex, file) => {
-  // Можно добавить логику для отслеживания завершенных файлов
-  return false
+const isTopicCompleted = (lessonIndex, topicIndex) => {
+  // Check using the same format as parent component
+  const topicId = `${props.currentLessonIndex}-${lessonIndex}-${topicIndex}`
+  return props.completedTopics.has(topicId)
 }
 
 const isLessonTestPassed = (lessonIndex) => {
@@ -389,133 +370,50 @@ const getFileIcon = (file) => {
   return 'description'
 }
 
-const getFileLabel = (file) => {
-  const isMain = file.isMain ?? file.is_main ?? false
-  return isMain ? 'Основной материал' : 'Дополнительный материал'
-}
-
-const formatDuration = (file) => {
-  // Можно добавить реальную длительность из файла
-  return '5 мин'
-}
-
 // Watch for current lesson changes to auto-expand
 watch(() => props.currentLessonIndex, (newIndex) => {
   if (!expandedLessons.value.includes(newIndex)) {
     expandedLessons.value.push(newIndex)
   }
-  // Auto-expand current topic
-  if (props.currentTopicIndex >= 0) {
-    const key = `${newIndex}-${props.currentTopicIndex}`
-    expandedTopics.value[key] = true
-  }
-}, { immediate: true })
-
-// Refresh user data
-watch(() => authService.getCurrentUser(), () => {
-  userDataVersion.value++
 }, { immediate: true })
 </script>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #e2e8f0;
-  border-radius: 20px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #cbd5e1;
-}
-
-details > summary {
-  list-style: none;
-}
-
-details > summary::-webkit-details-marker {
-  display: none;
-}
-
 /* Desktop styles */
 .sidebar-desktop {
   position: sticky;
   top: 0;
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
+  height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
 }
 
 /* Mobile styles */
 .sidebar-mobile {
   position: fixed;
   left: 0;
-  top: 0;
-  height: 100vh;
+  top: 4rem;
+  height: calc(100vh - 4rem);
   z-index: 40;
-  overflow: hidden;
+  overflow-y: auto;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Animations */
-.file-list-enter-active,
-.file-list-leave-active {
-  transition: all 0.3s ease;
+/* Custom scrollbar */
+aside::-webkit-scrollbar {
+  width: 6px;
 }
 
-.file-list-enter-from {
-  opacity: 0;
-  transform: translateX(-10px);
+aside::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.file-list-leave-to {
-  opacity: 0;
-  transform: translateX(10px);
+aside::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
 }
 
-.check-fade-enter-active,
-.check-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.check-fade-enter-from {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-.check-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-.test-fade-enter-active,
-.test-fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.test-fade-enter-from {
-  opacity: 0;
-  transform: translateY(-5px);
-}
-
-.test-fade-leave-to {
-  opacity: 0;
-  transform: translateY(5px);
-}
-
-/* Performance optimizations */
-.group\/item {
-  will-change: transform, background-color;
-}
-
-/* Smooth scrolling for long lists */
-.custom-scrollbar {
-  scroll-behavior: smooth;
+aside::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.8);
 }
 </style>
