@@ -214,7 +214,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, shallowRef, watch, onMounted, onBeforeUnmount, nextTick, markRaw } from 'vue'
 import * as pdfjsLib from 'pdfjs-dist'
 
 // Configure PDF.js worker
@@ -245,7 +245,9 @@ const pageRefs = ref({})
 const canvasRefs = ref({})
 
 // State
-const pdfDoc = ref(null)
+// IMPORTANT: pdfjs objects use private fields; Vue reactive Proxy breaks them.
+// Keep them non-reactive to avoid: "TypeError: Cannot read from private field"
+const pdfDoc = shallowRef(null)
 const totalPages = ref(0)
 const currentPage = ref(1)
 const pageInput = ref(1)
@@ -349,7 +351,7 @@ async function loadPdf() {
       }
     }
 
-    pdfDoc.value = await loadingTask.promise
+    pdfDoc.value = markRaw(await loadingTask.promise)
     totalPages.value = pdfDoc.value.numPages
     pageInput.value = 1
     currentPage.value = 1
