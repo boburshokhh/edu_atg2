@@ -3,7 +3,8 @@
     :class="[
       'px-3 py-1.5 md:px-4 md:py-2 min-h-10 rounded-lg text-xs md:text-sm font-medium',
       'transition-colors shadow-sm hover:shadow active:scale-95 transform duration-100',
-      'focus:outline-none focus:ring-2 focus:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+      'focus:outline-none',
       variantClasses,
       disabled && 'opacity-50 cursor-not-allowed'
     ]"

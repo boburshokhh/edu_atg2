@@ -1,28 +1,47 @@
 <template>
   <div 
     :class="[
-      'flex-1 overflow-auto bg-[#525659] p-4 sm:p-6 md:p-8 flex justify-center items-start relative custom-scrollbar min-h-0'
+      'flex-1 overflow-auto bg-[#525659] p-4 sm:p-6 md:p-8 flex flex-col justify-start items-center relative custom-scrollbar min-h-0'
     ]"
   >
-      <!-- Video Player -->
-      <EducationalVideoPlayer
+      <!-- Video Player с responsive layout и aspect-ratio -->
+      <div
         v-if="currentFile && currentFileType === 'video'"
-        :source="currentFile"
-        :save-progress="true"
-        :progress-key="`lesson_${currentFile.id || currentFile.objectKey}`"
-        class="w-full max-w-5xl mx-auto"
-      />
+        class="w-full max-w-5xl mx-auto relative video-container"
+      >
+        <!-- Responsive container с aspect-ratio 16/9 -->
+        <div class="relative w-full video-wrapper" style="aspect-ratio: 16/9;">
+          <EducationalVideoPlayer
+            :source="currentFile"
+            :save-progress="true"
+            :progress-key="`lesson_${currentFile.id || currentFile.objectKey}`"
+            class="absolute inset-0 w-full h-full"
+          />
+        </div>
+        <!-- Кнопка "Завершить" под видеоплеером -->
+        <div class="mt-4 flex justify-end px-2">
+          <slot name="complete-button" />
+        </div>
+      </div>
 
       <!-- PDF Viewer -->
-      <LessonPdfViewer
+      <div
         v-else-if="currentFile && currentFileType === 'pdf'"
-        :source="currentFile"
-      />
+        class="w-full max-w-5xl mx-auto"
+      >
+        <LessonPdfViewer
+          :source="currentFile"
+        />
+        <!-- Кнопка "Завершить" под PDF -->
+        <div class="mt-4 flex justify-end">
+          <slot name="complete-button" />
+        </div>
+      </div>
 
     <!-- Document Viewer (for unsupported files) -->
       <div 
       v-else-if="currentFile"
-      class="w-full max-w-3xl bg-white h-auto min-h-[60vh] md:min-h-[80vh] shadow-2xl relative mb-8 md:mb-12 flex flex-col group"
+      class="w-full max-w-3xl bg-white h-auto min-h-[60vh] md:min-h-[80vh] shadow-2xl relative mb-8 md:mb-12 flex flex-col group mx-auto"
     >
       <div class="w-full h-full p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col gap-6 md:gap-8 lg:gap-10 opacity-80" aria-label="Simulated Document Page">
         <!-- Title Skeleton -->
@@ -78,6 +97,10 @@
           <span class="material-symbols-outlined text-[18px]">description</span>
           Page 1 of 5
         </span>
+      </div>
+      <!-- Кнопка "Завершить" под документом -->
+      <div class="mt-4 flex justify-end pb-4">
+        <slot name="complete-button" />
       </div>
     </div>
 
@@ -145,5 +168,28 @@ const emit = defineEmits(['download-file'])
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8;
+}
+
+/* Responsive layout для видеоплеера на мобильных */
+@media (max-width: 768px) {
+  /* На мобильных видеоплеер занимает всю ширину с минимальными отступами */
+  .video-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  .video-wrapper {
+    width: 100%;
+    aspect-ratio: 16/9;
+  }
+  
+  /* На очень маленьких экранах можно использовать full-width */
+  @media (max-width: 480px) {
+    .video-container {
+      margin: 0 -1rem;
+      width: calc(100% + 2rem);
+    }
+  }
 }
 </style>

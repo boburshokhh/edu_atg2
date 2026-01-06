@@ -9,33 +9,60 @@
     <div
       class="px-6 py-6 border-b border-slate-100 flex-shrink-0 bg-white"
     >
-      <h1 class="text-[#111418] text-lg md:text-xl font-bold leading-tight tracking-tight mb-4">
+      <!-- Заголовок курса с улучшенной визуальной иерархией -->
+      <h1 class="text-[#111418] text-[28px] md:text-[32px] font-semibold leading-tight tracking-tight mb-6 md:mb-8">
         {{ courseTitle || 'Курс обучения' }}
       </h1>
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-3">
         <div class="flex justify-between items-end">
-          <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+          <p class="text-[#757575] text-xs font-semibold uppercase tracking-wider">
             Прогресс курса
           </p>
-          <p class="text-[#111418] text-sm font-bold">{{ courseProgress }}%</p>
+          <!-- Увеличенный процент прогресса с gradient -->
+          <p class="text-[#111418] text-[32px] md:text-[36px] font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+            {{ courseProgress }}%
+          </p>
         </div>
-        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-          <div class="h-full rounded-full bg-primary" :style="{ width: `${courseProgress}%` }"></div>
+        <!-- Визуальный progress bar с gradient и milestone markers -->
+        <div class="relative h-3 rounded-full bg-slate-100 overflow-hidden">
+          <div 
+            class="h-full rounded-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 transition-all duration-500 ease-out" 
+            :style="{ width: `${courseProgress}%` }"
+          ></div>
+          <!-- Milestone markers -->
+          <div class="absolute inset-0 flex justify-between items-center px-0.5 pointer-events-none">
+            <div 
+              v-for="milestone in [25, 50, 75]" 
+              :key="milestone"
+              class="w-0.5 h-full bg-white/30"
+              :style="{ left: `${milestone}%` }"
+            ></div>
+          </div>
         </div>
-        <p class="text-slate-500 text-xs mt-1">{{ completedCount }}/{{ totalCount }} Уроков завершено</p>
+        <!-- Прогресс с визуальным индикатором -->
+        <div class="flex items-center justify-between mt-1">
+          <p class="text-[#757575] text-xs">{{ completedCount }}/{{ totalCount }} Уроков завершено</p>
+          <!-- Дополнительный визуальный progress bar под текстом -->
+          <div class="w-24 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+            <div 
+              class="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500" 
+              :style="{ width: `${courseProgress}%` }"
+            ></div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Lessons List -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col">
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3">
       <details
         v-for="(lesson, lessonIndex) in lessons"
         :key="lessonIndex"
-        class="group mb-1"
+        class="group"
         :open="expandedLessons.includes(lessonIndex)"
       >
         <summary
-          class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-lg hover:bg-slate-50 transition-colors select-none"
+          class="flex cursor-pointer items-center justify-between py-3 px-3 rounded-lg hover:bg-slate-50 transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           @click.prevent="toggleLesson(lessonIndex)"
         >
           <div class="flex items-center gap-3">
@@ -44,7 +71,8 @@
             >
               {{ lessonIndex + 1 }}
             </div>
-            <span class="text-sm font-bold text-slate-800 leading-none">
+            <!-- Улучшенная типографическая иерархия для заголовков разделов -->
+            <span class="text-[14px] md:text-[15px] font-semibold text-slate-800 leading-none">
               {{ lesson.title }}
             </span>
           </div>
@@ -56,7 +84,7 @@
           </span>
         </summary>
           <div
-          class="pl-3 border-l-2 border-slate-100 ml-3 pb-2 mt-1 flex flex-col gap-1"
+          class="pl-3 border-l-2 border-slate-100 ml-3 pb-3 mt-1 flex flex-col gap-3"
           >
           <details
               v-for="(topic, topicIndex) in lesson.topics"
@@ -65,10 +93,11 @@
             :open="expandedTopics[`${lessonIndex}-${topicIndex}`] || isCurrentTopic(lessonIndex, topicIndex)"
           >
             <summary
-              class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-md hover:bg-slate-50 transition-colors select-none"
+              class="flex cursor-pointer items-center justify-between py-2 px-2 rounded-md hover:bg-slate-50 transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
               @click.prevent="toggleTopic(lessonIndex, topicIndex)"
             >
-              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <!-- Улучшенная типографическая иерархия для подразделов -->
+              <span class="text-[13px] md:text-[14px] font-normal text-slate-600">
                 {{ lessonIndex + 1 }}.{{ topicIndex + 1 }} {{ topic.title }}
               </span>
               <span
@@ -78,65 +107,75 @@
                 expand_more
               </span>
             </summary>
-            <div class="flex flex-col gap-1 pl-2 mt-1">
+            <div class="flex flex-col gap-3 pl-2 mt-1">
               <!-- Files in topic -->
               <template v-if="(topic.files || []).length > 0">
                 <div
                   v-for="(file, fileIndex) in (topic.files || [])"
                   :key="`file-${file.id || fileIndex}`"
                   :class="[
-                    'flex items-start justify-between p-2 rounded-md cursor-pointer transition-colors',
+                    'flex items-start justify-between p-3 rounded-md cursor-pointer transition-all relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
                     isCurrentFile(lessonIndex, topicIndex, file)
-                      ? 'bg-primary/10 border border-primary/20 shadow-sm'
-                      : 'hover:bg-slate-50 group/item'
+                      ? 'bg-blue-50 border-l-4 border-blue-600 shadow-md'
+                      : 'hover:bg-slate-50 group/item border-l-4 border-transparent'
                   ]"
                   @click="selectFile(lessonIndex, topicIndex, file)"
+                  @keydown.enter="selectFile(lessonIndex, topicIndex, file)"
+                  @keydown.space.prevent="selectFile(lessonIndex, topicIndex, file)"
+                  tabindex="0"
+                  role="button"
+                  :title="file.originalName || file.original_name || file.fileName || file.file_name || 'Файл'"
                 >
                 <div 
                   :class="[
-                    'flex items-start gap-3',
+                    'flex items-start gap-3 flex-1 min-w-0',
                     isCurrentFile(lessonIndex, topicIndex, file)
                       ? ''
                       : 'opacity-75 group-hover/item:opacity-100 transition-opacity'
                   ]"
                 >
+                  <!-- Стандартизированные иконки 20-24px с выравниванием -->
                   <span
-                    class="material-symbols-outlined text-[20px] mt-0.5"
+                    class="material-symbols-outlined text-[22px] mt-0.5 flex-shrink-0"
                     :class="
                       isCurrentFile(lessonIndex, topicIndex, file)
-                        ? 'text-primary'
+                        ? 'text-blue-600'
                         : 'text-slate-400 group-hover/item:text-slate-600'
                     "
+                    style="vertical-align: middle;"
                   >
                     {{ getFileIcon(file) }}
                   </span>
-                  <div class="flex flex-col">
+                  <div class="flex flex-col min-w-0 flex-1">
+                    <!-- Text overflow ellipsis для длинных названий -->
                     <span
                       :class="[
-                        'text-sm leading-snug',
+                        'text-sm leading-snug truncate',
                         isCurrentFile(lessonIndex, topicIndex, file)
-                          ? 'font-semibold text-primary'
+                          ? 'font-semibold text-blue-600'
                           : 'font-medium text-slate-600 group-hover/item:text-slate-900 transition-colors'
                   ]"
                 >
                       {{ file.originalName || file.original_name || file.fileName || file.file_name || 'Файл' }}
                     </span>
+                    <!-- Улучшенный контраст вторичного текста -->
                     <span
                       :class="[
                         'text-[11px] mt-0.5',
                         isCurrentFile(lessonIndex, topicIndex, file)
-                          ? 'text-primary/70 font-medium'
-                          : 'text-slate-400'
+                          ? 'text-blue-500 font-medium'
+                          : 'text-[#757575]'
                       ]"
                     >
                       {{ getFileLabel(file) }} • {{ formatDuration(file) }}
                     </span>
                   </div>
                 </div>
-                <div v-if="isCurrentFile(lessonIndex, topicIndex, file)" class="w-1.5 h-1.5 rounded-full bg-primary mt-2 mr-1"></div>
+                <div v-if="isCurrentFile(lessonIndex, topicIndex, file)" class="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 mr-1 flex-shrink-0"></div>
                 <span
                   v-else-if="isFileCompleted(lessonIndex, topicIndex, file)"
-                  class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
+                  class="material-symbols-outlined text-emerald-500 text-[20px] mt-0.5 flex-shrink-0"
+                  style="vertical-align: middle;"
                 >
                   check
                 </span>
@@ -154,21 +193,27 @@
             <!-- Lesson Test -->
           <div
               :class="[
-              'flex items-start justify-between p-2 rounded-md cursor-pointer transition-colors border-t border-slate-200 mt-1',
+              'flex items-start justify-between p-3 rounded-md cursor-pointer transition-all border-t-2 border-slate-200 mt-3 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2',
                 isCurrentTest(lessonIndex)
-                ? 'bg-purple-50 border-purple-200'
-                : 'hover:bg-slate-50'
+                ? 'bg-purple-50 border-l-4 border-purple-600 shadow-md'
+                : 'hover:bg-slate-50 border-l-4 border-transparent'
               ]"
               @click="selectTest(lessonIndex)"
+              @keydown.enter="selectTest(lessonIndex)"
+              @keydown.space.prevent="selectTest(lessonIndex)"
+              tabindex="0"
+              role="button"
             >
-            <div class="flex items-start gap-3">
+            <div class="flex items-start gap-3 flex-1">
+              <!-- Стандартизированная иконка -->
               <span
-                class="material-symbols-outlined text-[20px] mt-0.5"
+                class="material-symbols-outlined text-[22px] mt-0.5 flex-shrink-0"
                 :class="isCurrentTest(lessonIndex) ? 'text-purple-600' : 'text-slate-400'"
+                style="vertical-align: middle;"
                 >
                 description
               </span>
-              <div class="flex flex-col">
+              <div class="flex flex-col min-w-0 flex-1">
                 <span
                   :class="[
                     'text-sm font-medium leading-snug',
@@ -177,12 +222,14 @@
                 >
                   Тест модуля {{ lessonIndex + 1 }}
                 </span>
-                <span class="text-[11px] text-slate-400 mt-0.5">Проверка знаний</span>
+                <!-- Улучшенный контраст -->
+                <span class="text-[11px] text-[#757575] mt-0.5">Проверка знаний</span>
               </div>
             </div>
             <span
                     v-if="isLessonTestPassed(lessonIndex)"
-              class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
+              class="material-symbols-outlined text-emerald-500 text-[20px] mt-0.5 flex-shrink-0"
+              style="vertical-align: middle;"
             >
               check
             </span>

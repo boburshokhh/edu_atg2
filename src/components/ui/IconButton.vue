@@ -2,7 +2,8 @@
   <button
     :class="[
       'p-2.5 min-w-10 min-h-10 rounded-lg transition-colors',
-      'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+      'focus:outline-none',
       variantClasses,
       disabled && 'opacity-50 cursor-not-allowed'
     ]"
