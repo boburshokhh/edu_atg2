@@ -1,7 +1,8 @@
 <template>
   <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-    <!-- Top Toolbar -->
+    <!-- Top Toolbar (only for non-PDF content) -->
     <div 
+      v-if="currentFileType !== 'pdf'"
       :class="[
         'p-2 border-b flex items-center justify-between shadow-sm z-10 transition-colors duration-200',
         isDark 
@@ -63,7 +64,8 @@
     <div 
       ref="contentContainer"
       :class="[
-        'flex-1 overflow-auto p-4 md:p-8 flex items-center justify-center custom-scrollbar',
+        'flex-1 overflow-auto custom-scrollbar',
+        currentFileType === 'pdf' ? '' : 'p-4 md:p-8 flex items-center justify-center',
         isDark ? 'bg-black/40' : 'bg-gray-100'
       ]"
     >
@@ -81,15 +83,18 @@
         />
       </div>
 
-      <!-- PDF Viewer -->
-      <div
+      <!-- PDF Viewer - No CSS transform, component handles zoom internally -->
+      <LessonPdfViewer
         v-else-if="currentFile && currentFileType === 'pdf'"
-        :style="{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }"
-      >
-        <LessonPdfViewer
-          :source="currentFile"
-        />
-      </div>
+        ref="pdfViewerRef"
+        :source="currentFile"
+        :is-dark="isDark"
+        class="w-full h-full"
+        @page-change="handlePdfPageChange"
+        @scale-change="handlePdfScaleChange"
+        @loaded="handlePdfLoaded"
+        @error="handlePdfError"
+      />
 
       <!-- Document Viewer (for unsupported files) -->
       <div 
@@ -265,10 +270,13 @@ const props = defineProps({
 
 const emit = defineEmits(['download-file', 'previous', 'next', 'mark-complete'])
 
-// Zoom state
-const zoom = ref(100)
+// Refs
 const contentContainer = ref(null)
+const pdfViewerRef = ref(null)
 const isViewerFullscreen = ref(false)
+
+// Zoom state (for non-PDF content)
+const zoom = ref(100)
 
 const zoomIn = () => {
   zoom.value = Math.min(200, zoom.value + 10)
@@ -296,6 +304,25 @@ const toggleViewerFullscreen = () => {
     }
     isViewerFullscreen.value = false
   }
+}
+
+// PDF event handlers
+const handlePdfPageChange = (page) => {
+  // Can be used for analytics or progress tracking
+  console.log('[ContentViewer] PDF page changed to:', page)
+}
+
+const handlePdfScaleChange = (scale) => {
+  // Can be used for analytics or state sync
+  console.log('[ContentViewer] PDF scale changed to:', scale)
+}
+
+const handlePdfLoaded = (info) => {
+  console.log('[ContentViewer] PDF loaded:', info)
+}
+
+const handlePdfError = (error) => {
+  console.error('[ContentViewer] PDF error:', error)
 }
 
 // Listen for fullscreen changes
