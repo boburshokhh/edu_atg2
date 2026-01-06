@@ -1049,6 +1049,42 @@ export default {
       lightboxVisible.value = true
     }
 
+    const normalizeFeatureLabel = (feature) => {
+      if (!feature) return ''
+      if (typeof feature === 'string') {
+        // Sometimes backend sends JSON-stringified objects; try to extract a human label.
+        const trimmed = feature.trim()
+        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          try {
+            const parsed = JSON.parse(trimmed)
+            if (typeof parsed === 'string') return parsed
+            if (parsed && typeof parsed === 'object') {
+              return (
+                parsed.feature_name ||
+                parsed.featureName ||
+                parsed.name ||
+                parsed.title ||
+                ''
+              )
+            }
+          } catch (_) {
+            // Not a JSON string, keep as is.
+          }
+        }
+        return trimmed
+      }
+      if (typeof feature === 'object') {
+        return (
+          feature.feature_name ||
+          feature.featureName ||
+          feature.name ||
+          feature.title ||
+          ''
+        )
+      }
+      return String(feature)
+    }
+
     const mapStationToView = (data) => {
       const s = data?.station || data || {}
       return {
@@ -1090,7 +1126,9 @@ export default {
           name: ss.name,
           manufacturer: ss.manufacturer,
           description: ss.description,
-          features: ss.features || [],
+          features: (Array.isArray(ss.features) ? ss.features : [])
+            .map(normalizeFeatureLabel)
+            .filter(Boolean),
         })),
       }
     }
