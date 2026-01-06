@@ -10,6 +10,7 @@ urlpatterns = [
     path("exists", views.ExistsObjectView.as_view()),
     path("object", views.DeleteObjectView.as_view()),
     re_path(r"^stream/(?P<key>.+)$", views.StreamObjectView.as_view()),
+    re_path(r"^video/(?P<key>.+)$", views.VideoStreamView.as_view()),  # Public video streaming
     re_path(r"^hls/(?P<key>.+)$", views.HlsObjectView.as_view()),
     path("transcode-hls", views.TranscodeHlsView.as_view()),
     path("transcode-jobs/<int:job_id>", views.TranscodeJobView.as_view()),

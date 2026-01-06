@@ -40,12 +40,20 @@ services:
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: 1602atgbobur
+      # Optimize MinIO for streaming and range requests
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
     command: server /data --console-address ":9001"
     volumes:
       - miniodata:/data
     ports:
       - "9000:9000"
       - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
   backend:
     build:
       context: .

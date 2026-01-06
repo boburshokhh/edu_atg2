@@ -17,6 +17,11 @@ from apps.stations.views import IsAdmin
 
 
 _RANGE_RE = re.compile(r"bytes=(\d+)-(\d+)?")
+_VIDEO_EXTENSIONS = {'.mp4', '.webm', '.ogg', '.ogv', '.mov', '.avi', '.mkv', '.flv', '.wmv'}
+_VIDEO_MIME_TYPES = {
+    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+    'video/x-msvideo', 'video/x-matroska', 'video/x-flv', 'video/x-ms-wmv'
+}
 
 
 class PresignDownloadView(APIView):
@@ -144,12 +149,134 @@ class FolderContentsView(APIView):
         return JsonResponse({"folders": folders, "files": files})
 
 
+def _parse_range_header(range_header: str, total_size: int) -> tuple[int | None, int | None]:
+    """
+    Parse Range header and return (start, end) tuple.
+    Returns (None, None) if invalid or out of range.
+    """
+    if not range_header:
+        return None, None
+    
+    m = _RANGE_RE.match(range_header)
+    if not m:
+        return None, None
+    
+    try:
+        start = int(m.group(1))
+        end_str = m.group(2)
+        
+        # Validate start
+        if start < 0:
+            return None, None
+        if start >= total_size:
+            return None, None
+        
+        # Parse end
+        if end_str:
+            end = int(end_str)
+            if end < start:
+                return None, None
+            if end >= total_size:
+                end = total_size - 1
+        else:
+            # No end specified - stream to the end
+            end = total_size - 1
+        
+        return start, end
+    except (ValueError, TypeError):
+        return None, None
+
+
+def _get_content_type(key: str, obj_content_type: str | None) -> str:
+    """Determine content type from object metadata or file extension."""
+    # Priority: object metadata > file extension > default
+    if obj_content_type and obj_content_type != "binary/octet-stream":
+        return obj_content_type
+    
+    guessed_type, _ = mimetypes.guess_type(key)
+    if guessed_type:
+        return guessed_type
+    
+    # Fallback for common types
+    key_lower = key.lower()
+    if key_lower.endswith('.pdf'):
+        return "application/pdf"
+    elif any(key_lower.endswith(ext) for ext in _VIDEO_EXTENSIONS):
+        # Video type detection
+        if key_lower.endswith('.webm'):
+            return "video/webm"
+        elif key_lower.endswith(('.ogg', '.ogv')):
+            return "video/ogg"
+        elif key_lower.endswith('.mov'):
+            return "video/quicktime"
+        else:
+            return "video/mp4"  # Default for MP4 and others
+    
+    return "application/octet-stream"
+
+
+def _is_video(content_type: str, key: str) -> bool:
+    """Check if content is video based on MIME type or extension."""
+    if content_type in _VIDEO_MIME_TYPES:
+        return True
+    key_lower = key.lower()
+    return any(key_lower.endswith(ext) for ext in _VIDEO_EXTENSIONS)
+
+
 class StreamObjectView(APIView):
     """
-    Secure streaming endpoint for PDF and other files from MinIO.
-    Requires authentication and supports Range requests for efficient PDF.js loading.
+    Secure streaming endpoint for PDF, video, and other files from MinIO.
+    Requires authentication and supports Range requests for efficient streaming.
+    Optimized for real-time video streaming and partial file loading.
     """
     permission_classes = [IsAuthenticated]
+
+    def head(self, request, key: str):
+        """Handle HEAD requests for metadata (used by browsers for video metadata)"""
+        import logging
+        import urllib.parse
+        logger = logging.getLogger(__name__)
+        
+        try:
+            key = urllib.parse.unquote(key)
+            key = key.lstrip("/")
+        except Exception as e:
+            logger.error(f"[StreamObjectView] Error decoding key: {e}")
+            return JsonResponse({"error": "Invalid key format"}, status=400)
+        
+        if not key:
+            return JsonResponse({"error": "Missing key"}, status=400)
+        
+        client = s3_client()
+        try:
+            head_obj = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            if code in ("NoSuchKey", "404", "NotFound"):
+                return JsonResponse({"error": "File not found"}, status=404)
+            return JsonResponse({"error": "Failed to retrieve file"}, status=500)
+        
+        content_type = _get_content_type(key, head_obj.get("ContentType"))
+        content_length = head_obj.get("ContentLength", 0)
+        
+        response = JsonResponse({}, status=200)
+        response["Content-Type"] = content_type
+        response["Content-Length"] = str(content_length)
+        response["Accept-Ranges"] = "bytes"
+        response["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+        response["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Range, Authorization, Content-Type"
+        response["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges"
+        
+        # Cache headers
+        if _is_video(content_type, key):
+            response["Cache-Control"] = "public, max-age=86400"  # 24 hours for video
+        elif content_type == "application/pdf":
+            response["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
+        else:
+            response["Cache-Control"] = "public, max-age=3600"
+        
+        return response
 
     def options(self, request, key: str):
         """Handle CORS preflight requests"""
@@ -167,7 +294,6 @@ class StreamObjectView(APIView):
         
         # Декодируем ключ из URL (frontend использует encodeURIComponent)
         try:
-            # Django автоматически декодирует URL, но нужно обработать специальные случаи
             key = urllib.parse.unquote(key)
             key = key.lstrip("/")
         except Exception as e:
@@ -182,23 +308,10 @@ class StreamObjectView(APIView):
         client = s3_client()
         range_header = request.headers.get("Range")
 
-        extra = {}
-        status_code = 200
-        content_range = None
-
-        # Поддержка Range requests для PDF.js (partial content)
-        if range_header:
-            m = _RANGE_RE.match(range_header)
-            if m:
-                start = int(m.group(1))
-                end = int(m.group(2)) if m.group(2) is not None else None
-                extra["Range"] = f"bytes={start}-{'' if end is None else end}"
-                status_code = 206
-                logger.debug(f"[StreamObjectView] Range request: {start}-{end}")
-
+        # First, get object metadata to determine total size
         try:
-            # Получаем объект из MinIO
-            obj = client.get_object(Bucket=settings.MINIO_BUCKET, Key=key, **extra)
+            head_obj = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
+            total_size = head_obj.get("ContentLength", 0)
         except ClientError as e:
             code = (e.response.get("Error") or {}).get("Code")
             logger.error(f"[StreamObjectView] MinIO error for key {key}: {code}")
@@ -209,63 +322,239 @@ class StreamObjectView(APIView):
             logger.exception(f"[StreamObjectView] Unexpected error for key {key}: {e}")
             return JsonResponse({"error": "Internal server error"}, status=500)
 
+        # Parse range header
+        start = None
+        end = None
+        status_code = 200
+        content_range = None
+        
+        if range_header and total_size > 0:
+            start, end = _parse_range_header(range_header, total_size)
+            if start is not None and end is not None:
+                status_code = 206  # Partial Content
+                content_range = f"bytes {start}-{end}/{total_size}"
+                logger.debug(f"[StreamObjectView] Range request: {start}-{end} (total: {total_size})")
+            else:
+                # Invalid range - return 416 Range Not Satisfiable
+                response = JsonResponse({"error": "Range Not Satisfiable"}, status=416)
+                response["Content-Range"] = f"bytes */{total_size}"
+                response["Accept-Ranges"] = "bytes"
+                return response
+
+        # Prepare MinIO request
+        extra = {}
+        if start is not None and end is not None:
+            extra["Range"] = f"bytes={start}-{end}"
+
+        try:
+            # Получаем объект из MinIO
+            obj = client.get_object(Bucket=settings.MINIO_BUCKET, Key=key, **extra)
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            logger.error(f"[StreamObjectView] MinIO get_object error for key {key}: {code}")
+            if code in ("NoSuchKey", "404", "NotFound"):
+                return JsonResponse({"error": "File not found"}, status=404)
+            return JsonResponse({"error": "Failed to retrieve file"}, status=500)
+        except Exception as e:
+            logger.exception(f"[StreamObjectView] Unexpected error for key {key}: {e}")
+            return JsonResponse({"error": "Internal server error"}, status=500)
+
         body = obj["Body"]
         
-        # Определяем Content-Type: приоритет у метаданных MinIO, затем по расширению
-        content_type = obj.get("ContentType")
-        if not content_type or content_type == "binary/octet-stream":
-            # Определяем по расширению файла
-            guessed_type, _ = mimetypes.guess_type(key)
-            if guessed_type:
-                content_type = guessed_type
-            elif key.lower().endswith('.pdf'):
-                content_type = "application/pdf"
-            else:
-                content_type = "application/octet-stream"
-        
+        # Определяем Content-Type
+        content_type = _get_content_type(key, obj.get("ContentType"))
         content_length = obj.get("ContentLength")
-
-        # Вычисляем Content-Range для partial content responses
-        total_size = None
-        if status_code == 206:
-            try:
-                head = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
-                total_size = head.get("ContentLength")
-            except Exception:
-                total_size = content_length
-
-        if status_code == 206 and total_size is not None and range_header:
-            m = _RANGE_RE.match(range_header)
-            if m:
-                start = int(m.group(1))
-                end = int(m.group(2)) if m.group(2) is not None else (total_size - 1)
-                content_range = f"bytes {start}-{end}/{total_size}"
+        
+        # Если это range request, content_length уже правильный для части
+        # Но для полного файла используем total_size
+        if status_code == 200:
+            content_length = total_size
 
         # Создаем streaming response
         resp = StreamingHttpResponse(body, status=status_code, content_type=content_type)
         
-        # Заголовки для поддержки Range requests и кэширования
+        # Заголовки для поддержки Range requests
         resp["Accept-Ranges"] = "bytes"
         if content_length is not None:
             resp["Content-Length"] = str(content_length)
         if content_range:
             resp["Content-Range"] = content_range
         
-        # CORS заголовки для streaming responses (важно для PDF.js)
+        # CORS заголовки для streaming responses
         resp["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
         resp["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
         resp["Access-Control-Allow-Headers"] = "Range, Authorization, Content-Type"
         resp["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges"
         
-        # Кэширование для оптимизации (не кэшируем PDF для безопасности)
-        if content_type == "application/pdf":
+        # Оптимизированное кэширование
+        is_video = _is_video(content_type, key)
+        if is_video:
+            # Видео: кэшируем долго, но с revalidation
+            resp["Cache-Control"] = "public, max-age=86400, must-revalidate"  # 24 hours
+            resp["ETag"] = head_obj.get("ETag", "").strip('"')
+        elif content_type == "application/pdf":
+            # PDF: не кэшируем для безопасности
             resp["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
             resp["Pragma"] = "no-cache"
             resp["Expires"] = "0"
         else:
-            resp["Cache-Control"] = "public, max-age=3600"
+            # Другие файлы: умеренное кэширование
+            resp["Cache-Control"] = "public, max-age=3600"  # 1 hour
         
-        logger.debug(f"[StreamObjectView] Streaming {content_type} file: {key}, size: {content_length}")
+        logger.debug(f"[StreamObjectView] Streaming {content_type} file: {key}, size: {content_length}, range: {content_range}")
+        return resp
+
+
+class VideoStreamView(APIView):
+    """
+    Public streaming endpoint for video files from MinIO.
+    Supports Range requests for efficient video playback without full download.
+    Optimized for real-time video streaming with proper caching headers.
+    """
+    permission_classes = [AllowAny]
+
+    def head(self, request, key: str):
+        """Handle HEAD requests for video metadata"""
+        import logging
+        import urllib.parse
+        logger = logging.getLogger(__name__)
+        
+        try:
+            key = urllib.parse.unquote(key)
+            key = key.lstrip("/")
+        except Exception as e:
+            logger.error(f"[VideoStreamView] Error decoding key: {e}")
+            return JsonResponse({"error": "Invalid key format"}, status=400)
+        
+        if not key:
+            return JsonResponse({"error": "Missing key"}, status=400)
+        
+        client = s3_client()
+        try:
+            head_obj = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            if code in ("NoSuchKey", "404", "NotFound"):
+                return JsonResponse({"error": "File not found"}, status=404)
+            return JsonResponse({"error": "Failed to retrieve file"}, status=500)
+        
+        content_type = _get_content_type(key, head_obj.get("ContentType"))
+        content_length = head_obj.get("ContentLength", 0)
+        
+        response = JsonResponse({}, status=200)
+        response["Content-Type"] = content_type
+        response["Content-Length"] = str(content_length)
+        response["Accept-Ranges"] = "bytes"
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Range, Content-Type"
+        response["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges"
+        response["Cache-Control"] = "public, max-age=86400"  # 24 hours for video
+        if head_obj.get("ETag"):
+            response["ETag"] = head_obj.get("ETag", "").strip('"')
+        
+        return response
+
+    def options(self, request, key: str):
+        """Handle CORS preflight requests"""
+        response = JsonResponse({})
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Range, Content-Type"
+        response["Access-Control-Max-Age"] = "86400"
+        return response
+
+    def get(self, request, key: str):
+        import logging
+        import urllib.parse
+        logger = logging.getLogger(__name__)
+        
+        try:
+            key = urllib.parse.unquote(key)
+            key = key.lstrip("/")
+        except Exception as e:
+            logger.error(f"[VideoStreamView] Error decoding key: {e}")
+            return JsonResponse({"error": "Invalid key format"}, status=400)
+        
+        if not key:
+            return JsonResponse({"error": "Missing key"}, status=400)
+        
+        logger.debug(f"[VideoStreamView] Streaming video: {key}")
+        
+        client = s3_client()
+        range_header = request.headers.get("Range")
+
+        # Get object metadata first
+        try:
+            head_obj = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
+            total_size = head_obj.get("ContentLength", 0)
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            logger.error(f"[VideoStreamView] MinIO error for key {key}: {code}")
+            if code in ("NoSuchKey", "404", "NotFound"):
+                return JsonResponse({"error": "File not found"}, status=404)
+            return JsonResponse({"error": "Failed to retrieve file"}, status=500)
+
+        # Parse range header
+        start = None
+        end = None
+        status_code = 200
+        content_range = None
+        
+        if range_header and total_size > 0:
+            start, end = _parse_range_header(range_header, total_size)
+            if start is not None and end is not None:
+                status_code = 206  # Partial Content
+                content_range = f"bytes {start}-{end}/{total_size}"
+                logger.debug(f"[VideoStreamView] Range request: {start}-{end} (total: {total_size})")
+            else:
+                # Invalid range - return 416 Range Not Satisfiable
+                response = JsonResponse({"error": "Range Not Satisfiable"}, status=416)
+                response["Content-Range"] = f"bytes */{total_size}"
+                response["Accept-Ranges"] = "bytes"
+                response["Access-Control-Allow-Origin"] = "*"
+                return response
+
+        # Prepare MinIO request
+        extra = {}
+        if start is not None and end is not None:
+            extra["Range"] = f"bytes={start}-{end}"
+
+        try:
+            obj = client.get_object(Bucket=settings.MINIO_BUCKET, Key=key, **extra)
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            logger.error(f"[VideoStreamView] MinIO get_object error for key {key}: {code}")
+            if code in ("NoSuchKey", "404", "NotFound"):
+                return JsonResponse({"error": "File not found"}, status=404)
+            return JsonResponse({"error": "Failed to retrieve file"}, status=500)
+
+        body = obj["Body"]
+        content_type = _get_content_type(key, obj.get("ContentType"))
+        content_length = obj.get("ContentLength")
+        
+        if status_code == 200:
+            content_length = total_size
+
+        resp = StreamingHttpResponse(body, status=status_code, content_type=content_type)
+        resp["Accept-Ranges"] = "bytes"
+        if content_length is not None:
+            resp["Content-Length"] = str(content_length)
+        if content_range:
+            resp["Content-Range"] = content_range
+        
+        # CORS headers for public video streaming
+        resp["Access-Control-Allow-Origin"] = "*"
+        resp["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        resp["Access-Control-Allow-Headers"] = "Range, Content-Type"
+        resp["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges"
+        
+        # Optimized caching for video
+        resp["Cache-Control"] = "public, max-age=86400, must-revalidate"  # 24 hours
+        if head_obj.get("ETag"):
+            resp["ETag"] = head_obj.get("ETag", "").strip('"')
+        
+        logger.debug(f"[VideoStreamView] Streaming {content_type} video: {key}, size: {content_length}, range: {content_range}")
         return resp
 
 
@@ -274,26 +563,46 @@ class HlsObjectView(APIView):
     Public proxy for HLS playlists and segments stored in MinIO.
     Important: HLS playlists contain relative segment URLs; presigned URLs break that,
     so we serve via a stable Django path that can resolve relative references.
+    Optimized for range requests and caching.
     """
 
     permission_classes = [AllowAny]
 
     def get(self, request, key: str):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         key = key.lstrip("/")
         client = s3_client()
         range_header = request.headers.get("Range")
 
-        extra = {}
+        # Get metadata first
+        try:
+            head_obj = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
+            total_size = head_obj.get("ContentLength", 0)
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            logger.error(f"[HlsObjectView] MinIO error for key {key}: {code}")
+            if code in ("NoSuchKey", "404", "NotFound"):
+                return JsonResponse({"error": "Not found"}, status=404)
+            return JsonResponse({"error": "Not found"}, status=404)
+
+        # Parse range header
+        start = None
+        end = None
         status_code = 200
         content_range = None
-
-        if range_header:
-            m = _RANGE_RE.match(range_header)
-            if m:
-                start = int(m.group(1))
-                end = int(m.group(2)) if m.group(2) is not None else None
-                extra["Range"] = f"bytes={start}-{'' if end is None else end}"
+        
+        if range_header and total_size > 0:
+            start, end = _parse_range_header(range_header, total_size)
+            if start is not None and end is not None:
                 status_code = 206
+                content_range = f"bytes {start}-{end}/{total_size}"
+
+        # Prepare MinIO request
+        extra = {}
+        if start is not None and end is not None:
+            extra["Range"] = f"bytes={start}-{end}"
 
         try:
             obj = client.get_object(Bucket=settings.MINIO_BUCKET, Key=key, **extra)
@@ -306,20 +615,9 @@ class HlsObjectView(APIView):
         body = obj["Body"]
         content_type = obj.get("ContentType") or mimetypes.guess_type(key)[0] or "application/octet-stream"
         content_length = obj.get("ContentLength")
-
-        total_size = None
-        try:
-            head = client.head_object(Bucket=settings.MINIO_BUCKET, Key=key)
-            total_size = head.get("ContentLength")
-        except Exception:
-            total_size = None
-
-        if status_code == 206 and total_size is not None and range_header:
-            m = _RANGE_RE.match(range_header)
-            if m:
-                start = int(m.group(1))
-                end = int(m.group(2)) if m.group(2) is not None else (total_size - 1)
-                content_range = f"bytes {start}-{end}/{total_size}"
+        
+        if status_code == 200:
+            content_length = total_size
 
         resp = StreamingHttpResponse(body, status=status_code, content_type=content_type)
         resp["Accept-Ranges"] = "bytes"
@@ -327,8 +625,19 @@ class HlsObjectView(APIView):
             resp["Content-Length"] = str(content_length)
         if content_range:
             resp["Content-Range"] = content_range
-        # Allow browsers to cache segments for better UX on slow networks
-        resp["Cache-Control"] = "public, max-age=3600"
+        
+        # CORS headers
+        resp["Access-Control-Allow-Origin"] = "*"
+        resp["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        resp["Access-Control-Allow-Headers"] = "Range, Content-Type"
+        resp["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges"
+        
+        # Cache HLS segments aggressively for better performance
+        # HLS segments are small and immutable, so long cache is safe
+        resp["Cache-Control"] = "public, max-age=86400"  # 24 hours
+        if head_obj.get("ETag"):
+            resp["ETag"] = head_obj.get("ETag", "").strip('"')
+        
         return resp
 
 
