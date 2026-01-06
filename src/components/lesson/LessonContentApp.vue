@@ -68,29 +68,7 @@
             :current-file="currentFile"
             :current-file-type="currentFileType"
             @download-file="downloadFile"
-          >
-            <!-- Кнопка "Завершить" передается через slot для размещения под видеоплеером -->
-            <template #complete-button>
-              <AppButton
-                v-if="!isTopicCompleted"
-                variant="primary"
-                class="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                @click="markAsCompleted"
-              >
-                <span class="material-symbols-outlined text-[18px] align-middle mr-2">check_circle</span>
-                <span>Завершить урок</span>
-              </AppButton>
-              <AppButton
-                v-else
-                variant="success"
-                disabled
-                class="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
-              >
-                <span class="material-symbols-outlined text-[18px] align-middle mr-2">check_circle</span>
-                <span>Завершено</span>
-              </AppButton>
-            </template>
-          </ContentViewer>
+          />
               </div>
       </main>
 
@@ -141,7 +119,6 @@ import LessonHeader from '@/components/lesson/LessonHeader.vue'
 import LessonSidebar from '@/components/lesson/LessonSidebar.vue'
 import TestQuiz from '@/components/lesson/TestQuiz.vue'
 import CommentsSidebar from '@/components/lesson/CommentsSidebar.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import testsData from '@/data/testsData.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'

@@ -7,7 +7,6 @@
         icon="menu"
         variant="default"
         aria-label="Меню"
-        class="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         @click="handleToggleSidebar"
       />
       <h2 class="font-medium text-slate-700 text-sm md:text-base lg:text-lg truncate max-w-[150px] md:max-w-md min-w-0">
@@ -19,16 +18,31 @@
         :icon="isFullscreen ? 'fullscreen_exit' : 'fullscreen'"
         variant="default"
         :title="isFullscreen ? 'Выйти из полноэкранного режима' : 'На весь экран'"
-        class="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         @click="$emit('toggle-fullscreen')"
       />
 
-      <!-- Кнопка "Завершить" перемещена в ContentViewer под контентом для лучшего UX -->
+      <AppButton
+        v-if="!isTopicCompleted"
+        variant="primary"
+        @click="$emit('mark-complete')"
+      >
+        <span class="hidden md:inline">Завершить</span>
+        <span class="md:hidden">
+          <span class="material-symbols-outlined text-[18px] align-middle">check</span>
+        </span>
+      </AppButton>
+      <AppButton
+        v-else
+        variant="success"
+        disabled
+      >
+        <span class="material-symbols-outlined text-[16px] md:text-[18px]">check</span>
+        <span class="hidden md:inline ml-2">Завершено</span>
+      </AppButton>
       <IconButton
         icon="chat_bubble"
         :variant="isCommentsOpen ? 'primary' : 'default'"
         title="Комментарии"
-        class="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         @click="$emit('toggle-comments')"
       />
     </div>

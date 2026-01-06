@@ -57,65 +57,46 @@
         </div>
       </template>
 
-      <!-- Улучшенный empty state с иллюстрацией и призывом к действию -->
-      <div v-else class="text-center py-12 px-4">
-        <div class="flex flex-col items-center gap-4">
-          <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center">
-            <span class="material-symbols-outlined text-4xl text-slate-400">chat_bubble_outline</span>
-          </div>
-          <div class="flex flex-col gap-2">
-            <p class="text-base font-semibold text-slate-700">Пока нет комментариев</p>
-            <p class="text-sm text-[#757575] max-w-xs">
-              Станьте первым, кто оставит комментарий! Ваши вопросы и обсуждения помогают всем лучше понять материал.
-            </p>
-          </div>
-        </div>
+      <div v-else class="text-center py-8">
+        <p class="text-sm text-slate-400">Пока нет комментариев</p>
       </div>
     </div>
 
     <template #footer>
-      <!-- Comment Form с улучшенным padding и группировкой элементов -->
-      <div class="p-4 bg-slate-50 border-t border-slate-200">
+      <!-- Comment Form -->
+      <div class="p-4 bg-slate-50">
       <form @submit.prevent="handleSubmit" class="flex flex-col gap-3">
-        <!-- Textarea с увеличенным padding и min-height -->
         <el-input
           v-model="newCommentText"
           type="textarea"
-          :rows="4"
+          :rows="3"
           placeholder="Введите ваш комментарий..."
           :disabled="isSubmitting"
-          class="custom-scrollbar comment-textarea"
-          :style="{ minHeight: '100px' }"
+          class="custom-scrollbar"
         />
-        <!-- Визуально сгруппированная toolbar -->
-        <div class="flex justify-between items-center pt-2 border-t border-slate-200">
-          <!-- Группа кнопок управления (emoji, attachment) -->
-          <div class="flex gap-2 items-center">
+        <div class="flex justify-between items-center">
+          <div class="flex gap-1 text-slate-400">
             <button
               type="button"
-              class="p-2 hover:bg-slate-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              class="p-1.5 hover:bg-slate-200 rounded-full transition-colors"
               title="Эмодзи"
-              tabindex="0"
             >
-              <span class="material-symbols-outlined text-[20px] text-slate-600">sentiment_satisfied</span>
+              <span class="material-symbols-outlined text-[18px]">sentiment_satisfied</span>
             </button>
             <button
               type="button"
-              class="p-2 hover:bg-slate-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              class="p-1.5 hover:bg-slate-200 rounded-full transition-colors"
               title="Прикрепить файл"
-              tabindex="0"
             >
-              <span class="material-symbols-outlined text-[20px] text-slate-600">attach_file</span>
+              <span class="material-symbols-outlined text-[18px]">attach_file</span>
             </button>
           </div>
-          <!-- Кнопка отправки отделена визуально -->
           <el-button
             type="primary"
             :loading="isSubmitting"
             :disabled="!newCommentText.trim()"
             native-type="submit"
-            class="flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            tabindex="0"
+            class="flex items-center gap-1.5"
           >
             Отправить
             <el-icon>
@@ -296,19 +277,6 @@ onMounted(() => {
 
 
 <style scoped>
-/* Увеличенный padding для textarea комментариев */
-:deep(.comment-textarea .el-textarea__inner) {
-  padding: 12px 16px !important;
-  min-height: 100px !important;
-  font-size: 14px;
-  line-height: 1.5;
-  border-radius: 8px;
-  transition: border-color 0.2s;
-}
-
-:deep(.comment-textarea .el-textarea__inner:focus) {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
+/* Styles handled by SidebarShell */
 </style>
 
