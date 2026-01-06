@@ -63,13 +63,12 @@
       </div>
       
       <div class="flex items-center gap-2 md:gap-4">
-    <div class="flex items-center gap-2 md:gap-4">
-      <IconButton
-        :icon="isFullscreen ? 'fullscreen_exit' : 'fullscreen'"
-        variant="default"
-        :title="isFullscreen ? 'Выйти из полноэкранного режима' : 'На весь экран'"
-        @click="$emit('toggle-fullscreen')"
-      />
+        <IconButton
+          :icon="isFullscreen ? 'fullscreen_exit' : 'fullscreen'"
+          variant="default"
+          :title="isFullscreen ? 'Выйти из полноэкранного режима' : 'На весь экран'"
+          @click="$emit('toggle-fullscreen')"
+        />
 
         <transition name="button-fade" mode="out-in">
           <AppButton
@@ -95,12 +94,13 @@
             <span class="hidden md:inline ml-2">Завершено</span>
           </AppButton>
         </transition>
-      <IconButton
-        icon="chat_bubble"
-        :variant="isCommentsOpen ? 'primary' : 'default'"
-        title="Комментарии"
-        @click="$emit('toggle-comments')"
-      />
+        <IconButton
+          icon="chat_bubble"
+          :variant="isCommentsOpen ? 'primary' : 'default'"
+          title="Комментарии"
+          @click="$emit('toggle-comments')"
+        />
+      </div>
     </div>
   </header>
 </template>
