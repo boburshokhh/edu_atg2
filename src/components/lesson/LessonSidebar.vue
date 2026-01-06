@@ -81,17 +81,22 @@
             <div class="flex flex-col gap-1 pl-2 mt-1">
               <!-- Files in topic -->
               <template v-if="(topic.files || []).length > 0">
-                <div
-                  v-for="(file, fileIndex) in (topic.files || [])"
-                  :key="`file-${file.id || fileIndex}`"
-                  :class="[
-                    'flex items-start justify-between p-2 rounded-md cursor-pointer transition-colors',
-                    isCurrentFile(lessonIndex, topicIndex, file)
-                      ? 'bg-primary/10 border border-primary/20 shadow-sm'
-                      : 'hover:bg-slate-50 group/item'
-                  ]"
-                  @click="selectFile(lessonIndex, topicIndex, file)"
+                <transition-group
+                  name="file-list"
+                  tag="div"
+                  class="flex flex-col gap-1"
                 >
+                  <div
+                    v-for="(file, fileIndex) in (topic.files || [])"
+                    :key="`file-${file.id || fileIndex}`"
+                    :class="[
+                      'flex items-start justify-between p-2 rounded-md cursor-pointer transition-all duration-200',
+                      isCurrentFile(lessonIndex, topicIndex, file)
+                        ? 'bg-primary/10 border border-primary/20 shadow-sm scale-[1.02]'
+                        : 'hover:bg-slate-50 group/item hover:scale-[1.01]'
+                    ]"
+                    @click="selectFile(lessonIndex, topicIndex, file)"
+                  >
                 <div 
                   :class="[
                     'flex items-start gap-3',
@@ -133,14 +138,17 @@
                     </span>
                   </div>
                 </div>
-                <div v-if="isCurrentFile(lessonIndex, topicIndex, file)" class="w-1.5 h-1.5 rounded-full bg-primary mt-2 mr-1"></div>
-                <span
-                  v-else-if="isFileCompleted(lessonIndex, topicIndex, file)"
-                  class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
-                >
-                  check
-                </span>
-                </div>
+                    <div v-if="isCurrentFile(lessonIndex, topicIndex, file)" class="w-1.5 h-1.5 rounded-full bg-primary mt-2 mr-1 animate-pulse"></div>
+                    <transition name="check-fade">
+                      <span
+                        v-if="isFileCompleted(lessonIndex, topicIndex, file) && !isCurrentFile(lessonIndex, topicIndex, file)"
+                        class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
+                      >
+                        check
+                      </span>
+                    </transition>
+                  </div>
+                </transition-group>
               </template>
               <div
                 v-else
@@ -152,12 +160,13 @@
           </details>
 
             <!-- Lesson Test -->
-          <div
+          <transition name="test-fade">
+            <div
               :class="[
-              'flex items-start justify-between p-2 rounded-md cursor-pointer transition-colors border-t border-slate-200 mt-1',
+                'flex items-start justify-between p-2 rounded-md cursor-pointer transition-all duration-200 border-t border-slate-200 mt-1',
                 isCurrentTest(lessonIndex)
-                ? 'bg-purple-50 border-purple-200'
-                : 'hover:bg-slate-50'
+                  ? 'bg-purple-50 border-purple-200 shadow-sm scale-[1.02]'
+                  : 'hover:bg-slate-50 hover:scale-[1.01]'
               ]"
               @click="selectTest(lessonIndex)"
             >
@@ -180,13 +189,16 @@
                 <span class="text-[11px] text-slate-400 mt-0.5">Проверка знаний</span>
               </div>
             </div>
-            <span
-                    v-if="isLessonTestPassed(lessonIndex)"
-              class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
-            >
-              check
-            </span>
-                </div>
+              <transition name="check-fade">
+                <span
+                  v-if="isLessonTestPassed(lessonIndex)"
+                  class="material-symbols-outlined text-emerald-500 text-[18px] mt-0.5"
+                >
+                  check
+                </span>
+              </transition>
+            </div>
+          </transition>
         </div>
       </details>
               </div>
@@ -209,7 +221,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import authService from '@/services/auth'
 
 const props = defineProps({
@@ -325,7 +337,9 @@ const selectTopic = (lessonIndex, topicIndex) => {
   emit('select-lesson', { lessonIndex, topicIndex })
 }
 
-const selectFile = (lessonIndex, topicIndex, file) => {
+const selectFile = async (lessonIndex, topicIndex, file) => {
+  // Smooth scroll to current file if needed
+  await nextTick()
   emit('select-file', { lessonIndex, topicIndex, file })
 }
 
@@ -447,5 +461,61 @@ details > summary::-webkit-details-marker {
   z-index: 40;
   overflow: hidden;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Animations */
+.file-list-enter-active,
+.file-list-leave-active {
+  transition: all 0.3s ease;
+}
+
+.file-list-enter-from {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
+.file-list-leave-to {
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+.check-fade-enter-active,
+.check-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.check-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.check-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.test-fade-enter-active,
+.test-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.test-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+.test-fade-leave-to {
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+/* Performance optimizations */
+.group\/item {
+  will-change: transform, background-color;
+}
+
+/* Smooth scrolling for long lists */
+.custom-scrollbar {
+  scroll-behavior: smooth;
 }
 </style>

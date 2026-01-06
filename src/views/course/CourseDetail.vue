@@ -450,19 +450,45 @@
     </div>
 
     <!-- Video Player -->
-    <VideoPlayer
+    <el-dialog
       v-model="showVideoPlayer"
-      :video-url="currentLesson?.videoUrl || ''"
-      :video-title="currentLesson?.title || ''"
-      :video-description="currentLesson?.sectionTitle || ''"
-      :video-id="currentLesson?.id"
-      :lessons="allLessons"
-      :current-index="currentLessonIndex"
-      @video-end="handleVideoEnd"
+      :title="currentLesson?.title || 'Видеоурок'"
+      width="90%"
+      :before-close="handleVideoClose"
       @close="handleVideoClose"
-      @next="playNext"
-      @previous="playPrevious"
-    />
+    >
+      <EducationalVideoPlayer
+        v-if="currentLesson?.videoUrl"
+        :source="currentLesson.videoUrl"
+        :require-auth="false"
+        :save-progress="true"
+        :progress-key="`lesson_${currentLesson.id}`"
+        @ended="handleVideoEnd"
+      />
+      <template #footer>
+        <div class="flex items-center justify-between w-full">
+          <el-button
+            :disabled="currentLessonIndex === 0"
+            @click="playPrevious"
+          >
+            <el-icon class="mr-2">
+              <ArrowLeft />
+            </el-icon>
+            Предыдущий урок
+          </el-button>
+          <el-button
+            type="primary"
+            :disabled="currentLessonIndex >= allLessons.length - 1"
+            @click="playNext"
+          >
+            Следующий урок
+            <el-icon class="ml-2">
+              <ArrowRight />
+            </el-icon>
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
 </template>
 
 <script>
@@ -471,7 +497,8 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Document, Download } from '@element-plus/icons-vue'
-import VideoPlayer from '@/components/course/VideoPlayer.vue'
+import EducationalVideoPlayer from '@/components/video/EducationalVideoPlayer.vue'
+import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import videoService from '@/services/videoService'
 import authService from '@/services/auth'
 import minioService from '@/services/minioService'
@@ -479,9 +506,11 @@ import minioService from '@/services/minioService'
 export default {
   name: 'CourseDetail',
   components: {
-    VideoPlayer,
+    EducationalVideoPlayer,
     Document,
-    Download
+    Download,
+    ArrowLeft,
+    ArrowRight
   },
   props: {
     id: {

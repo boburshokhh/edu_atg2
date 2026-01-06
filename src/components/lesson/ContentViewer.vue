@@ -4,26 +4,55 @@
       'flex-1 overflow-auto bg-[#525659] p-4 sm:p-6 md:p-8 flex justify-center items-start relative custom-scrollbar min-h-0'
     ]"
   >
+    <!-- Loading State -->
+    <transition name="fade">
+      <div
+        v-if="isLoading"
+        class="w-full max-w-5xl bg-white rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]"
+      >
+        <div class="text-center">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+          <p class="text-slate-500">{{ loadingText }}</p>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Content with transitions -->
+    <transition name="content-fade" mode="out-in">
       <!-- Video Player -->
-      <EducationalVideoPlayer
-        v-if="currentFile && currentFileType === 'video'"
-        :source="currentFile"
-        :save-progress="true"
-        :progress-key="`lesson_${currentFile.id || currentFile.objectKey}`"
+      <div
+        v-if="currentFile && currentFileType === 'video' && !isLoading"
+        key="video"
         class="w-full max-w-5xl mx-auto"
-      />
+      >
+        <EducationalVideoPlayer
+          :source="currentFile"
+          :save-progress="true"
+          :progress-key="`lesson_${currentFile.id || currentFile.objectKey}`"
+          class="w-full"
+          @ready="handleVideoReady"
+          @error="handleVideoError"
+        />
+      </div>
 
       <!-- PDF Viewer -->
-      <LessonPdfViewer
-        v-else-if="currentFile && currentFileType === 'pdf'"
-        :source="currentFile"
-      />
+      <div
+        v-else-if="currentFile && currentFileType === 'pdf' && !isLoading"
+        key="pdf"
+        class="w-full max-w-5xl mx-auto"
+      >
+        <LessonPdfViewer
+          :source="currentFile"
+          @page-loaded="handlePdfLoaded"
+        />
+      </div>
 
-    <!-- Document Viewer (for unsupported files) -->
+      <!-- Document Viewer (for unsupported files) -->
       <div 
-      v-else-if="currentFile"
-      class="w-full max-w-3xl bg-white h-auto min-h-[60vh] md:min-h-[80vh] shadow-2xl relative mb-8 md:mb-12 flex flex-col group"
-    >
+        v-else-if="currentFile && !isLoading"
+        key="document"
+        class="w-full max-w-3xl bg-white h-auto min-h-[60vh] md:min-h-[80vh] shadow-2xl relative mb-8 md:mb-12 flex flex-col group"
+      >
       <div class="w-full h-full p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col gap-6 md:gap-8 lg:gap-10 opacity-80" aria-label="Simulated Document Page">
         <!-- Title Skeleton -->
         <div class="w-3/4 h-10 bg-slate-200 rounded animate-pulse"></div>
@@ -81,24 +110,25 @@
       </div>
     </div>
 
-    <!-- No Content Placeholder -->
-    <div
-      v-else
-      class="w-full max-w-3xl bg-white rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]"
-    >
-      <div class="text-center">
-        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block">
-          description
-        </span>
-        <p class="text-slate-500">Выберите материал для просмотра</p>
+      <!-- No Content Placeholder -->
+      <div
+        v-else-if="!isLoading"
+        key="empty"
+        class="w-full max-w-3xl bg-white rounded-lg shadow-2xl p-8 md:p-12 flex items-center justify-center min-h-[400px]"
+      >
+        <div class="text-center">
+          <span class="material-symbols-outlined text-6xl text-slate-400 mb-4 block">
+            description
+          </span>
+          <p class="text-slate-500">Выберите материал для просмотра</p>
+        </div>
       </div>
-    </div>
-
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { defineAsyncComponent } from 'vue'
+import { ref, watch, defineAsyncComponent } from 'vue'
 
 // Lazy load viewers
 const EducationalVideoPlayer = defineAsyncComponent(() => import('../video/EducationalVideoPlayer.vue'))
@@ -116,6 +146,45 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['download-file'])
+
+// Loading state
+const isLoading = ref(false)
+const loadingText = ref('Загрузка...')
+
+// Watch for file changes to show loading
+watch(() => [props.currentFile, props.currentFileType], ([newFile, newType], [oldFile, oldType]) => {
+  if (newFile && newFile !== oldFile) {
+    isLoading.value = true
+    if (newType === 'video') {
+      loadingText.value = 'Загрузка видео...'
+    } else if (newType === 'pdf') {
+      loadingText.value = 'Загрузка PDF...'
+    } else {
+      loadingText.value = 'Загрузка файла...'
+    }
+    
+    // Hide loading after a short delay (content will handle its own loading)
+    setTimeout(() => {
+      isLoading.value = false
+    }, 300)
+  } else if (!newFile) {
+    isLoading.value = false
+  }
+}, { immediate: false })
+
+// Handlers
+const handleVideoReady = () => {
+  isLoading.value = false
+}
+
+const handleVideoError = () => {
+  isLoading.value = false
+  loadingText.value = 'Ошибка загрузки видео'
+}
+
+const handlePdfLoaded = () => {
+  isLoading.value = false
+}
 </script>
 
 <style scoped>
@@ -145,5 +214,41 @@ const emit = defineEmits(['download-file'])
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.content-fade-enter-active {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.content-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.content-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.content-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .custom-scrollbar {
+    padding: 1rem;
+  }
 }
 </style>

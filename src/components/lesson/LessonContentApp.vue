@@ -36,6 +36,9 @@
           :is-topic-completed="isTopicCompleted"
           :is-comments-open="isCommentsOpen"
           :is-fullscreen="isFullscreen"
+          :breadcrumbs="breadcrumbs"
+          :lesson-progress="topicProgress"
+          :show-progress="!!currentFile"
           @mark-complete="markAsCompleted"
           @toggle-sidebar="handleToggleSidebar"
           @toggle-comments="handleToggleComments"
@@ -202,6 +205,39 @@ const currentFile = ref(null)
 const mainMaterials = ref([])
 const additionalMaterials = ref([])
 
+// File cache for performance
+const fileCache = ref(new Map())
+
+// Breadcrumbs for navigation
+const breadcrumbs = computed(() => {
+  const crumbs = []
+  if (courseProgram.value?.title) {
+    crumbs.push({
+      label: courseProgram.value.title,
+      path: `/station/${stationId.value}/courses`
+    })
+  }
+  if (currentLesson.value) {
+    crumbs.push({
+      label: getLessonTitle(currentLesson.value.title),
+      path: null
+    })
+  }
+  if (currentTopic.value) {
+    crumbs.push({
+      label: currentTopic.value.title,
+      path: null
+    })
+  }
+  return crumbs
+})
+
+// Topic progress (for video files)
+const topicProgress = computed(() => {
+  // This can be enhanced to track actual video progress
+  return isTopicCompleted.value ? 100 : 0
+})
+
 const currentFileType = computed(() => {
   const f = currentFile.value
   if (!f) return 'unknown'
@@ -346,6 +382,16 @@ const loadTopicMaterials = async () => {
       return
     }
 
+    // Проверяем кэш
+    const cacheKey = `${currentLessonIndex.value}-${currentTopicIndex.value}`
+    if (fileCache.value.has(cacheKey)) {
+      const cached = fileCache.value.get(cacheKey)
+      mainMaterials.value = cached.mainMaterials
+      additionalMaterials.value = cached.additionalMaterials
+      currentFile.value = cached.currentFile
+      return
+    }
+
     // Загружаем материалы только из БД (course_program_topic_files)
     const dbFiles = Array.isArray(currentTopic.value?.files) ? currentTopic.value.files : []
     
@@ -354,6 +400,12 @@ const loadTopicMaterials = async () => {
       mainMaterials.value = []
       additionalMaterials.value = []
       currentFile.value = null
+      // Кэшируем пустое состояние
+      fileCache.value.set(cacheKey, {
+        mainMaterials: [],
+        additionalMaterials: [],
+        currentFile: null
+      })
       return
     }
 
@@ -429,6 +481,13 @@ const loadTopicMaterials = async () => {
     } else {
       currentFile.value = null
     }
+
+    // Кэшируем результаты
+    fileCache.value.set(cacheKey, {
+      mainMaterials: mainFiles,
+      additionalMaterials: additionals,
+      currentFile: currentFile.value
+    })
   } catch (error) {
     console.error('[LessonContentApp] Error loading topic materials:', error)
     ElMessage.error('Не удалось загрузить материалы урока')
@@ -532,6 +591,23 @@ const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
   currentLessonIndex.value = lessonIndex
   currentTopicIndex.value = topicIndex
   isTestMode.value = false
+  
+  // Проверяем кэш
+  const cacheKey = `${lessonIndex}-${topicIndex}`
+  if (fileCache.value.has(cacheKey)) {
+    const cached = fileCache.value.get(cacheKey)
+    // Ищем файл в кэше
+    const cachedFile = [...cached.mainMaterials, ...cached.additionalMaterials]
+      .find(f => (f.objectName || f.objectKey) === (file.objectKey || file.object_key || file.objectName))
+    if (cachedFile) {
+      currentFile.value = cachedFile
+      updateRoute()
+      if (isMobile.value) {
+        showSidebar.value = false
+      }
+      return
+    }
+  }
   
   // Обрабатываем файл аналогично loadTopicMaterials
   try {
