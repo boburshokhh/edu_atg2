@@ -5,9 +5,12 @@
     ]"
   >
       <!-- Video Player -->
-      <OptimizedVideoPlayer
+      <EducationalVideoPlayer
         v-if="currentFile && currentFileType === 'video'"
         :source="currentFile"
+        :save-progress="true"
+        :progress-key="`lesson_${currentFile.id || currentFile.objectKey}`"
+        class="w-full max-w-5xl mx-auto"
       />
 
       <!-- PDF Viewer -->
@@ -98,7 +101,7 @@
 import { defineAsyncComponent } from 'vue'
 
 // Lazy load viewers
-const OptimizedVideoPlayer = defineAsyncComponent(() => import('./OptimizedVideoPlayer.vue'))
+const EducationalVideoPlayer = defineAsyncComponent(() => import('../video/EducationalVideoPlayer.vue'))
 const LessonPdfViewer = defineAsyncComponent(() => import('./LessonPdfViewer.vue'))
 
 const props = defineProps({
