@@ -64,8 +64,10 @@
     <div 
       ref="contentContainer"
       :class="[
-        'flex-1 overflow-auto custom-scrollbar',
-        currentFileType === 'pdf' ? '' : 'p-4 md:p-8 flex items-center justify-center',
+        'flex-1 min-h-0',
+        currentFileType === 'pdf' 
+          ? 'overflow-hidden' 
+          : 'overflow-auto custom-scrollbar p-2 sm:p-4 md:p-8 flex items-center justify-center',
         isDark ? 'bg-black/40' : 'bg-gray-100'
       ]"
     >
@@ -176,7 +178,7 @@
     <!-- Bottom Navigation -->
     <div 
       :class="[
-        'p-4 flex justify-between items-center shrink-0 z-20 border-t transition-colors duration-200',
+        'p-2 sm:p-4 flex justify-between items-center shrink-0 z-20 border-t transition-colors duration-200 gap-2',
         isDark 
           ? 'bg-gray-800 border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.2)]' 
           : 'bg-white border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]'
@@ -185,7 +187,7 @@
       <!-- Previous Button -->
       <button
         :class="[
-          'flex items-center px-4 py-2 text-sm font-medium rounded-md border transition-colors',
+          'flex items-center px-2 sm:px-4 py-2 text-sm font-medium rounded-md border transition-colors',
           !hasPrevious 
             ? 'opacity-50 cursor-not-allowed' 
             : '',
@@ -196,39 +198,39 @@
         :disabled="!hasPrevious"
         @click="$emit('previous')"
       >
-        <span class="material-symbols-outlined text-sm mr-1">arrow_back_ios</span>
-        Назад
+        <span class="material-symbols-outlined text-sm sm:mr-1">arrow_back_ios</span>
+        <span class="hidden sm:inline">Назад</span>
       </button>
 
-      <!-- Complete Button -->
+      <!-- Complete Button - visible on all sizes, compact on mobile -->
       <button
         v-if="!isTopicCompleted"
-        class="hidden md:flex items-center px-6 py-2 text-sm font-bold text-white bg-green-500 rounded-md hover:bg-green-600 shadow-sm transition-all transform active:scale-95"
+        class="flex items-center justify-center px-2 sm:px-6 py-2 text-sm font-bold text-white bg-green-500 rounded-md hover:bg-green-600 shadow-sm transition-all transform active:scale-95"
         @click="$emit('mark-complete')"
       >
-        <span class="material-symbols-outlined text-sm mr-2">check</span>
-        Завершить
+        <span class="material-symbols-outlined text-sm sm:mr-2">check</span>
+        <span class="hidden sm:inline">Завершить</span>
       </button>
       <button
         v-else
-        class="hidden md:flex items-center px-6 py-2 text-sm font-bold text-white bg-green-600 rounded-md cursor-default opacity-80"
+        class="flex items-center justify-center px-2 sm:px-6 py-2 text-sm font-bold text-white bg-green-600 rounded-md cursor-default opacity-80"
         disabled
       >
-        <span class="material-symbols-outlined text-sm mr-2">check_circle</span>
-        Завершено
+        <span class="material-symbols-outlined text-sm sm:mr-2">check_circle</span>
+        <span class="hidden sm:inline">Завершено</span>
       </button>
 
       <!-- Next Button -->
       <button
         :class="[
-          'flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-blue-600 shadow-sm transition-colors',
+          'flex items-center px-2 sm:px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-blue-600 shadow-sm transition-colors',
           !hasNext ? 'opacity-50 cursor-not-allowed' : ''
         ]"
         :disabled="!hasNext"
         @click="$emit('next')"
       >
-        Далее
-        <span class="material-symbols-outlined text-sm ml-1">arrow_forward_ios</span>
+        <span class="hidden sm:inline">Далее</span>
+        <span class="material-symbols-outlined text-sm sm:ml-1">arrow_forward_ios</span>
       </button>
     </div>
   </div>

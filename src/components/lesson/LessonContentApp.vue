@@ -129,19 +129,6 @@
       />
     </div>
 
-    <!-- Mobile Menu Button -->
-    <el-button
-      v-if="isMobile || isTablet"
-      class="mobile-menu-btn mobile-menu-btn-left"
-      type="primary"
-      circle
-      @click="showSidebar = !showSidebar"
-    >
-      <el-icon class="mobile-menu-icon">
-        <Menu v-if="!showSidebar" />
-        <Close v-else />
-      </el-icon>
-    </el-button>
   </div>
 </template>
 
@@ -149,10 +136,7 @@
 import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
-  Menu,
-  Close
-} from '@element-plus/icons-vue'
+// Menu and Close icons removed - menu access only through header
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
 import LessonSidebar from '@/components/lesson/LessonSidebar.vue'
 import TestQuiz from '@/components/lesson/TestQuiz.vue'
@@ -734,33 +718,5 @@ onMounted(async () => {
   z-index: 30;
 }
 
-/* Mobile Menu Buttons */
-.mobile-menu-btn {
-  position: fixed;
-  bottom: clamp(1rem, 4vw, 1.5rem);
-  z-index: 40;
-  width: clamp(3rem, 8vw, 3.5rem);
-  height: clamp(3rem, 8vw, 3.5rem);
-  border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.mobile-menu-btn-left {
-  left: clamp(1rem, 4vw, 1.5rem);
-}
-
-.mobile-menu-btn-right {
-  right: clamp(1rem, 4vw, 1.5rem);
-}
-
-.mobile-menu-icon {
-  font-size: clamp(1rem, 3vw, 1.25rem);
-}
-
-/* Hide mobile menu on desktop */
-@media (min-width: 1025px) {
-  .mobile-menu-btn {
-    display: none !important;
-  }
-}
+/* Mobile menu now accessible only via header hamburger button */
 </style>

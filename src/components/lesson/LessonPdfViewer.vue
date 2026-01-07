@@ -6,28 +6,28 @@
     <!-- PDF Toolbar -->
     <div 
       :class="[
-        'pdf-toolbar flex items-center justify-between px-4 py-2 border-b sticky top-0 z-20',
+        'pdf-toolbar flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 border-b sticky top-0 z-20 gap-1 sm:gap-2',
         isDark 
           ? 'bg-gray-800 border-gray-700' 
           : 'bg-white border-gray-200'
       ]"
     >
       <!-- Zoom Controls -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1 sm:gap-2 shrink-0">
         <button
           :class="[
-            'p-1.5 rounded transition-colors',
+            'p-1 sm:p-1.5 rounded transition-colors',
             isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
           ]"
           :disabled="isRendering || scale <= 0.5"
           title="Уменьшить"
           @click="zoomOut"
         >
-          <span class="material-symbols-outlined text-lg">remove</span>
+          <span class="material-symbols-outlined text-base sm:text-lg">remove</span>
         </button>
         <span 
           :class="[
-            'text-sm font-mono min-w-[4rem] text-center',
+            'text-xs sm:text-sm font-mono min-w-[2.5rem] sm:min-w-[4rem] text-center',
             isDark ? 'text-gray-400' : 'text-gray-600'
           ]"
         >
@@ -35,20 +35,20 @@
         </span>
         <button
           :class="[
-            'p-1.5 rounded transition-colors',
+            'p-1 sm:p-1.5 rounded transition-colors',
             isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
           ]"
           :disabled="isRendering || scale >= 3"
           title="Увеличить"
           @click="zoomIn"
         >
-          <span class="material-symbols-outlined text-lg">add</span>
+          <span class="material-symbols-outlined text-base sm:text-lg">add</span>
         </button>
         
-        <!-- Fit width button -->
+        <!-- Fit width button - hidden on xs -->
         <button
           :class="[
-            'p-1.5 rounded transition-colors ml-2',
+            'hidden sm:flex p-1.5 rounded transition-colors ml-1 sm:ml-2',
             isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
           ]"
           title="По ширине"
@@ -59,27 +59,27 @@
       </div>
 
       <!-- Page Navigation -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1 sm:gap-2 shrink-0">
         <button
           :class="[
-            'p-1.5 rounded transition-colors',
+            'p-1 sm:p-1.5 rounded transition-colors',
             isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
           ]"
           :disabled="currentPage <= 1"
           title="Предыдущая страница"
           @click="goToPrevPage"
         >
-          <span class="material-symbols-outlined text-lg">chevron_left</span>
+          <span class="material-symbols-outlined text-base sm:text-lg">chevron_left</span>
         </button>
         
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-0.5 sm:gap-1">
           <input
             v-model.number="pageInput"
             type="number"
             :min="1"
             :max="totalPages"
             :class="[
-              'w-12 text-center text-sm rounded border px-1 py-0.5',
+              'w-10 sm:w-12 text-center text-xs sm:text-sm rounded border px-0.5 sm:px-1 py-0.5',
               isDark 
                 ? 'bg-gray-700 border-gray-600 text-gray-200' 
                 : 'bg-white border-gray-300 text-gray-700'
@@ -87,32 +87,32 @@
             @change="goToPage(pageInput)"
             @keyup.enter="goToPage(pageInput)"
           />
-          <span :class="isDark ? 'text-gray-400' : 'text-gray-500'" class="text-sm">
+          <span :class="isDark ? 'text-gray-400' : 'text-gray-500'" class="text-xs sm:text-sm whitespace-nowrap">
             / {{ totalPages }}
           </span>
         </div>
         
         <button
           :class="[
-            'p-1.5 rounded transition-colors',
+            'p-1 sm:p-1.5 rounded transition-colors',
             isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
           ]"
           :disabled="currentPage >= totalPages"
           title="Следующая страница"
           @click="goToNextPage"
         >
-          <span class="material-symbols-outlined text-lg">chevron_right</span>
+          <span class="material-symbols-outlined text-base sm:text-lg">chevron_right</span>
         </button>
       </div>
 
-      <!-- Loading indicator -->
-      <div class="flex items-center gap-2 min-w-[100px] justify-end">
+      <!-- Loading indicator - hidden on xs, icon only on sm -->
+      <div class="hidden sm:flex items-center gap-2 min-w-[40px] md:min-w-[100px] justify-end shrink-0">
         <div 
           v-if="isRendering"
-          class="flex items-center gap-2"
+          class="flex items-center gap-1 sm:gap-2"
         >
-          <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span :class="['text-xs', isDark ? 'text-gray-400' : 'text-gray-500']">
+          <div class="w-3 h-3 sm:w-4 sm:h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span :class="['text-xs hidden md:inline', isDark ? 'text-gray-400' : 'text-gray-500']">
             Рендеринг...
           </span>
         </div>
@@ -132,6 +132,9 @@
       @mousemove="onDrag"
       @mouseup="endDrag"
       @mouseleave="endDrag"
+      @touchstart="handleTouchStart"
+      @touchmove="handleTouchMove"
+      @touchend="handleTouchEnd"
     >
       <!-- Pages Wrapper -->
       <div 
@@ -271,6 +274,12 @@ const BUFFER_PAGES = 2
 // Drag to pan
 const isDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 })
+
+// Pinch to zoom
+const isPinching = ref(false)
+const pinchStartDistance = ref(0)
+const pinchStartScale = ref(1)
+let pinchRafId = null
 
 // Debounce timers
 let zoomDebounceTimer = null
@@ -672,6 +681,57 @@ function endDrag() {
   isDragging.value = false
 }
 
+// Touch handlers for pinch-to-zoom
+function getTouchDistance(touches) {
+  if (touches.length < 2) return 0
+  const dx = touches[0].clientX - touches[1].clientX
+  const dy = touches[0].clientY - touches[1].clientY
+  return Math.sqrt(dx * dx + dy * dy)
+}
+
+function handleTouchStart(e) {
+  if (e.touches.length === 2) {
+    e.preventDefault()
+    isPinching.value = true
+    pinchStartDistance.value = getTouchDistance(e.touches)
+    pinchStartScale.value = scale.value
+  }
+}
+
+function handleTouchMove(e) {
+  if (!isPinching.value || e.touches.length !== 2) return
+  
+  e.preventDefault()
+  
+  // Throttle with requestAnimationFrame
+  if (pinchRafId) return
+  
+  pinchRafId = requestAnimationFrame(() => {
+    const currentDistance = getTouchDistance(e.touches)
+    const pinchRatio = currentDistance / pinchStartDistance.value
+    const newScale = Math.min(3, Math.max(0.5, pinchStartScale.value * pinchRatio))
+    
+    if (Math.abs(newScale - scale.value) > 0.02) {
+      scale.value = newScale
+      // Don't debounce during active pinch - wait for touchend
+    }
+    
+    pinchRafId = null
+  })
+}
+
+function handleTouchEnd(e) {
+  if (isPinching.value && e.touches.length < 2) {
+    isPinching.value = false
+    if (pinchRafId) {
+      cancelAnimationFrame(pinchRafId)
+      pinchRafId = null
+    }
+    // Trigger debounced render after pinch ends
+    debouncedRender()
+  }
+}
+
 // Keyboard navigation
 function handleKeydown(e) {
   if (!pdfDoc.value) return
@@ -729,18 +789,39 @@ watch(() => props.initialScale, (newScale) => {
   }
 })
 
+// Track previous width for significant resize detection
+let previousContainerWidth = 0
+let resizeDebounceTimer = null
+
 // Lifecycle
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   
-  const resizeObserver = new ResizeObserver(() => {
-    if (pdfDoc.value && scrollContainer.value) {
-      containerWidth.value = scrollContainer.value.clientWidth - 48
+  const resizeObserver = new ResizeObserver((entries) => {
+    if (!pdfDoc.value || !scrollContainer.value) return
+    
+    const newWidth = scrollContainer.value.clientWidth - 48
+    containerWidth.value = newWidth
+    
+    // Check if this is a significant resize (e.g., orientation change)
+    // Threshold: > 20% width change
+    const widthChange = Math.abs(newWidth - previousContainerWidth)
+    const isSignificantResize = previousContainerWidth > 0 && widthChange / previousContainerWidth > 0.2
+    
+    if (isSignificantResize) {
+      // Debounce fitToWidth to avoid rapid re-renders during animation
+      clearTimeout(resizeDebounceTimer)
+      resizeDebounceTimer = setTimeout(() => {
+        fitToWidth()
+      }, 200)
     }
+    
+    previousContainerWidth = newWidth
   })
   
   if (scrollContainer.value) {
     resizeObserver.observe(scrollContainer.value)
+    previousContainerWidth = scrollContainer.value.clientWidth - 48
   }
 })
 
@@ -748,6 +829,11 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
   clearTimeout(zoomDebounceTimer)
   clearTimeout(scrollDebounceTimer)
+  clearTimeout(resizeDebounceTimer)
+  
+  if (pinchRafId) {
+    cancelAnimationFrame(pinchRafId)
+  }
   
   if (pdfDoc.value) {
     pdfDoc.value.destroy()
@@ -776,6 +862,9 @@ defineExpose({
 .pdf-scroll-container {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pdf-scroll-container::-webkit-scrollbar {
