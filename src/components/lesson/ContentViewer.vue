@@ -130,7 +130,7 @@
           <div class="space-y-4 w-full">
             <h1 class="text-3xl md:text-5xl font-bold text-blue-900">
               <span :class="isDark ? 'text-gray-100' : 'text-gray-900'">Файл:</span>
-              {{ currentFile.original_name || currentFile.originalName || 'Документ' }}
+              {{ cleanFileName(currentFile.original_name || currentFile.originalName) }}
             </h1>
             <div class="h-1 w-full bg-blue-900 rounded-full"></div>
             <h2 class="text-xl md:text-2xl font-semibold text-blue-600">
@@ -325,6 +325,13 @@ const handlePdfLoaded = (info) => {
 
 const handlePdfError = (error) => {
   console.error('[ContentViewer] PDF error:', error)
+}
+
+// Функция для очистки названия файла от "_OUTLINE"
+const cleanFileName = (fileName) => {
+  if (!fileName) return 'Документ'
+  // Убираем "_OUTLINE" из названия (может быть в начале или в конце)
+  return fileName.replace(/^O_OUTLINE\s+/i, '').replace(/\s*_OUTLINE$/i, '').replace(/\s*OUTLINE$/i, '')
 }
 
 // Listen for fullscreen changes

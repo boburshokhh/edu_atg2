@@ -92,7 +92,7 @@
                   isDark ? 'text-blue-400' : 'text-primary'
                 ]"
               >
-                {{ material.original_name || material.originalName || 'Файл' }}
+                {{ cleanFileName(material.original_name || material.originalName) }}
               </p>
               <p 
                 :class="[
@@ -162,7 +162,7 @@
                   isDark ? 'text-gray-100' : 'text-gray-900'
                 ]"
               >
-                {{ material.original_name || material.originalName || 'Файл' }}
+                {{ cleanFileName(material.original_name || material.originalName) }}
               </p>
               <p 
                 :class="[
@@ -275,6 +275,13 @@ const isActiveMaterial = (material) => {
 
 const selectMaterial = (material) => {
   emit('select-material', material)
+}
+
+// Функция для очистки названия файла от "_OUTLINE"
+const cleanFileName = (fileName) => {
+  if (!fileName) return 'Файл'
+  // Убираем "_OUTLINE" из названия (может быть в начале или в конце)
+  return fileName.replace(/^O_OUTLINE\s+/i, '').replace(/\s*_OUTLINE$/i, '').replace(/\s*OUTLINE$/i, '')
 }
 </script>
 

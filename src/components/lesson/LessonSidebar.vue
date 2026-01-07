@@ -190,7 +190,7 @@
                   {{ getFileIcon(file) }}
                 </span>
                 <span class="truncate flex-1">
-                  {{ file.originalName || file.original_name || file.fileName || 'Файл' }}
+                  {{ cleanFileName(file.originalName || file.original_name || file.fileName) }}
                 </span>
               </div>
             </div>
@@ -355,6 +355,13 @@ const isTopicCompleted = (lessonIndex, topicIndex) => {
 const isLessonTestPassed = (lessonIndex) => {
   const testId = `test-module-${lessonIndex + 1}`
   return props.passedTests.has(testId)
+}
+
+// Функция для очистки названия файла от "_OUTLINE"
+const cleanFileName = (fileName) => {
+  if (!fileName) return 'Файл'
+  // Убираем "_OUTLINE" из названия (может быть в начале или в конце)
+  return fileName.replace(/^O_OUTLINE\s+/i, '').replace(/\s*_OUTLINE$/i, '').replace(/\s*OUTLINE$/i, '')
 }
 
 const getFileIcon = (file) => {

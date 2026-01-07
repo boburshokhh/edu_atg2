@@ -65,7 +65,8 @@
                     <el-avatar 
                       :size="avatarSize" 
                       :src="user.avatar" 
-                      class="border-4 border-white shadow-lg bg-white text-4xl font-bold text-gray-400 flex items-center justify-center"
+                      class="border-4 border-white shadow-lg bg-white text-4xl font-bold text-gray-400 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                      @click="user.avatar && openAvatarLightbox()"
                     >
                       <img
                         v-if="user.avatar"
@@ -412,6 +413,14 @@
       </div>
     </div>
 
+    <!-- Lightbox для просмотра аватара -->
+    <vue-easy-lightbox
+      :visible="avatarLightboxVisible"
+      :imgs="avatarLightboxImages"
+      :index="0"
+      @hide="avatarLightboxVisible = false"
+    />
+
     <!-- Модальное окно редактирования -->
     <el-dialog 
       v-model="showEditProfile" 
@@ -503,6 +512,7 @@
 <script>
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import UserStatistics from '@/components/user/UserStatistics.vue'
+import VueEasyLightbox from 'vue-easy-lightbox'
 import { ElMessage } from 'element-plus'
 import authService from '@/services/auth'
 import userProfileService from '@/services/userProfile'
@@ -516,6 +526,7 @@ export default {
   name: 'Profile',
   components: {
     UserStatistics,
+    VueEasyLightbox,
     Edit, Camera, Message, OfficeBuilding, Suitcase, ArrowRight, Lock,
     Monitor, Bell, Clock, Collection, Loading, User
   },
@@ -529,6 +540,18 @@ export default {
     const stations = ref([])
     const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
     let resizeHandler = null
+    
+    // Lightbox для аватара
+    const avatarLightboxVisible = ref(false)
+    const avatarLightboxImages = computed(() => {
+      return user.value.avatar ? [user.value.avatar] : []
+    })
+    
+    const openAvatarLightbox = () => {
+      if (user.value.avatar) {
+        avatarLightboxVisible.value = true
+      }
+    }
     
     const currentUser = authService.getCurrentUser()
 
@@ -863,8 +886,11 @@ export default {
       customColors,
       isMobile,
       avatarSize,
+      avatarLightboxVisible,
+      avatarLightboxImages,
       Edit, Camera, Message, OfficeBuilding, Suitcase, ArrowRight, Lock, Monitor, Bell, User,
       openEditModal,
+      openAvatarLightbox,
       handleAvatarChange,
       saveProfile,
       saveSettings,

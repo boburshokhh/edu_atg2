@@ -278,9 +278,17 @@ const currentFileType = computed(() => {
   return 'unknown'
 })
 
+// Функция для очистки названия файла от "_OUTLINE"
+const cleanFileName = (fileName) => {
+  if (!fileName) return 'Файл'
+  // Убираем "_OUTLINE" из названия (может быть в начале или в конце)
+  return fileName.replace(/^O_OUTLINE\s+/i, '').replace(/\s*_OUTLINE$/i, '').replace(/\s*OUTLINE$/i, '')
+}
+
 const currentFileName = computed(() => {
   if (!currentFile.value) return ''
-  return currentFile.value.original_name || currentFile.value.originalName || currentFile.value.fileName || currentFile.value.file_name || 'Файл'
+  const fileName = currentFile.value.original_name || currentFile.value.originalName || currentFile.value.fileName || currentFile.value.file_name || 'Файл'
+  return cleanFileName(fileName)
 })
 
 const downloadFile = async (file) => {

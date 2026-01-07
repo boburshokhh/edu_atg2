@@ -27,7 +27,8 @@
       >
         <img
           :src="photo.displayUrl || photo.image_url"
-          class="w-full h-48 object-cover"
+          class="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+          @click="openPhotoLightbox(photo)"
         >
         <div class="p-4">
           <div class="mb-2">
@@ -81,10 +82,20 @@
         </div>
       </el-card>
     </div>
+
+    <!-- Lightbox для просмотра фотографий -->
+    <vue-easy-lightbox
+      :visible="lightboxVisible"
+      :imgs="lightboxImages"
+      :index="lightboxIndex"
+      @hide="lightboxVisible = false"
+    />
   </div>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
+import VueEasyLightbox from 'vue-easy-lightbox'
 import { Upload } from '@element-plus/icons-vue'
 import { useStationEditorContext } from '../context'
 
@@ -95,5 +106,20 @@ const {
   updatePhoto,
   deletePhoto
 } = useStationEditorContext()
+
+// Lightbox для фотографий
+const lightboxVisible = ref(false)
+const lightboxIndex = ref(0)
+const lightboxImages = computed(() => {
+  return photos.value.map(photo => photo.displayUrl || photo.image_url)
+})
+
+const openPhotoLightbox = (photo) => {
+  const index = photos.value.findIndex(p => 
+    (p.displayUrl || p.image_url) === (photo.displayUrl || photo.image_url)
+  )
+  lightboxIndex.value = index >= 0 ? index : 0
+  lightboxVisible.value = true
+}
 </script>
 
