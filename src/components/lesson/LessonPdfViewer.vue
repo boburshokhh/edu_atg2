@@ -145,17 +145,18 @@
           :key="pageNum"
           :ref="el => setPageRef(el, pageNum)"
           :data-page="pageNum"
-          class="pdf-page-container mb-4 shadow-xl bg-white relative"
+          class="pdf-page-container mb-4 shadow-xl relative overflow-hidden"
           :style="{
-            width: pageWidth + 'px',
-            height: pageHeights[pageNum] || estimatedPageHeight + 'px'
+            width: pageWidths[pageNum] + 'px',
+            height: pageHeights[pageNum] + 'px',
+            backgroundColor: '#ffffff'
           }"
         >
           <!-- Canvas for rendered page -->
           <canvas
             v-if="renderedPages.has(pageNum)"
             :ref="el => setCanvasRef(el, pageNum)"
-            class="pdf-canvas block"
+            class="pdf-canvas block absolute top-0 left-0"
           />
           
           <!-- Placeholder for unrendered page -->
@@ -171,7 +172,7 @@
 
           <!-- Page number overlay -->
           <div 
-            class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded"
+            class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none"
           >
             {{ pageNum }}
           </div>
@@ -245,8 +246,6 @@ const pageRefs = ref({})
 const canvasRefs = ref({})
 
 // State
-// IMPORTANT: pdfjs objects use private fields; Vue reactive Proxy breaks them.
-// Keep them non-reactive to avoid: "TypeError: Cannot read from private field"
 const pdfDoc = shallowRef(null)
 const totalPages = ref(0)
 const currentPage = ref(1)
@@ -257,31 +256,31 @@ const loadingProgress = ref(0)
 const isRendering = ref(false)
 const error = ref(null)
 
-// Page dimensions
-const pageWidth = ref(800)
+// Page dimensions (viewport dimensions, not canvas)
+const pageWidths = ref({})
 const pageHeights = ref({})
-const estimatedPageHeight = ref(1130) // A4 ratio estimation
+const estimatedPageHeight = ref(1130)
 const containerWidth = ref(0)
 
 // Virtualization
 const renderedPages = ref(new Set())
-const renderQueue = ref([])
+const renderingPages = ref(new Set()) // Track pages currently being rendered
 const visiblePages = ref(new Set())
-const BUFFER_PAGES = 2 // Render 2 pages before/after visible
+const BUFFER_PAGES = 2
 
 // Drag to pan
 const isDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 })
 
-// Render cache
-const renderCache = new Map()
-
-// Debounce timer
+// Debounce timers
 let zoomDebounceTimer = null
 let scrollDebounceTimer = null
 
 // API base URL
 const API_BASE_URL = '/api'
+
+// Device pixel ratio for high DPI displays
+const DPR = window.devicePixelRatio || 1
 
 // Get auth token
 function getAuthToken() {
@@ -315,7 +314,7 @@ async function loadPdf() {
   loadingProgress.value = 0
   error.value = null
   renderedPages.value.clear()
-  renderCache.clear()
+  renderingPages.value.clear()
 
   try {
     const token = getAuthToken()
@@ -356,7 +355,7 @@ async function loadPdf() {
     pageInput.value = 1
     currentPage.value = 1
 
-    // Get first page dimensions to calculate initial scale
+    // Get first page to calculate scale
     const firstPage = await pdfDoc.value.getPage(1)
     const viewport = firstPage.getViewport({ scale: 1 })
     
@@ -364,14 +363,8 @@ async function loadPdf() {
     await nextTick()
     calculateOptimalScale(viewport.width)
     
-    // Store page heights
-    for (let i = 1; i <= totalPages.value; i++) {
-      const page = await pdfDoc.value.getPage(i)
-      const vp = page.getViewport({ scale: scale.value })
-      pageHeights.value[i] = vp.height
-    }
-    
-    estimatedPageHeight.value = pageHeights.value[1] || 1130
+    // Pre-calculate all page dimensions at current scale
+    await calculateAllPageDimensions()
 
     emit('loaded', { totalPages: totalPages.value })
     
@@ -380,7 +373,7 @@ async function loadPdf() {
     updateVisiblePages()
     
   } catch (err) {
-    console.error('[LessonPdfViewer] Error loading PDF:', err)
+    console.error('[PDFViewer] Error loading PDF:', err)
     error.value = err.message || 'Не удалось загрузить PDF файл'
     emit('error', err)
   } finally {
@@ -388,17 +381,31 @@ async function loadPdf() {
   }
 }
 
+// Calculate all page dimensions
+async function calculateAllPageDimensions() {
+  if (!pdfDoc.value) return
+  
+  for (let i = 1; i <= totalPages.value; i++) {
+    const page = await pdfDoc.value.getPage(i)
+    const viewport = page.getViewport({ scale: scale.value })
+    
+    // Store VIEWPORT dimensions (not canvas dimensions)
+    pageWidths.value[i] = viewport.width
+    pageHeights.value[i] = viewport.height
+  }
+  
+  estimatedPageHeight.value = pageHeights.value[1] || 1130
+}
+
 // Calculate optimal scale to fit container width
 function calculateOptimalScale(originalWidth) {
   if (!scrollContainer.value) return
   
-  const containerW = scrollContainer.value.clientWidth - 48 // padding
+  const containerW = scrollContainer.value.clientWidth - 48
   containerWidth.value = containerW
   
-  // Calculate scale to fit width
   const optimalScale = containerW / originalWidth
   scale.value = Math.min(Math.max(optimalScale, 0.5), 2)
-  pageWidth.value = originalWidth * scale.value
 }
 
 // Fit to width
@@ -437,19 +444,12 @@ function debouncedRender() {
   
   clearTimeout(zoomDebounceTimer)
   zoomDebounceTimer = setTimeout(async () => {
-    // Clear cache and re-render at new scale
+    // Clear rendered pages
     renderedPages.value.clear()
-    renderCache.clear()
+    renderingPages.value.clear()
     
-    // Update page dimensions
-    if (pdfDoc.value) {
-      for (let i = 1; i <= totalPages.value; i++) {
-        const page = await pdfDoc.value.getPage(i)
-        const vp = page.getViewport({ scale: scale.value })
-        pageHeights.value[i] = vp.height
-        if (i === 1) pageWidth.value = vp.width
-      }
-    }
+    // Recalculate dimensions at new scale
+    await calculateAllPageDimensions()
     
     await nextTick()
     updateVisiblePages()
@@ -474,7 +474,7 @@ function updateVisiblePages() {
     const pageTop = accumulatedHeight
     const pageBottom = pageTop + pageHeight
     
-    // Check if page is in viewport (with buffer)
+    // Check if page is in viewport with buffer
     const bufferTop = scrollTop - (viewportHeight * BUFFER_PAGES)
     const bufferBottom = scrollBottom + (viewportHeight * BUFFER_PAGES)
     
@@ -491,12 +491,10 @@ function updateVisiblePages() {
       }
     }
     
-    accumulatedHeight = pageBottom + 16 // Gap between pages
+    accumulatedHeight = pageBottom + 16
   }
   
   visiblePages.value = newVisiblePages
-  
-  // Render visible pages
   renderVisiblePages()
 }
 
@@ -504,7 +502,9 @@ function updateVisiblePages() {
 async function renderVisiblePages() {
   if (!pdfDoc.value) return
   
-  const pagesToRender = [...visiblePages.value].filter(p => !renderedPages.value.has(p))
+  const pagesToRender = [...visiblePages.value].filter(
+    p => !renderedPages.value.has(p) && !renderingPages.value.has(p)
+  )
   
   if (pagesToRender.length === 0) {
     isRendering.value = false
@@ -514,77 +514,76 @@ async function renderVisiblePages() {
   isRendering.value = true
   
   // Sort by distance from current page
-  pagesToRender.sort((a, b) => Math.abs(a - currentPage.value) - Math.abs(b - currentPage.value))
+  pagesToRender.sort((a, b) => 
+    Math.abs(a - currentPage.value) - Math.abs(b - currentPage.value)
+  )
   
-  for (const pageNum of pagesToRender) {
-    if (!visiblePages.value.has(pageNum)) continue // Skip if no longer visible
-    await renderPage(pageNum)
+  // Render pages in parallel (but limit concurrency)
+  const CONCURRENT_RENDERS = 3
+  for (let i = 0; i < pagesToRender.length; i += CONCURRENT_RENDERS) {
+    const batch = pagesToRender.slice(i, i + CONCURRENT_RENDERS)
+    await Promise.all(batch.map(pageNum => renderPage(pageNum)))
   }
   
   isRendering.value = false
-  
-  // Clean up pages that are far from viewport
   cleanupDistantPages()
 }
 
 // Render single page
 async function renderPage(pageNum) {
-  if (!pdfDoc.value || renderedPages.value.has(pageNum)) return
+  if (!pdfDoc.value || renderedPages.value.has(pageNum) || renderingPages.value.has(pageNum)) {
+    return
+  }
   
-  const cacheKey = `${pageNum}-${scale.value}`
+  // Mark as rendering to prevent duplicates
+  renderingPages.value.add(pageNum)
   
   try {
     const page = await pdfDoc.value.getPage(pageNum)
     const viewport = page.getViewport({ scale: scale.value })
     
-    // Mark as rendered to prevent duplicate renders
-    renderedPages.value.add(pageNum)
-    
     await nextTick()
     
     const canvas = canvasRefs.value[pageNum]
-    if (!canvas) return
+    if (!canvas) {
+      renderingPages.value.delete(pageNum)
+      return
+    }
     
-    // High DPI support
-    const dpr = window.devicePixelRatio || 1
-    canvas.width = viewport.width * dpr
-    canvas.height = viewport.height * dpr
+    // Set canvas size with DPR for sharp rendering
+    canvas.width = viewport.width * DPR
+    canvas.height = viewport.height * DPR
+    
+    // Set CSS size to viewport dimensions (not DPR-scaled)
     canvas.style.width = viewport.width + 'px'
     canvas.style.height = viewport.height + 'px'
     
     const ctx = canvas.getContext('2d')
-    ctx.scale(dpr, dpr)
     
-    // Check cache
-    if (renderCache.has(cacheKey)) {
-      const imageData = renderCache.get(cacheKey)
-      ctx.putImageData(imageData, 0, 0)
-      return
+    // Clear canvas first
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // Create render context with DPR-scaled viewport
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: viewport,
+      transform: DPR !== 1 ? [DPR, 0, 0, DPR, 0, 0] : null
     }
     
     // Render page
-    await page.render({
-      canvasContext: ctx,
-      viewport: viewport
-    }).promise
+    await page.render(renderContext).promise
     
-    // Cache the result (only for reasonable sizes)
-    if (canvas.width * canvas.height < 4000000) { // ~2000x2000
-      try {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        renderCache.set(cacheKey, imageData)
-      } catch (e) {
-        // Canvas might be tainted, skip caching
-      }
-    }
+    // Mark as successfully rendered
+    renderedPages.value.add(pageNum)
+    renderingPages.value.delete(pageNum)
     
   } catch (err) {
-    console.error(`[LessonPdfViewer] Error rendering page ${pageNum}:`, err)
-    renderedPages.value.delete(pageNum)
+    console.error(`[PDFViewer] Error rendering page ${pageNum}:`, err)
+    renderingPages.value.delete(pageNum)
   }
 }
 
-// Cleanup pages far from viewport to save memory
+// Cleanup pages far from viewport
 function cleanupDistantPages() {
   const MAX_CACHED_PAGES = 10
   
@@ -594,14 +593,13 @@ function cleanupDistantPages() {
     (a, b) => Math.abs(a - currentPage.value) - Math.abs(b - currentPage.value)
   )
   
-  // Remove pages that are far from current
   const pagesToRemove = sortedPages.slice(MAX_CACHED_PAGES)
   
   for (const pageNum of pagesToRemove) {
     if (!visiblePages.value.has(pageNum)) {
       renderedPages.value.delete(pageNum)
       
-      // Clear canvas
+      // Clear canvas properly
       const canvas = canvasRefs.value[pageNum]
       if (canvas) {
         const ctx = canvas.getContext('2d')
@@ -624,7 +622,6 @@ function goToPage(pageNum) {
   const num = Math.max(1, Math.min(totalPages.value, parseInt(pageNum) || 1))
   pageInput.value = num
   
-  // Scroll to page
   const pageEl = pageRefs.value[num]
   if (pageEl && scrollContainer.value) {
     pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -714,6 +711,10 @@ watch(() => props.source, () => {
   currentPage.value = 1
   pageInput.value = 1
   totalPages.value = 0
+  renderedPages.value.clear()
+  renderingPages.value.clear()
+  pageWidths.value = {}
+  pageHeights.value = {}
   loadPdf()
 }, { immediate: true })
 
@@ -729,7 +730,6 @@ watch(() => props.initialScale, (newScale) => {
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   
-  // Handle resize
   const resizeObserver = new ResizeObserver(() => {
     if (pdfDoc.value && scrollContainer.value) {
       containerWidth.value = scrollContainer.value.clientWidth - 48
@@ -745,7 +745,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
   clearTimeout(zoomDebounceTimer)
   clearTimeout(scrollDebounceTimer)
-  renderCache.clear()
   
   if (pdfDoc.value) {
     pdfDoc.value.destroy()
@@ -806,7 +805,6 @@ defineExpose({
   display: block;
 }
 
-/* Hide number input spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -818,7 +816,6 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Dark mode scrollbar */
 .dark .pdf-scroll-container::-webkit-scrollbar-thumb {
   background-color: rgba(75, 85, 99, 0.5);
 }
