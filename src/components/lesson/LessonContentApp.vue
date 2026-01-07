@@ -11,6 +11,7 @@
       :current-file-name="currentFileName"
       :is-topic-completed="isTopicCompleted"
       :is-comments-open="isCommentsOpen"
+      :is-materials-sidebar-open="showMaterialsSidebar"
       :is-fullscreen="isFullscreen"
       :is-dark="isDark"
       :current-lesson-index="currentLessonIndex"
@@ -18,6 +19,7 @@
       @mark-complete="markAsCompleted"
       @toggle-sidebar="handleToggleSidebar"
       @toggle-comments="handleToggleComments"
+      @toggle-materials-sidebar="handleToggleMaterialsSidebar"
       @toggle-fullscreen="toggleFullscreen"
       @toggle-dark-mode="toggleDarkMode"
     />
@@ -126,6 +128,13 @@
         v-if="isCommentsOpen && isMobile"
         class="mobile-overlay"
         @click="isCommentsOpen = false"
+      />
+
+      <!-- Mobile Overlay for Materials -->
+      <div
+        v-if="showMaterialsSidebar && isMobile"
+        class="mobile-overlay"
+        @click="showMaterialsSidebar = false"
       />
     </div>
 
@@ -524,6 +533,10 @@ const handleToggleSidebar = () => {
 
 const handleToggleComments = () => {
   isCommentsOpen.value = !isCommentsOpen.value
+}
+
+const handleToggleMaterialsSidebar = () => {
+  showMaterialsSidebar.value = !showMaterialsSidebar.value
 }
 
 const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {

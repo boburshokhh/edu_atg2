@@ -109,6 +109,22 @@
         </span>
       </button>
 
+      <!-- Materials toggle -->
+      <button
+        :class="[
+          'p-2 rounded-full transition-colors',
+          isMaterialsSidebarOpen 
+            ? 'bg-primary text-white' 
+            : isDark 
+              ? 'hover:bg-gray-700 text-gray-400' 
+              : 'hover:bg-gray-100 text-gray-500'
+        ]"
+        title="Материалы курса"
+        @click="$emit('toggle-materials-sidebar')"
+      >
+        <span class="material-symbols-outlined text-xl">folder</span>
+      </button>
+
       <!-- Comments toggle -->
       <button
         :class="[
@@ -189,6 +205,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  isMaterialsSidebarOpen: {
+    type: Boolean,
+    default: false
+  },
   isFullscreen: {
     type: Boolean,
     default: false
@@ -210,7 +230,8 @@ const props = defineProps({
 defineEmits([
   'mark-complete', 
   'toggle-sidebar', 
-  'toggle-comments', 
+  'toggle-comments',
+  'toggle-materials-sidebar',
   'toggle-fullscreen',
   'toggle-dark-mode'
 ])
