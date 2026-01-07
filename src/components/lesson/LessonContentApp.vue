@@ -399,6 +399,30 @@ const loadTopicMaterials = async () => {
 
     const dbFiles = Array.isArray(currentTopic.value?.files) ? currentTopic.value.files : []
     
+    // Логирование для анализа "_outline" - проверка данных из API
+    if (dbFiles.length > 0) {
+      const filesWithOutline = dbFiles.filter(f => {
+        const name = (f.originalName || f.original_name || f.fileName || f.file_name || f.title || '').toLowerCase()
+        return name.includes('outline') || name.includes('_outline')
+      })
+      if (filesWithOutline.length > 0) {
+        console.warn('[LessonContentApp] API returned files with "_outline" in name:', {
+          topicId: currentTopic.value?.id,
+          topicTitle: currentTopic.value?.title,
+          filesCount: filesWithOutline.length,
+          files: filesWithOutline.map(f => ({
+            id: f.id,
+            originalName: f.originalName,
+            original_name: f.original_name,
+            fileName: f.fileName,
+            file_name: f.file_name,
+            title: f.title,
+            objectKey: f.objectKey || f.object_key
+          }))
+        })
+      }
+    }
+    
     if (dbFiles.length === 0) {
       mainMaterials.value = []
       additionalMaterials.value = []
@@ -414,6 +438,22 @@ const loadTopicMaterials = async () => {
         const fileSize = f.fileSize ?? f.file_size ?? null
         const mimeType = f.mimeType || f.mime_type || null
         const isMain = f.isMain ?? f.is_main ?? false
+
+        // Логирование для анализа "_outline" в названиях файлов
+        if (originalName && (originalName.toLowerCase().includes('outline') || originalName.toLowerCase().includes('_outline'))) {
+          console.warn('[LessonContentApp] Found file with "_outline" in name:', {
+            fileId: f.id,
+            originalName: originalName,
+            originalName_from_api: f.originalName,
+            original_name_from_api: f.original_name,
+            fileName_from_api: f.fileName,
+            file_name_from_api: f.file_name,
+            title_from_api: f.title,
+            objectKey: objectKey,
+            fileType: fileType,
+            rawFileData: f
+          })
+        }
 
         if (!objectKey) {
           return null

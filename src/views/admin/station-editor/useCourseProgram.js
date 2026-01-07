@@ -152,6 +152,17 @@ export function useCourseProgram(station, isEditing) {
 
     uploadingTopicFile.value = true
     try {
+      // Логирование для анализа "_outline" в названиях файлов при загрузке
+      if (file.name && (file.name.toLowerCase().includes('outline') || file.name.toLowerCase().includes('_outline'))) {
+        console.warn('[useCourseProgram] Uploading file with "_outline" in name:', {
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+          topicId: activeTopic.value.id,
+          topicKey: activeTopic.value.topicKey
+        })
+      }
+
       const folder = `stations/${station.value.id}/course_program/topics/${activeTopic.value.topicKey || activeTopic.value.id}`
       const objectKey = await stationService.uploadFile(file, folder)
 
