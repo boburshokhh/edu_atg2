@@ -165,35 +165,6 @@
               </span>
             </div>
 
-            <!-- Files in Topic (collapsible) -->
-            <div 
-              v-if="isCurrentTopic(lessonIndex, topicIndex) && topic.files?.length > 0"
-              :class="[
-                'pl-12 pb-2',
-                isDark ? 'bg-gray-900/20' : 'bg-gray-100/50'
-              ]"
-            >
-              <div
-                v-for="(file, fileIndex) in topic.files"
-                :key="fileIndex"
-                :class="[
-                  'flex items-center gap-2 px-3 py-2 text-xs cursor-pointer rounded-md mx-2 transition-colors',
-                  isCurrentFile(lessonIndex, topicIndex, file)
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : isDark 
-                      ? 'hover:bg-gray-700 text-gray-400'
-                      : 'hover:bg-gray-200 text-gray-600'
-                ]"
-                @click.stop="selectFile(lessonIndex, topicIndex, file)"
-              >
-                <span class="material-symbols-outlined text-sm">
-                  {{ getFileIcon(file) }}
-                </span>
-                <span class="truncate flex-1">
-                  {{ cleanFileName(file.originalName || file.original_name || file.fileName) }}
-                </span>
-              </div>
-            </div>
           </div>
 
           <!-- Module Test -->
@@ -357,11 +328,19 @@ const isLessonTestPassed = (lessonIndex) => {
   return props.passedTests.has(testId)
 }
 
-// Функция для очистки названия файла от "_OUTLINE"
+// Функция для очистки названия файла от "_OUTLINE" или "_outline"
 const cleanFileName = (fileName) => {
   if (!fileName) return 'Файл'
-  // Убираем "_OUTLINE" из названия (может быть в начале или в конце)
-  return fileName.replace(/^O_OUTLINE\s+/i, '').replace(/\s*_OUTLINE$/i, '').replace(/\s*OUTLINE$/i, '')
+  // Убираем "_OUTLINE" или "_outline" из названия (может быть в начале или в конце)
+  // Обрабатываем различные варианты: O_OUTLINE, _OUTLINE, OUTLINE, _outline, outline
+  return fileName
+    .replace(/^O_OUTLINE\s+/i, '')  // Убираем "O_OUTLINE " в начале
+    .replace(/^O_outline\s+/i, '')  // Убираем "O_outline " в начале
+    .replace(/\s*_OUTLINE$/i, '')    // Убираем " _OUTLINE" в конце
+    .replace(/\s*_outline$/i, '')    // Убираем " _outline" в конце
+    .replace(/\s*OUTLINE$/i, '')     // Убираем " OUTLINE" в конце
+    .replace(/\s*outline$/i, '')     // Убираем " outline" в конце
+    .trim()                           // Убираем лишние пробелы
 }
 
 const getFileIcon = (file) => {

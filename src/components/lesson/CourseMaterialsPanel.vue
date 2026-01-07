@@ -277,11 +277,19 @@ const selectMaterial = (material) => {
   emit('select-material', material)
 }
 
-// Функция для очистки названия файла от "_OUTLINE"
+// Функция для очистки названия файла от "_OUTLINE" или "_outline"
 const cleanFileName = (fileName) => {
   if (!fileName) return 'Файл'
-  // Убираем "_OUTLINE" из названия (может быть в начале или в конце)
-  return fileName.replace(/^O_OUTLINE\s+/i, '').replace(/\s*_OUTLINE$/i, '').replace(/\s*OUTLINE$/i, '')
+  // Убираем "_OUTLINE" или "_outline" из названия (может быть в начале или в конце)
+  // Обрабатываем различные варианты: O_OUTLINE, _OUTLINE, OUTLINE, _outline, outline
+  return fileName
+    .replace(/^O_OUTLINE\s+/i, '')  // Убираем "O_OUTLINE " в начале
+    .replace(/^O_outline\s+/i, '')  // Убираем "O_outline " в начале
+    .replace(/\s*_OUTLINE$/i, '')    // Убираем " _OUTLINE" в конце
+    .replace(/\s*_outline$/i, '')    // Убираем " _outline" в конце
+    .replace(/\s*OUTLINE$/i, '')     // Убираем " OUTLINE" в конце
+    .replace(/\s*outline$/i, '')     // Убираем " outline" в конце
+    .trim()                           // Убираем лишние пробелы
 }
 </script>
 
