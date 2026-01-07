@@ -542,11 +542,15 @@ async function renderPage(pageNum) {
     const page = await pdfDoc.value.getPage(pageNum)
     const viewport = page.getViewport({ scale: scale.value })
     
+    // Mark as rendered BEFORE nextTick so v-if shows canvas
+    renderedPages.value.add(pageNum)
+    
     await nextTick()
     
     const canvas = canvasRefs.value[pageNum]
     if (!canvas) {
       renderingPages.value.delete(pageNum)
+      renderedPages.value.delete(pageNum)
       return
     }
     
@@ -573,13 +577,12 @@ async function renderPage(pageNum) {
     // Render page
     await page.render(renderContext).promise
     
-    // Mark as successfully rendered
-    renderedPages.value.add(pageNum)
     renderingPages.value.delete(pageNum)
     
   } catch (err) {
     console.error(`[PDFViewer] Error rendering page ${pageNum}:`, err)
     renderingPages.value.delete(pageNum)
+    renderedPages.value.delete(pageNum)
   }
 }
 
