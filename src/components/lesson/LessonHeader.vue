@@ -204,18 +204,20 @@
             v-if="userName"
             class="flex flex-col items-start min-w-0 hidden md:block"
           >
+            <!-- ФИО сверху -->
             <span 
               :class="[
-                'text-sm font-semibold truncate max-w-[120px]',
+                'text-sm font-semibold truncate max-w-[120px] leading-tight',
                 isDark ? 'text-gray-100' : 'text-gray-900'
               ]"
               :title="userName"
             >
               {{ userName }}
             </span>
+            <!-- Роль снизу маленьким шрифтом -->
             <span 
               :class="[
-                'text-xs font-medium',
+                'text-[10px] font-normal mt-0.5 leading-tight',
                 isDark ? 'text-blue-400' : 'text-blue-600'
               ]"
             >
