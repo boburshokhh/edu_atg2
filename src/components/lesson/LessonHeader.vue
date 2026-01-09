@@ -213,29 +213,6 @@
             >
               {{ userName }}
             </span>
-            <span 
-              :class="[
-                'text-[10px] font-normal mt-0.5',
-                isDark ? 'text-blue-400' : 'text-blue-600'
-              ]"
-            >
-              {{ userRole }}
-            </span>
-          </div>
-          
-          <!-- Mobile: Show only role badge -->
-          <div
-            v-if="isAuthenticated"
-            class="md:hidden"
-          >
-            <span 
-              :class="[
-                'text-xs font-medium px-2 py-1 rounded-full',
-                isDark ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700'
-              ]"
-            >
-              {{ userRole }}
-            </span>
           </div>
           
           <!-- Dropdown arrow -->
@@ -413,12 +390,9 @@
               class="mt-6 text-center text-white"
               id="avatar-preview-title"
             >
-              <h3 class="text-2xl font-bold mb-2">
+              <h3 class="text-2xl font-bold">
                 {{ userName }}
               </h3>
-              <p class="text-blue-300 mb-4">
-                {{ userRole }}
-              </p>
             </div>
 
             <!-- Zoom Controls -->
