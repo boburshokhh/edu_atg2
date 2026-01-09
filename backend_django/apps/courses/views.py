@@ -231,33 +231,52 @@ class TestsListView(APIView):
         
         data = []
         
-        if not test_type or test_type == 'lesson':
-            lesson_tests = CourseProgramLessonTest.objects.all().values(
-                'id', 'title', 'description', 'questions_count', 'passing_score',
-                'time_limit', 'attempts', 'is_active', 'created_at', 'updated_at',
-                'course_program_lesson_id'
-            )
-            for test in lesson_tests:
-                data.append({
-                    **test,
-                    'test_type': 'lesson',
-                    'test_id': test['id']
-                })
-        
-        if not test_type or test_type == 'final':
-            final_tests = FinalTest.objects.all().values(
-                'id', 'title', 'description', 'questions_count', 'passing_score',
-                'time_limit', 'attempts', 'is_active', 'created_at', 'updated_at',
-                'course_program_id'
-            )
-            for test in final_tests:
-                data.append({
-                    **test,
-                    'test_type': 'final',
-                    'test_id': test['id']
-                })
-        
-        return JsonResponse({'data': data})
+        try:
+            if not test_type or test_type == 'lesson':
+                # Get lesson tests - use lesson_id which Django creates for ForeignKey
+                lesson_tests = CourseProgramLessonTest.objects.all().values(
+                    'id', 'title', 'description', 'questions_count', 'passing_score',
+                    'time_limit', 'attempts', 'is_active', 'created_at', 'updated_at'
+                )
+                # Get lesson_id using raw query since db_column is used
+                from django.db import connection
+                lesson_ids_map = {}
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT id, course_program_lesson_id FROM course_program_lesson_tests")
+                    for row in cursor.fetchall():
+                        lesson_ids_map[row[0]] = row[1]
+                
+                for test in lesson_tests:
+                    test_dict = dict(test)
+                    test_dict['course_program_lesson_id'] = lesson_ids_map.get(test['id'])
+                    test_dict['test_type'] = 'lesson'
+                    test_dict['test_id'] = test['id']
+                    data.append(test_dict)
+            
+            if not test_type or test_type == 'final':
+                final_tests = FinalTest.objects.all().values(
+                    'id', 'title', 'description', 'questions_count', 'passing_score',
+                    'time_limit', 'attempts', 'is_active', 'created_at', 'updated_at',
+                    'course_program_id'
+                )
+                for test in final_tests:
+                    data.append({
+                        **test,
+                        'test_type': 'final',
+                        'test_id': test['id']
+                    })
+            
+            return JsonResponse({'data': data})
+        except Exception as e:
+            import traceback
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"[TestsListView] Error: {e}", exc_info=True)
+            from django.conf import settings
+            error_response = {'error': str(e)}
+            if settings.DEBUG:
+                error_response['traceback'] = traceback.format_exc()
+            return JsonResponse(error_response, status=500)
 
 
 class TestDetailView(APIView):
