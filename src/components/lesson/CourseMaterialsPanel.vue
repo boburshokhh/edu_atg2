@@ -94,20 +94,21 @@
             </div>
             
             <div 
+              class="p-1.5 rounded shadow-sm transition-all flex items-center justify-center"
               :class="[
-                'p-1.5 rounded shadow-sm transition-colors',
                 isActiveMaterial(material)
                   ? isDark
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-600 text-white'
+                    ? 'bg-blue-600'
+                    : 'bg-blue-600'
                   : isDark
-                    ? 'bg-blue-800 text-primary group-hover:bg-blue-700'
-                    : 'bg-white text-primary group-hover:bg-blue-50'
+                    ? 'bg-gray-700/50 group-hover:bg-gray-700'
+                    : 'bg-white group-hover:bg-gray-50'
               ]"
             >
-              <span class="material-symbols-outlined text-xl">
-                {{ getMaterialIcon(material) }}
-              </span>
+              <component 
+                :is="getMaterialIconComponent(material)" 
+                class="w-6 h-6"
+              />
             </div>
             <div class="flex-1 min-w-0">
               <p 
@@ -201,29 +202,11 @@
               <span class="material-symbols-outlined text-xs">check_circle</span>
             </div>
             
-            <div 
-              :class="[
-                'mt-0.5 transition-colors',
-                isActiveMaterial(material)
-                  ? isVideoMaterial(material)
-                    ? isDark
-                      ? 'text-red-400'
-                      : 'text-red-600'
-                    : isDark
-                      ? 'text-blue-400'
-                      : 'text-blue-600'
-                  : isVideoMaterial(material)
-                    ? isDark 
-                      ? 'text-gray-500 group-hover:text-red-400' 
-                      : 'text-gray-400 group-hover:text-red-500'
-                    : isDark
-                      ? 'text-gray-500 group-hover:text-primary'
-                      : 'text-gray-400 group-hover:text-primary'
-              ]"
-            >
-              <span class="material-symbols-outlined text-xl">
-                {{ getMaterialIcon(material) }}
-              </span>
+            <div class="mt-0.5 flex items-center justify-center">
+              <component 
+                :is="getMaterialIconComponent(material)" 
+                class="w-6 h-6"
+              />
             </div>
             <div class="flex-1">
               <p 
