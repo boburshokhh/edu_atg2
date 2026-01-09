@@ -155,9 +155,9 @@
       <div class="relative" ref="dropdownRef">
         <button
           :class="[
-            'flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-opacity-80',
+            'flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200',
             isDark 
-              ? 'text-gray-300 hover:bg-gray-700' 
+              ? 'text-gray-300 hover:bg-gray-700/50' 
               : 'text-gray-700 hover:bg-gray-100'
           ]"
           aria-label="Меню пользователя"
@@ -165,8 +165,9 @@
           aria-haspopup="true"
           @click="toggleDropdown"
         >
+          <!-- Avatar -->
           <div 
-            class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-offset-2 transition-all hover:ring-offset-4 cursor-pointer"
+            class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-offset-2 transition-all hover:ring-offset-4 cursor-pointer shrink-0"
             :class="userAvatar 
               ? (isDark ? 'ring-blue-500' : 'ring-blue-500') 
               : (isDark 
@@ -197,29 +198,49 @@
               ?
             </div>
           </div>
+          
+          <!-- User Info - Always visible on md+ -->
           <div
             v-if="userName"
-            class="flex flex-col items-start hidden sm:block"
+            class="flex flex-col items-start min-w-0 hidden md:block"
           >
             <span 
               :class="[
-                'text-sm font-medium',
+                'text-sm font-semibold truncate max-w-[120px]',
                 isDark ? 'text-gray-100' : 'text-gray-900'
               ]"
+              :title="userName"
             >
               {{ userName }}
             </span>
             <span 
               :class="[
-                'text-xs opacity-70',
-                isDark ? 'text-gray-400' : 'text-gray-500'
+                'text-xs font-medium',
+                isDark ? 'text-blue-400' : 'text-blue-600'
               ]"
             >
               {{ userRole }}
             </span>
           </div>
+          
+          <!-- Mobile: Show only role badge -->
+          <div
+            v-if="userName"
+            class="md:hidden"
+          >
+            <span 
+              :class="[
+                'text-xs font-medium px-2 py-1 rounded-full',
+                isDark ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700'
+              ]"
+            >
+              {{ userRole }}
+            </span>
+          </div>
+          
+          <!-- Dropdown arrow -->
           <svg
-            class="w-4 h-4 transition-transform duration-200 hidden sm:block"
+            class="w-4 h-4 transition-transform duration-200 shrink-0 hidden md:block"
             :class="[
               userDropdownOpen ? 'rotate-180' : '',
               isDark ? 'text-gray-400' : 'text-gray-500'

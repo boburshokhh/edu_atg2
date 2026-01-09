@@ -95,19 +95,20 @@
             
             <div 
               :class="[
-                'p-1.5 rounded shadow-sm transition-colors',
+                'p-1.5 rounded shadow-sm transition-colors flex items-center justify-center',
                 isActiveMaterial(material)
                   ? isDark
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-600 text-white'
+                    ? 'bg-blue-600'
+                    : 'bg-blue-600'
                   : isDark
-                    ? 'bg-blue-800 text-primary group-hover:bg-blue-700'
-                    : 'bg-white text-primary group-hover:bg-blue-50'
+                    ? 'bg-gray-700/50 group-hover:bg-gray-700'
+                    : 'bg-white group-hover:bg-gray-50'
               ]"
             >
-              <span class="material-symbols-outlined text-xl">
-                {{ getMaterialIcon(material) }}
-              </span>
+              <FileTypeIcon 
+                :file-type="getFileType(material)" 
+                size="md"
+              />
             </div>
             <div class="flex-1 min-w-0">
               <p 
@@ -201,29 +202,11 @@
               <span class="material-symbols-outlined text-xs">check_circle</span>
             </div>
             
-            <div 
-              :class="[
-                'mt-0.5 transition-colors',
-                isActiveMaterial(material)
-                  ? isVideoMaterial(material)
-                    ? isDark
-                      ? 'text-red-400'
-                      : 'text-red-600'
-                    : isDark
-                      ? 'text-blue-400'
-                      : 'text-blue-600'
-                  : isVideoMaterial(material)
-                    ? isDark 
-                      ? 'text-gray-500 group-hover:text-red-400' 
-                      : 'text-gray-400 group-hover:text-red-500'
-                    : isDark
-                      ? 'text-gray-500 group-hover:text-primary'
-                      : 'text-gray-400 group-hover:text-primary'
-              ]"
-            >
-              <span class="material-symbols-outlined text-xl">
-                {{ getMaterialIcon(material) }}
-              </span>
+            <div class="mt-0.5 flex items-center justify-center">
+              <FileTypeIcon 
+                :file-type="getFileType(material)" 
+                size="md"
+              />
             </div>
             <div class="flex-1">
               <p 
@@ -279,6 +262,8 @@
 </template>
 
 <script setup>
+import FileTypeIcon from '@/components/ui/FileTypeIcon.vue'
+
 const props = defineProps({
   mainMaterials: {
     type: Array,
@@ -324,6 +309,26 @@ const getMaterialIcon = (material) => {
     return 'picture_as_pdf'
   }
   return 'description'
+}
+
+const getFileType = (material) => {
+  if (isVideoMaterial(material)) {
+    return 'video'
+  }
+  const fileName = (material.original_name || material.originalName || '').toLowerCase()
+  if (fileName.endsWith('.pdf')) {
+    return 'pdf'
+  }
+  if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+    return 'word'
+  }
+  if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+    return 'excel'
+  }
+  if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
+    return 'powerpoint'
+  }
+  return 'document'
 }
 
 const getMaterialType = (material) => {
