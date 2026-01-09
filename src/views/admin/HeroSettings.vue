@@ -151,9 +151,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Delete, Picture, ArrowUp, ArrowDown, FolderOpened } from '@element-plus/icons-vue'
 import siteSettingsService from '@/services/siteSettingsService'
+import { deleteFile } from '@/services/minioService'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -203,12 +204,46 @@ const moveDown = (index) => {
   })
 }
 
-const removeItem = (index) => {
-  sliderItems.value.splice(index, 1)
-  // Update order indices
-  sliderItems.value.forEach((it, idx) => {
-    it.orderIndex = idx
-  })
+const removeItem = async (index) => {
+  const item = sliderItems.value[index]
+  if (!item) return
+  
+  try {
+    await ElMessageBox.confirm(
+      'Вы уверены, что хотите удалить этот слайд? Файл будет удален из хранилища.',
+      'Подтверждение удаления',
+      {
+        confirmButtonText: 'Удалить',
+        cancelButtonText: 'Отмена',
+        type: 'warning'
+      }
+    )
+
+    const itemKey = item.key
+    
+    // Удаляем из массива
+    sliderItems.value.splice(index, 1)
+    // Update order indices
+    sliderItems.value.forEach((it, idx) => {
+      it.orderIndex = idx
+    })
+    
+    // Удаляем файл из MinIO, если есть key
+    if (itemKey && !itemKey.startsWith('http')) {
+      try {
+        await deleteFile(itemKey)
+      } catch (fileError) {
+        console.warn('Не удалось удалить файл из MinIO:', fileError)
+        // Продолжаем, даже если удаление файла не удалось
+      }
+    }
+    
+    ElMessage.success('Слайд удален')
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('Ошибка удаления: ' + error.message)
+    }
+  }
 }
 
 const saveSlider = async () => {

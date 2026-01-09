@@ -121,13 +121,30 @@
               </el-button>
               <div
                 v-if="department.image && department.imageUrl"
-                class="mt-4"
+                class="mt-4 relative inline-block"
               >
                 <img
                   :src="department.imageUrl"
                   alt="Department image"
                   class="max-w-xs rounded-lg shadow-md"
                 >
+                <el-popconfirm
+                  title="Удалить изображение? Файл будет удален из хранилища."
+                  @confirm="deleteMainImage"
+                >
+                  <template #reference>
+                    <el-button
+                      type="danger"
+                      size="small"
+                      circle
+                      class="absolute top-2 right-2"
+                    >
+                      <el-icon>
+                        <Delete />
+                      </el-icon>
+                    </el-button>
+                  </template>
+                </el-popconfirm>
               </div>
             </div>
           </el-form-item>
@@ -153,11 +170,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Delete } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import departmentService from '@/services/departmentService'
 import stationService from '@/services/stationService'
 import minioService from '@/services/minioService'
+import { deleteFile } from '@/services/minioService'
 import { resolveDepartmentMedia } from '@/utils/departmentsMedia'
 
 const route = useRoute()
@@ -351,6 +369,34 @@ const handleMainImageUpload = async (event) => {
     ElMessage.error('Ошибка загрузки изображения: ' + error.message)
   } finally {
     event.target.value = ''
+  }
+}
+
+const deleteMainImage = async () => {
+  if (!department.value.image) return
+  
+  try {
+    const imageKey = department.value.image
+    
+    // Удаляем файл из MinIO, если это MinIO ключ
+    if (imageKey && !imageKey.startsWith('http')) {
+      try {
+        await deleteFile(imageKey)
+      } catch (fileError) {
+        console.warn('Не удалось удалить файл из MinIO:', fileError)
+        // Продолжаем, даже если удаление файла не удалось
+      }
+    }
+    
+    // Очищаем поле изображения
+    department.value.image = ''
+    department.value.imageUrl = ''
+    
+    // Сохраняем изменения
+    await saveGeneral()
+    ElMessage.success('Изображение удалено')
+  } catch (error) {
+    ElMessage.error('Ошибка удаления изображения: ' + error.message)
   }
 }
 

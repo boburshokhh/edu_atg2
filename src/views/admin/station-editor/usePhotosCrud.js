@@ -1,6 +1,7 @@
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import stationService from '@/services/stationService'
+import { deleteFile } from '@/services/minioService'
 
 export function usePhotosCrud(station, photos, loadData) {
   const uploadingPhoto = ref(false)
@@ -37,11 +38,37 @@ export function usePhotosCrud(station, photos, loadData) {
 
   const deletePhoto = async (photo) => {
     try {
+      await ElMessageBox.confirm(
+        'Вы уверены, что хотите удалить это фото? Файл будет удален из хранилища.',
+        'Подтверждение удаления',
+        {
+          confirmButtonText: 'Удалить',
+          cancelButtonText: 'Отмена',
+          type: 'warning'
+        }
+      )
+
+      const imageUrl = photo.image_url
+      
+      // Удаляем запись из БД
       await stationService.deletePhoto(station.value.id, photo.id)
+      
+      // Удаляем файл из MinIO, если есть image_url
+      if (imageUrl && !imageUrl.startsWith('http')) {
+        try {
+          await deleteFile(imageUrl)
+        } catch (fileError) {
+          console.warn('Не удалось удалить файл из MinIO:', fileError)
+          // Продолжаем, даже если удаление файла не удалось
+        }
+      }
+      
       ElMessage.success('Фото удалено')
       photos.value = photos.value.filter(p => p.id !== photo.id)
     } catch (error) {
-      ElMessage.error('Ошибка удаления: ' + error.message)
+      if (error !== 'cancel') {
+        ElMessage.error('Ошибка удаления: ' + error.message)
+      }
     }
   }
 
