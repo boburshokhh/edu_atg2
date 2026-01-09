@@ -189,7 +189,7 @@
               v-else-if="userName"
               class="w-full h-full flex items-center justify-center text-white text-sm font-semibold"
             >
-              {{ userName.charAt(0).toUpperCase() }}
+              {{ userName.charAt(0).toUpperCase() , userName}}
             </div>
             <div
               v-else
