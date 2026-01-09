@@ -168,7 +168,7 @@
           <!-- Avatar -->
           <div 
             class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-offset-2 transition-all hover:ring-offset-4 cursor-pointer shrink-0"
-            :class="userAvatar 
+            :class="userAvatar && !imageError
               ? (isDark ? 'ring-blue-500' : 'ring-blue-500') 
               : (isDark 
                 ? 'bg-gradient-to-br from-blue-600 to-blue-700 ring-gray-500' 
@@ -180,13 +180,13 @@
             <img 
               v-if="userAvatar && !imageError" 
               :src="userAvatar" 
-              :alt="`Аватар ${userName}`"
+              :alt="`Аватар ${userName || 'Пользователь'}`"
               class="w-full h-full object-cover transition-transform duration-300"
               :class="hoveringAvatar ? 'scale-110' : ''"
               @error="handleImageError"
             >
             <div
-              v-else-if="userName"
+              v-else-if="userName && userName !== 'Пользователь'"
               class="w-full h-full flex items-center justify-center text-white text-sm font-semibold"
             >
               {{ userName.charAt(0).toUpperCase() }}
@@ -201,7 +201,7 @@
           
           <!-- User Info - Always visible on md+ -->
           <div
-            v-if="userName"
+            v-if="isAuthenticated"
             class="flex flex-col items-start min-w-0 hidden md:block"
           >
             <span 
@@ -225,7 +225,7 @@
           
           <!-- Mobile: Show only role badge -->
           <div
-            v-if="userName"
+            v-if="isAuthenticated"
             class="md:hidden"
           >
             <span 
@@ -346,7 +346,7 @@
     <Teleport to="body">
       <Transition name="fade">
         <div 
-          v-if="showAvatarPreview && isAuthenticated && userName"
+          v-if="showAvatarPreview && isAuthenticated"
           class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center"
           role="dialog"
           aria-modal="true"
@@ -765,7 +765,7 @@ const closeDropdown = () => {
 
 // Avatar preview functions
 const openAvatarPreview = () => {
-  if (!isAuthenticated.value || !userName.value) return
+  if (!isAuthenticated.value) return
   
   previousFocusedElement.value = document.activeElement
   showAvatarPreview.value = true
@@ -921,8 +921,19 @@ onMounted(async () => {
   document.addEventListener('keydown', handleKeydown)
   // Слушаем обновления профиля
   window.addEventListener('user-profile-updated', handleProfileUpdate)
+  
   // Загружаем данные пользователя при монтировании
-  await refreshUserData()
+  // Сначала проверяем, есть ли данные в authService
+  const currentUser = authService.getCurrentUser()
+  if (currentUser) {
+    // Если есть базовые данные, сразу обновляем computed свойства
+    userDataVersion.value++
+  }
+  
+  // Затем загружаем расширенные данные асинхронно
+  refreshUserData().catch(err => {
+    console.error('[LessonHeader] Error loading user data on mount:', err)
+  })
 })
 
 onBeforeUnmount(() => {
