@@ -62,23 +62,47 @@
             :key="material.id || material.objectName"
             href="#"
             :class="[
-              'flex items-start gap-3 p-2 rounded-lg border transition-all group',
+              'flex items-start gap-3 p-2.5 rounded-lg border-2 transition-all group relative',
               isActiveMaterial(material)
                 ? isDark 
-                  ? 'bg-blue-900/20 border-blue-800' 
-                  : 'bg-blue-50 border-blue-100'
+                  ? 'bg-blue-900/40 border-blue-500 shadow-lg shadow-blue-900/20' 
+                  : 'bg-blue-100 border-blue-500 shadow-md shadow-blue-200/50'
                 : isDark
-                  ? 'bg-gray-700/50 border-gray-600 hover:shadow-sm'
-                  : 'bg-blue-50 border-blue-100 hover:shadow-sm'
+                  ? 'bg-gray-700/50 border-gray-600 hover:shadow-sm hover:border-gray-500'
+                  : 'bg-blue-50 border-blue-100 hover:shadow-sm hover:border-blue-200'
             ]"
             @click.prevent="selectMaterial(material)"
           >
+            <!-- Active indicator bar -->
+            <div 
+              v-if="isActiveMaterial(material)"
+              :class="[
+                'absolute left-0 top-0 bottom-0 w-1 rounded-l-lg',
+                isDark ? 'bg-blue-400' : 'bg-blue-600'
+              ]"
+            />
+            
+            <!-- Checkmark icon for active material -->
+            <div 
+              v-if="isActiveMaterial(material)"
+              :class="[
+                'absolute top-1 right-1 p-0.5 rounded-full',
+                isDark ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xs">check_circle</span>
+            </div>
+            
             <div 
               :class="[
-                'p-1.5 rounded shadow-sm group-hover:text-blue-600 transition-colors',
-                isDark 
-                  ? 'bg-blue-800 text-primary' 
-                  : 'bg-white text-primary'
+                'p-1.5 rounded shadow-sm transition-colors',
+                isActiveMaterial(material)
+                  ? isDark
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-600 text-white'
+                  : isDark
+                    ? 'bg-blue-800 text-primary group-hover:bg-blue-700'
+                    : 'bg-white text-primary group-hover:bg-blue-50'
               ]"
             >
               <span class="material-symbols-outlined text-xl">
@@ -88,8 +112,14 @@
             <div class="flex-1 min-w-0">
               <p 
                 :class="[
-                  'text-sm font-medium group-hover:underline truncate',
-                  isDark ? 'text-blue-400' : 'text-primary'
+                  'text-sm font-medium truncate transition-colors',
+                  isActiveMaterial(material)
+                    ? isDark
+                      ? 'text-blue-300 font-semibold'
+                      : 'text-blue-700 font-semibold'
+                    : isDark
+                      ? 'text-blue-400 group-hover:text-blue-300 group-hover:underline'
+                      : 'text-primary group-hover:text-blue-600 group-hover:underline'
                 ]"
               >
                 {{ cleanFileName(material.original_name || material.originalName) }}
@@ -97,7 +127,13 @@
               <p 
                 :class="[
                   'text-xs mt-0.5',
-                  isDark ? 'text-gray-400' : 'text-gray-500'
+                  isActiveMaterial(material)
+                    ? isDark
+                      ? 'text-blue-400'
+                      : 'text-blue-600'
+                    : isDark
+                      ? 'text-gray-400'
+                      : 'text-gray-500'
                 ]"
               >
                 {{ formatFileSize(material.file_size) }} • {{ getMaterialType(material) }}
@@ -105,7 +141,10 @@
             </div>
             <span 
               :class="[
-                'material-symbols-outlined text-primary text-sm opacity-0 group-hover:opacity-100 transition-opacity',
+                'material-symbols-outlined text-sm transition-opacity',
+                isActiveMaterial(material)
+                  ? 'opacity-100 text-primary'
+                  : 'opacity-0 group-hover:opacity-100 text-primary',
                 isDark ? 'text-blue-400' : ''
               ]"
             >
@@ -131,21 +170,55 @@
             v-for="material in additionalMaterials"
             :key="material.id || material.objectName"
             :class="[
-              'group flex items-start gap-3 cursor-pointer',
-              isActiveMaterial(material) ? 'opacity-100' : ''
+              'group flex items-start gap-3 cursor-pointer p-2 rounded-lg border-2 transition-all relative',
+              isActiveMaterial(material)
+                ? isDark
+                  ? 'bg-blue-900/30 border-blue-500 shadow-md shadow-blue-900/20'
+                  : 'bg-blue-50 border-blue-500 shadow-sm shadow-blue-200/30'
+                : isDark
+                  ? 'border-transparent hover:border-gray-600 hover:bg-gray-700/30'
+                  : 'border-transparent hover:border-blue-200 hover:bg-blue-50/50'
             ]"
             @click="selectMaterial(material)"
           >
+            <!-- Active indicator bar -->
+            <div 
+              v-if="isActiveMaterial(material)"
+              :class="[
+                'absolute left-0 top-0 bottom-0 w-1 rounded-l-lg',
+                isDark ? 'bg-blue-400' : 'bg-blue-600'
+              ]"
+            />
+            
+            <!-- Checkmark icon for active material -->
+            <div 
+              v-if="isActiveMaterial(material)"
+              :class="[
+                'absolute top-1.5 right-1.5 p-0.5 rounded-full',
+                isDark ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xs">check_circle</span>
+            </div>
+            
             <div 
               :class="[
                 'mt-0.5 transition-colors',
-                isVideoMaterial(material)
-                  ? isDark 
-                    ? 'text-gray-500 group-hover:text-red-400' 
-                    : 'text-gray-400 group-hover:text-red-500'
-                  : isDark
-                    ? 'text-gray-500 group-hover:text-primary'
-                    : 'text-gray-400 group-hover:text-primary'
+                isActiveMaterial(material)
+                  ? isVideoMaterial(material)
+                    ? isDark
+                      ? 'text-red-400'
+                      : 'text-red-600'
+                    : isDark
+                      ? 'text-blue-400'
+                      : 'text-blue-600'
+                  : isVideoMaterial(material)
+                    ? isDark 
+                      ? 'text-gray-500 group-hover:text-red-400' 
+                      : 'text-gray-400 group-hover:text-red-500'
+                    : isDark
+                      ? 'text-gray-500 group-hover:text-primary'
+                      : 'text-gray-400 group-hover:text-primary'
               ]"
             >
               <span class="material-symbols-outlined text-xl">
@@ -156,9 +229,17 @@
               <p 
                 :class="[
                   'text-sm font-medium leading-tight transition-colors',
-                  isVideoMaterial(material)
-                    ? 'group-hover:text-red-500'
-                    : 'group-hover:text-primary',
+                  isActiveMaterial(material)
+                    ? isVideoMaterial(material)
+                      ? isDark
+                        ? 'text-red-300 font-semibold'
+                        : 'text-red-700 font-semibold'
+                      : isDark
+                        ? 'text-blue-300 font-semibold'
+                        : 'text-blue-700 font-semibold'
+                    : isVideoMaterial(material)
+                      ? 'group-hover:text-red-500'
+                      : 'group-hover:text-primary',
                   isDark ? 'text-gray-100' : 'text-gray-900'
                 ]"
               >
@@ -167,7 +248,13 @@
               <p 
                 :class="[
                   'text-xs mt-1',
-                  isDark ? 'text-gray-400' : 'text-gray-500'
+                  isActiveMaterial(material)
+                    ? isDark
+                      ? 'text-blue-400'
+                      : 'text-blue-600'
+                    : isDark
+                      ? 'text-gray-400'
+                      : 'text-gray-500'
                 ]"
               >
                 {{ formatFileSize(material.file_size) }}
