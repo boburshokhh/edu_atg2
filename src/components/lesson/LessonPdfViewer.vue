@@ -792,16 +792,69 @@ watch(() => props.initialScale, (newScale) => {
 // Track previous width for significant resize detection
 let previousContainerWidth = 0
 let resizeDebounceTimer = null
+let savedScaleBeforeFullscreen = null
+let isInFullscreen = false
+let resizeObserver = null
+
+// Handle fullscreen changes
+function handleFullscreenChange() {
+  const isCurrentlyFullscreen = !!(
+    document.fullscreenElement || 
+    document.webkitFullscreenElement || 
+    document.mozFullScreenElement || 
+    document.msFullscreenElement
+  )
+  
+  // Entering fullscreen
+  if (isCurrentlyFullscreen && !isInFullscreen) {
+    // Save current scale before entering fullscreen
+    savedScaleBeforeFullscreen = scale.value
+    isInFullscreen = true
+  }
+  
+  // Exiting fullscreen
+  if (!isCurrentlyFullscreen && isInFullscreen) {
+    isInFullscreen = false
+    
+    // Restore saved scale if it was saved
+    if (savedScaleBeforeFullscreen !== null && pdfDoc.value) {
+      scale.value = savedScaleBeforeFullscreen
+      savedScaleBeforeFullscreen = null
+      
+      // Recalculate dimensions and re-render with restored scale
+      nextTick(() => {
+        calculateAllPageDimensions().then(() => {
+          nextTick(() => {
+            updateVisiblePages()
+          })
+        })
+      })
+    }
+  }
+}
 
 // Lifecycle
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   
-  const resizeObserver = new ResizeObserver((entries) => {
+  // Listen for fullscreen changes
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+  document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+  
+  resizeObserver = new ResizeObserver((entries) => {
     if (!pdfDoc.value || !scrollContainer.value) return
     
     const newWidth = scrollContainer.value.clientWidth - 48
     containerWidth.value = newWidth
+    
+    // Don't auto-fit if we're in fullscreen mode or just exited it
+    // This prevents unwanted scale changes during fullscreen transitions
+    if (isInFullscreen) {
+      previousContainerWidth = newWidth
+      return
+    }
     
     // Check if this is a significant resize (e.g., orientation change)
     // Threshold: > 20% width change
@@ -827,12 +880,21 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+  document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+  document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+  
   clearTimeout(zoomDebounceTimer)
   clearTimeout(scrollDebounceTimer)
   clearTimeout(resizeDebounceTimer)
   
   if (pinchRafId) {
     cancelAnimationFrame(pinchRafId)
+  }
+  
+  if (resizeObserver && scrollContainer.value) {
+    resizeObserver.unobserve(scrollContainer.value)
   }
   
   if (pdfDoc.value) {
