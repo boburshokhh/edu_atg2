@@ -211,7 +211,7 @@
               ]"
               :title="userName"
             >
-              {{ userName }}
+              {{ userName }}{{ userName }}
             </span>
             <span 
               :class="[
