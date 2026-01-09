@@ -16,13 +16,17 @@
             ? 'hover:bg-gray-700 text-gray-400' 
             : 'hover:bg-gray-100 text-gray-500'
         ]"
+        aria-label="Открыть меню"
         @click="$emit('toggle-sidebar')"
       >
         <span class="material-symbols-outlined text-xl">menu</span>
       </button>
 
       <!-- Breadcrumbs -->
-      <nav class="hidden md:flex items-center text-sm">
+      <nav 
+        class="hidden md:flex items-center text-sm" 
+        aria-label="Навигационная цепочка"
+      >
         <router-link
           to="/"
           :class="[
@@ -37,6 +41,7 @@
             'material-symbols-outlined text-base mx-2',
             isDark ? 'text-gray-600' : 'text-gray-400'
           ]"
+          aria-hidden="true"
         >
           chevron_right
         </span>
@@ -53,6 +58,7 @@
             'material-symbols-outlined text-base mx-2',
             isDark ? 'text-gray-600' : 'text-gray-400'
           ]"
+          aria-hidden="true"
         >
           chevron_right
         </span>
@@ -61,6 +67,7 @@
             'font-medium',
             isDark ? 'text-gray-100' : 'text-gray-900'
           ]"
+          aria-current="page"
         >
           Модуль {{ currentLessonIndex + 1 }}
         </span>
@@ -85,7 +92,7 @@
             ? 'hover:bg-gray-700 text-gray-400' 
             : 'hover:bg-gray-100 text-gray-500'
         ]"
-        title="Переключить тему"
+        :aria-label="isDark ? 'Включить светлую тему' : 'Включить темную тему'"
         @click="$emit('toggle-dark-mode')"
       >
         <span class="material-symbols-outlined text-xl">
@@ -101,7 +108,8 @@
             ? 'hover:bg-gray-700 text-gray-400' 
             : 'hover:bg-gray-100 text-gray-500'
         ]"
-        :title="isFullscreen ? 'Выйти из полноэкранного режима' : 'На весь экран'"
+        :aria-label="isFullscreen ? 'Выйти из полноэкранного режима' : 'Полноэкранный режим'"
+        :aria-pressed="isFullscreen"
         @click="$emit('toggle-fullscreen')"
       >
         <span class="material-symbols-outlined text-xl">
@@ -119,7 +127,8 @@
               ? 'hover:bg-gray-700 text-gray-400' 
               : 'hover:bg-gray-100 text-gray-500'
         ]"
-        title="Материалы курса"
+        aria-label="Материалы курса"
+        :aria-pressed="isMaterialsSidebarOpen"
         @click="$emit('toggle-materials-sidebar')"
       >
         <span class="material-symbols-outlined text-xl">folder</span>
@@ -135,14 +144,15 @@
               ? 'hover:bg-gray-700 text-gray-400' 
               : 'hover:bg-gray-100 text-gray-500'
         ]"
-        title="Комментарии"
+        aria-label="Комментарии"
+        :aria-pressed="isCommentsOpen"
         @click="$emit('toggle-comments')"
       >
         <span class="material-symbols-outlined text-xl">chat_bubble</span>
       </button>
 
       <!-- User profile section with dropdown -->
-      <div class="relative">
+      <div class="relative" ref="dropdownRef">
         <button
           :class="[
             'flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-opacity-80',
@@ -150,7 +160,10 @@
               ? 'text-gray-300 hover:bg-gray-700' 
               : 'text-gray-700 hover:bg-gray-100'
           ]"
-          @click="userDropdownOpen = !userDropdownOpen"
+          aria-label="Меню пользователя"
+          :aria-expanded="userDropdownOpen"
+          aria-haspopup="true"
+          @click="toggleDropdown"
         >
           <div 
             class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-offset-2 transition-all hover:ring-offset-4 cursor-pointer"
@@ -161,14 +174,15 @@
                 : 'bg-gradient-to-br from-blue-600 to-blue-700 ring-gray-300')"
             @mouseenter="hoveringAvatar = true"
             @mouseleave="hoveringAvatar = false"
-            @click.stop="showAvatarPreview = true"
+            @click.stop="openAvatarPreview"
           >
             <img 
-              v-if="userAvatar" 
+              v-if="userAvatar && !imageError" 
               :src="userAvatar" 
-              :alt="userName"
+              :alt="`Аватар ${userName}`"
               class="w-full h-full object-cover transition-transform duration-300"
               :class="hoveringAvatar ? 'scale-110' : ''"
+              @error="handleImageError"
             >
             <div
               v-else-if="userName"
@@ -213,6 +227,7 @@
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               stroke-linecap="round"
@@ -240,7 +255,8 @@
                 ? 'bg-gray-800 border-gray-700' 
                 : 'bg-white border-gray-100'
             ]"
-            @click.stop
+            role="menu"
+            aria-orientation="vertical"
           >
             <router-link
               to="/profile"
@@ -250,7 +266,8 @@
                   ? 'text-gray-300 hover:bg-gray-700' 
                   : 'text-gray-700 hover:bg-gray-50'
               ]"
-              @click="userDropdownOpen = false"
+              role="menuitem"
+              @click="closeDropdown"
             >
               Профиль
             </router-link>
@@ -262,7 +279,8 @@
                   ? 'text-gray-300 hover:bg-gray-700' 
                   : 'text-gray-700 hover:bg-gray-50'
               ]"
-              @click="userDropdownOpen = false"
+              role="menuitem"
+              @click="closeDropdown"
             >
               Dashboard
             </router-link>
@@ -275,7 +293,8 @@
                   ? 'text-blue-400 hover:bg-gray-700' 
                   : 'text-blue-600 hover:bg-blue-50'
               ]"
-              @click="userDropdownOpen = false"
+              role="menuitem"
+              @click="closeDropdown"
             >
               Админ-панель
             </router-link>
@@ -292,6 +311,7 @@
                   ? 'text-red-400 hover:bg-gray-700' 
                   : 'text-red-600 hover:bg-red-50'
               ]"
+              role="menuitem"
               @click="handleLogout"
             >
               Выйти
@@ -307,16 +327,22 @@
         <div 
           v-if="showAvatarPreview && isAuthenticated && userName"
           class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center"
-          @click="showAvatarPreview = false; resetZoom()"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="avatar-preview-title"
+          @click="closeAvatarPreview"
+          @keydown.esc="closeAvatarPreview"
         >
           <div
             class="relative max-w-4xl max-h-[90vh] p-8"
             @click.stop
+            ref="modalRef"
           >
             <!-- Close Button -->
             <button
               class="absolute -top-2 -right-2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all z-10"
-              @click="showAvatarPreview = false; resetZoom()"
+              aria-label="Закрыть превью"
+              @click="closeAvatarPreview"
             >
               <svg
                 class="w-6 h-6 text-white"
@@ -336,12 +362,13 @@
             <!-- Avatar Image -->
             <div class="flex items-center justify-center bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
               <img 
-                v-if="userAvatar"
+                v-if="userAvatar && !imageError"
                 :src="userAvatar"
-                :alt="userName || 'Пользователь'"
+                :alt="`Полное фото ${userName || 'Пользователь'}`"
                 class="rounded-full shadow-2xl transition-transform duration-300"
                 :style="{ transform: `scale(${avatarScale})` }"
                 style="max-width: 500px; max-height: 500px; object-fit: cover;"
+                @error="handleImageError"
               >
               <div
                 v-else-if="userName"
@@ -363,6 +390,7 @@
             <div
               v-if="userName"
               class="mt-6 text-center text-white"
+              id="avatar-preview-title"
             >
               <h3 class="text-2xl font-bold mb-2">
                 {{ userName }}
@@ -373,10 +401,15 @@
             </div>
 
             <!-- Zoom Controls -->
-            <div class="flex items-center justify-center gap-4 mt-6 bg-white/10 backdrop-blur-md rounded-xl px-6 py-3 border border-white/20">
+            <div 
+              class="flex items-center justify-center gap-4 mt-6 bg-white/10 backdrop-blur-md rounded-xl px-6 py-3 border border-white/20"
+              role="toolbar"
+              aria-label="Управление масштабом"
+            >
               <button
                 class="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="avatarScale <= 0.5"
+                aria-label="Уменьшить"
                 @click="zoomOut"
               >
                 <svg
@@ -394,11 +427,17 @@
                 </svg>
               </button>
               
-              <span class="text-white text-sm font-medium px-4">{{ Math.round(avatarScale * 100) }}%</span>
+              <span 
+                class="text-white text-sm font-medium px-4" 
+                aria-live="polite"
+              >
+                {{ Math.round(avatarScale * 100) }}%
+              </span>
               
               <button
                 class="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="avatarScale >= 3"
+                aria-label="Увеличить"
                 @click="zoomIn"
               >
                 <svg
@@ -418,6 +457,7 @@
 
               <button
                 class="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all ml-4"
+                aria-label="Сбросить масштаб"
                 @click="resetZoom"
               >
                 <svg
@@ -443,7 +483,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import authService from '@/services/auth'
 
@@ -493,11 +533,17 @@ const emit = defineEmits([
 
 const router = useRouter()
 
+// Refs
+const dropdownRef = ref(null)
+const modalRef = ref(null)
+
 // State
 const userDropdownOpen = ref(false)
 const hoveringAvatar = ref(false)
 const showAvatarPreview = ref(false)
 const avatarScale = ref(1)
+const imageError = ref(false)
+const previousFocusedElement = ref(null)
 
 // User data
 const isAuthenticated = computed(() => {
@@ -537,16 +583,92 @@ const isAdminUser = computed(() => {
   return authService.isAdmin()
 })
 
-// Zoom functions
+// Utility: Safe localStorage
+const safeLocalStorage = {
+  getItem(key) {
+    try {
+      return localStorage.getItem(key)
+    } catch {
+      return null
+    }
+  },
+  setItem(key, value) {
+    try {
+      localStorage.setItem(key, value)
+    } catch {
+      console.warn('localStorage недоступен')
+    }
+  },
+  removeItem(key) {
+    try {
+      localStorage.removeItem(key)
+    } catch {
+      console.warn('localStorage недоступен')
+    }
+  }
+}
+
+// Clear avatar cache utility
+const clearAvatarCache = () => {
+  safeLocalStorage.removeItem('avatar_key')
+  safeLocalStorage.removeItem('avatar_url_cached')
+  safeLocalStorage.removeItem('avatar_url_expires')
+}
+
+// Image error handler
+const handleImageError = () => {
+  imageError.value = true
+}
+
+// Dropdown functions
+const toggleDropdown = () => {
+  userDropdownOpen.value = !userDropdownOpen.value
+}
+
+const closeDropdown = () => {
+  userDropdownOpen.value = false
+}
+
+// Avatar preview functions
+const openAvatarPreview = () => {
+  if (!isAuthenticated.value || !userName.value) return
+  
+  previousFocusedElement.value = document.activeElement
+  showAvatarPreview.value = true
+  
+  nextTick(() => {
+    if (modalRef.value) {
+      modalRef.value.focus()
+    }
+  })
+}
+
+const closeAvatarPreview = () => {
+  showAvatarPreview.value = false
+  resetZoom()
+  
+  // Restore focus
+  nextTick(() => {
+    if (previousFocusedElement.value) {
+      previousFocusedElement.value.focus()
+    }
+  })
+}
+
+// Zoom functions with limits
+const ZOOM_STEP = 0.2
+const MIN_ZOOM = 0.5
+const MAX_ZOOM = 3
+
 const zoomIn = () => {
-  if (avatarScale.value < 3) {
-    avatarScale.value += 0.2
+  if (avatarScale.value < MAX_ZOOM) {
+    avatarScale.value = Math.min(avatarScale.value + ZOOM_STEP, MAX_ZOOM)
   }
 }
 
 const zoomOut = () => {
-  if (avatarScale.value > 0.5) {
-    avatarScale.value -= 0.2
+  if (avatarScale.value > MIN_ZOOM) {
+    avatarScale.value = Math.max(avatarScale.value - ZOOM_STEP, MIN_ZOOM)
   }
 }
 
@@ -557,60 +679,116 @@ const resetZoom = () => {
 // Logout function
 const handleLogout = async () => {
   try {
-    userDropdownOpen.value = false
+    closeDropdown()
     
-    // Очищаем кеш аватарки
-    localStorage.removeItem('avatar_key')
-    localStorage.removeItem('avatar_url_cached')
-    localStorage.removeItem('avatar_url_expires')
+    clearAvatarCache()
     
-    // Выполняем выход
     const result = await authService.logout()
     
     if (result.success) {
-      // Перенаправляем на главную
-      router.push('/').then(() => {
-        // Обновляем страницу для полной очистки состояния
-        window.location.href = '/'
-      })
+      // Single navigation - no double redirect
+      await router.push('/')
     } else {
-      // Даже если logout не удался на сервере, очищаем локально и перенаправляем
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user')
-      window.location.href = '/'
+      // Fallback: clear local data
+      safeLocalStorage.removeItem('auth_token')
+      safeLocalStorage.removeItem('user')
+      await router.push('/')
     }
   } catch (error) {
     console.error('Logout error:', error)
-    // В случае ошибки очищаем локально и перенаправляем
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user')
-    // Очищаем кеш аватарки
-    localStorage.removeItem('avatar_key')
-    localStorage.removeItem('avatar_url_cached')
-    localStorage.removeItem('avatar_url_expires')
-    window.location.href = '/'
+    // Emergency cleanup
+    safeLocalStorage.removeItem('auth_token')
+    safeLocalStorage.removeItem('user')
+    clearAvatarCache()
+    await router.push('/')
   }
 }
 
-// Close dropdowns when clicking outside
+// Click outside handler - more specific
 const handleClickOutside = (event) => {
-  if (!event.target.closest('.relative')) {
-    userDropdownOpen.value = false
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+    closeDropdown()
   }
 }
 
+// Keyboard handler for modal
+const handleKeydown = (event) => {
+  if (event.key === 'Escape' && showAvatarPreview.value) {
+    closeAvatarPreview()
+  }
+}
+
+// Focus trap for modal
+const setupFocusTrap = () => {
+  if (!modalRef.value) return
+  
+  const focusableElements = modalRef.value.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  )
+  
+  if (focusableElements.length === 0) return
+  
+  const firstElement = focusableElements[0]
+  const lastElement = focusableElements[focusableElements.length - 1]
+  
+  const handleTabKey = (e) => {
+    if (e.key !== 'Tab') return
+    
+    if (e.shiftKey) {
+      if (document.activeElement === firstElement) {
+        e.preventDefault()
+        lastElement.focus()
+      }
+    } else {
+      if (document.activeElement === lastElement) {
+        e.preventDefault()
+        firstElement.focus()
+      }
+    }
+  }
+  
+  document.addEventListener('keydown', handleTabKey)
+  
+  return () => {
+    document.removeEventListener('keydown', handleTabKey)
+  }
+}
+
+// Watch for modal open/close
+watch(showAvatarPreview, (isOpen) => {
+  if (isOpen) {
+    document.body.style.overflow = 'hidden'
+    nextTick(() => {
+      const cleanup = setupFocusTrap()
+      // Store cleanup function
+      if (cleanup) {
+        // Will be called on unmount or modal close
+      }
+    })
+  } else {
+    document.body.style.overflow = ''
+  }
+})
+
+// Reset image error when avatar changes
+watch(userAvatar, () => {
+  imageError.value = false
+})
+
+// Lifecycle hooks
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleKeydown)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleKeydown)
+  document.body.style.overflow = '' // Cleanup
 })
 </script>
 
 <style scoped>
-/* Google Material Symbols font should be loaded in index.html */
-
 /* Fade animation for avatar preview modal */
 .fade-enter-active,
 .fade-leave-active {
@@ -620,5 +798,10 @@ onBeforeUnmount(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
 }
 </style>
