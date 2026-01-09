@@ -6,7 +6,32 @@ from django.utils import timezone
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
-from apps.courses.models import Course, CourseProgram, UserCourse, CourseComment
+from apps.courses.models import (
+    Course,
+    CourseProgram,
+    UserCourse,
+    CourseComment,
+    CourseProgramLessonTest,
+    FinalTest,
+    TestQuestion,
+    TestQuestionOption,
+    TestResult,
+)
+from django.db import connection
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+
+
+class IsAdmin(IsAuthenticated):
+    """Permission class to check if user is admin"""
+
+    def has_permission(self, request, view):
+        if not request.user or not hasattr(request.user, "id"):
+            raise AuthenticationFailed("Учетные данные не были предоставлены.")
+        if not hasattr(request.user, "role"):
+            raise PermissionDenied("Пользователь не имеет роли.")
+        if request.user.role != "admin":
+            raise PermissionDenied("Требуется роль администратора.")
+        return True
 
 
 class CoursesByStationView(APIView):
@@ -193,5 +218,306 @@ class CourseCommentsView(APIView):
                 "fileObjectKey": comment_data["file_object_key"],
             }
         }, status=201)
+
+
+# ==================== Test Management Views ====================
+
+class TestsListView(APIView):
+    """List all tests (lesson and final) - Admin only"""
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        test_type = request.GET.get('type')  # 'lesson' or 'final' or None for all
+        
+        data = []
+        
+        if not test_type or test_type == 'lesson':
+            lesson_tests = CourseProgramLessonTest.objects.all().values(
+                'id', 'title', 'description', 'questions_count', 'passing_score',
+                'time_limit', 'attempts', 'is_active', 'created_at', 'updated_at',
+                'course_program_lesson_id'
+            )
+            for test in lesson_tests:
+                data.append({
+                    **test,
+                    'test_type': 'lesson',
+                    'test_id': test['id']
+                })
+        
+        if not test_type or test_type == 'final':
+            final_tests = FinalTest.objects.all().values(
+                'id', 'title', 'description', 'questions_count', 'passing_score',
+                'time_limit', 'attempts', 'is_active', 'created_at', 'updated_at',
+                'course_program_id'
+            )
+            for test in final_tests:
+                data.append({
+                    **test,
+                    'test_type': 'final',
+                    'test_id': test['id']
+                })
+        
+        return JsonResponse({'data': data})
+
+
+class TestDetailView(APIView):
+    """Get test with questions and options - Admin only"""
+    permission_classes = [IsAdmin]
+
+    def get(self, request, test_id, test_type):
+        # Get test
+        if test_type == 'lesson':
+            test = CourseProgramLessonTest.objects.filter(id=test_id).values().first()
+        elif test_type == 'final':
+            test = FinalTest.objects.filter(id=test_id).values().first()
+        else:
+            return JsonResponse({'error': 'Invalid test_type'}, status=400)
+        
+        if not test:
+            return JsonResponse({'error': 'Test not found'}, status=404)
+        
+        # Get questions with options
+        questions = TestQuestion.objects.filter(
+            test_id=test_id, test_type=test_type
+        ).order_by('order_index', 'id').values()
+        
+        questions_list = []
+        for q in questions:
+            options = TestQuestionOption.objects.filter(
+                question_id=q['id']
+            ).order_by('order_index', 'id').values('id', 'option_text', 'is_correct', 'order_index')
+            
+            # Find correct answer index
+            correct_answer = None
+            options_list = []
+            for idx, opt in enumerate(options):
+                options_list.append(opt['option_text'])
+                if opt['is_correct']:
+                    correct_answer = idx
+            
+            questions_list.append({
+                'id': q['id'],
+                'question': q['question'],
+                'options': options_list,
+                'correctAnswer': correct_answer,
+                'points': q['points'],
+                'image': q['image'],
+                'explanation': q['explanation'],
+                'order_index': q['order_index']
+            })
+        
+        return JsonResponse({
+            'test': {
+                **test,
+                'test_type': test_type,
+                'questions': questions_list
+            }
+        })
+
+
+class TestCreateView(APIView):
+    """Create test - Admin only"""
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        test_type = request.data.get('test_type')  # 'lesson' or 'final'
+        if test_type not in ['lesson', 'final']:
+            return JsonResponse({'error': 'test_type must be "lesson" or "final"'}, status=400)
+        
+        title = request.data.get('title')
+        if not title:
+            return JsonResponse({'error': 'title is required'}, status=400)
+        
+        with transaction.atomic():
+            if test_type == 'lesson':
+                lesson_id = request.data.get('lesson_id')
+                if not lesson_id:
+                    return JsonResponse({'error': 'lesson_id is required for lesson test'}, status=400)
+                
+                test = CourseProgramLessonTest.objects.create(
+                    lesson_id=lesson_id,
+                    title=title,
+                    description=request.data.get('description', ''),
+                    passing_score=request.data.get('passing_score', 70),
+                    time_limit=request.data.get('time_limit', 30),
+                    attempts=request.data.get('attempts'),
+                    is_active=request.data.get('is_active', True)
+                )
+            else:  # final
+                course_program_id = request.data.get('course_program_id')
+                if not course_program_id:
+                    return JsonResponse({'error': 'course_program_id is required for final test'}, status=400)
+                
+                test = FinalTest.objects.create(
+                    course_program_id=course_program_id,
+                    title=title,
+                    description=request.data.get('description', ''),
+                    passing_score=request.data.get('passing_score', 70),
+                    time_limit=request.data.get('time_limit', 30),
+                    attempts=request.data.get('attempts'),
+                    is_active=request.data.get('is_active', True)
+                )
+        
+        return JsonResponse({'data': {'id': test.id, 'test_type': test_type}}, status=201)
+
+
+class TestUpdateView(APIView):
+    """Update test - Admin only"""
+    permission_classes = [IsAdmin]
+
+    def put(self, request, test_id, test_type):
+        if test_type == 'lesson':
+            test = CourseProgramLessonTest.objects.filter(id=test_id).first()
+        elif test_type == 'final':
+            test = FinalTest.objects.filter(id=test_id).first()
+        else:
+            return JsonResponse({'error': 'Invalid test_type'}, status=400)
+        
+        if not test:
+            return JsonResponse({'error': 'Test not found'}, status=404)
+        
+        if 'title' in request.data:
+            test.title = request.data['title']
+        if 'description' in request.data:
+            test.description = request.data.get('description', '')
+        if 'passing_score' in request.data:
+            test.passing_score = request.data['passing_score']
+        if 'time_limit' in request.data:
+            test.time_limit = request.data['time_limit']
+        if 'attempts' in request.data:
+            test.attempts = request.data.get('attempts')
+        if 'is_active' in request.data:
+            test.is_active = request.data['is_active']
+        
+        test.save()
+        
+        return JsonResponse({'data': {'id': test.id}})
+
+
+class TestDeleteView(APIView):
+    """Delete test - Admin only"""
+    permission_classes = [IsAdmin]
+
+    def delete(self, request, test_id, test_type):
+        if test_type == 'lesson':
+            test = CourseProgramLessonTest.objects.filter(id=test_id).first()
+        elif test_type == 'final':
+            test = FinalTest.objects.filter(id=test_id).first()
+        else:
+            return JsonResponse({'error': 'Invalid test_type'}, status=400)
+        
+        if not test:
+            return JsonResponse({'error': 'Test not found'}, status=404)
+        
+        test.delete()
+        return JsonResponse({'success': True})
+
+
+class TestQuestionsUpdateView(APIView):
+    """Update test questions - Admin only"""
+    permission_classes = [IsAdmin]
+
+    def put(self, request, test_id, test_type):
+        questions = request.data.get('questions', [])
+        
+        if test_type not in ['lesson', 'final']:
+            return JsonResponse({'error': 'Invalid test_type'}, status=400)
+        
+        with transaction.atomic():
+            # Delete existing questions
+            TestQuestion.objects.filter(test_id=test_id, test_type=test_type).delete()
+            
+            # Create new questions
+            for q_idx, q_data in enumerate(questions):
+                question = TestQuestion.objects.create(
+                    test_id=test_id,
+                    test_type=test_type,
+                    question=q_data.get('question', ''),
+                    points=q_data.get('points', 1),
+                    image=q_data.get('image', ''),
+                    explanation=q_data.get('explanation', ''),
+                    order_index=q_idx
+                )
+                
+                # Create options
+                options = q_data.get('options', [])
+                correct_answer = q_data.get('correctAnswer', 0)
+                
+                for opt_idx, opt_text in enumerate(options):
+                    TestQuestionOption.objects.create(
+                        question_id=question.id,
+                        option_text=opt_text,
+                        is_correct=(opt_idx == correct_answer),
+                        order_index=opt_idx
+                    )
+            
+            # Update questions_count
+            questions_count = len(questions)
+            if test_type == 'lesson':
+                CourseProgramLessonTest.objects.filter(id=test_id).update(questions_count=questions_count)
+            else:
+                FinalTest.objects.filter(id=test_id).update(questions_count=questions_count)
+        
+        return JsonResponse({'success': True})
+
+
+class TestResultsListView(APIView):
+    """List test results - Admin only"""
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        test_id = request.GET.get('test_id')
+        test_type = request.GET.get('test_type')
+        user_id = request.GET.get('user_id')
+        
+        query = TestResult.objects.all()
+        
+        if test_id:
+            query = query.filter(test_id=test_id)
+        if test_type:
+            query = query.filter(test_type=test_type)
+        if user_id:
+            query = query.filter(user_id=user_id)
+        
+        results = list(query.order_by('-completed_at').values(
+            'id', 'test_id', 'test_type', 'user_id', 'score', 'is_passed',
+            'correct_answers', 'total_questions', 'time_spent', 'completed_at'
+        ))
+        
+        # Get user info
+        from apps.accounts.models import User
+        user_ids = list(set(str(r['user_id']) for r in results))
+        users = {str(u['id']): u for u in User.objects.filter(id__in=user_ids).values('id', 'username', 'full_name')}
+        
+        # Format results
+        formatted_results = []
+        for r in results:
+            user = users.get(str(r['user_id']), {})
+            formatted_results.append({
+                **r,
+                'user_name': user.get('full_name') or user.get('username', 'Unknown')
+            })
+        
+        return JsonResponse({'data': formatted_results})
+
+
+class TestResultDetailView(APIView):
+    """Get test result details - Admin only"""
+    permission_classes = [IsAdmin]
+
+    def get(self, request, result_id):
+        result = TestResult.objects.filter(id=result_id).values().first()
+        if not result:
+            return JsonResponse({'error': 'Result not found'}, status=404)
+        
+        from apps.accounts.models import User
+        user = User.objects.filter(id=result['user_id']).values('id', 'username', 'full_name').first() or {}
+        
+        return JsonResponse({
+            'data': {
+                **result,
+                'user_name': user.get('full_name') or user.get('username', 'Unknown')
+            }
+        })
 
 

@@ -125,7 +125,11 @@ class CourseProgramLessonTest(models.Model):
         CourseProgramLesson, db_column="course_program_lesson_id", on_delete=models.CASCADE
     )
     title = models.CharField(max_length=500)
+    description = models.TextField(null=True, blank=True)
     questions_count = models.IntegerField(default=0)
+    passing_score = models.IntegerField(default=70)
+    time_limit = models.IntegerField(default=30)
+    attempts = models.IntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -141,13 +145,68 @@ class FinalTest(models.Model):
         CourseProgram, db_column="course_program_id", on_delete=models.CASCADE
     )
     title = models.CharField(max_length=500)
+    description = models.TextField(null=True, blank=True)
     questions_count = models.IntegerField(default=0)
+    passing_score = models.IntegerField(default=70)
+    time_limit = models.IntegerField(default=30)
+    attempts = models.IntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "final_tests"
+        managed = False
+
+
+class TestQuestion(models.Model):
+    id = models.AutoField(primary_key=True)
+    test_id = models.IntegerField()
+    test_type = models.CharField(max_length=20)  # 'lesson' or 'final'
+    question = models.TextField()
+    points = models.IntegerField(default=1)
+    image = models.TextField(null=True, blank=True)
+    explanation = models.TextField(null=True, blank=True)
+    order_index = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "test_questions"
+        managed = False
+
+
+class TestQuestionOption(models.Model):
+    id = models.AutoField(primary_key=True)
+    question = models.ForeignKey(
+        TestQuestion, db_column="question_id", on_delete=models.CASCADE
+    )
+    option_text = models.TextField()
+    is_correct = models.BooleanField(default=False)
+    order_index = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "test_question_options"
+        managed = False
+
+
+class TestResult(models.Model):
+    id = models.AutoField(primary_key=True)
+    test_id = models.IntegerField()
+    test_type = models.CharField(max_length=20)  # 'lesson' or 'final'
+    user_id = models.UUIDField()
+    score = models.IntegerField()
+    is_passed = models.BooleanField(default=False)
+    correct_answers = models.IntegerField(default=0)
+    total_questions = models.IntegerField(default=0)
+    time_spent = models.IntegerField(null=True, blank=True)
+    answers_data = models.JSONField(null=True, blank=True)
+    completed_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "test_results"
         managed = False
 
 
