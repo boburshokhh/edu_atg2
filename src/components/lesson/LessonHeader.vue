@@ -189,7 +189,7 @@
               v-else-if="userName"
               class="w-full h-full flex items-center justify-center text-white text-sm font-semibold"
             >
-              {{ userName.charAt(0).toUpperCase() , userName}}
+              {{ userName.charAt(0).toUpperCase() }}
             </div>
             <div
               v-else
@@ -211,7 +211,7 @@
               ]"
               :title="userName"
             >
-              {{ userName }}{{ userName }}
+              {{ userName }}
             </span>
             <span 
               :class="[
@@ -507,6 +507,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import authService from '@/services/auth'
+import userProfileService from '@/services/userProfile'
 
 const props = defineProps({
   currentFileName: {
@@ -566,32 +567,144 @@ const avatarScale = ref(1)
 const imageError = ref(false)
 const previousFocusedElement = ref(null)
 
+// Ref для принудительного обновления computed свойств
+const userDataVersion = ref(0)
+
+// Флаг для отслеживания первичной загрузки данных
+const isDataLoaded = ref(false)
+
+// Функция для проверки и использования кешированного avatar URL
+const getCachedAvatarUrl = (newAvatarKey, newAvatarUrl) => {
+  if (!newAvatarKey || !newAvatarUrl) {
+    return newAvatarUrl
+  }
+  
+  // Проверяем кеш
+  const cachedAvatarKey = localStorage.getItem('avatar_key')
+  const cachedAvatarUrl = localStorage.getItem('avatar_url_cached')
+  const avatarUrlExpires = parseInt(localStorage.getItem('avatar_url_expires') || '0')
+  
+  // Если ключ совпадает и кеш не истек (6 дней из 7), используем кешированный URL
+  if (cachedAvatarKey === newAvatarKey && 
+      cachedAvatarUrl && 
+      Date.now() < avatarUrlExpires) {
+    console.log('[LessonHeader] Using cached avatar URL, key:', newAvatarKey)
+    return cachedAvatarUrl
+  }
+  
+  // Обновляем кеш
+  console.log('[LessonHeader] Updating avatar cache, key:', newAvatarKey)
+  localStorage.setItem('avatar_key', newAvatarKey)
+  localStorage.setItem('avatar_url_cached', newAvatarUrl)
+  // Кеш действителен 6 дней (из 7 дней presigned URL)
+  localStorage.setItem('avatar_url_expires', String(Date.now() + (6 * 24 * 60 * 60 * 1000)))
+  
+  return newAvatarUrl
+}
+
+// Функция для обновления данных пользователя
+const refreshUserData = async (force = false) => {
+  // Если данные уже загружены и не требуется принудительное обновление, пропускаем
+  if (isDataLoaded.value && !force) {
+    // Проверяем, есть ли данные пользователя в authService
+    const currentUser = authService.getCurrentUser()
+    if (currentUser && currentUser.full_name && currentUser.avatar_url) {
+      // Данные уже есть, просто обновляем computed свойства
+      userDataVersion.value++
+      return
+    }
+  }
+  
+  try {
+    // Сначала обновляем базовые данные через authService
+    await authService.checkAuth()
+    const currentUser = authService.getCurrentUser()
+    
+    // Если пользователь авторизован, загружаем расширенные данные профиля из БД
+    if (currentUser?.id) {
+      try {
+        const profileResult = await userProfileService.getProfile(currentUser.id)
+        if (profileResult.success && profileResult.data) {
+          const profileData = profileResult.data
+          
+          // Применяем кеширование для avatar URL
+          const avatarKey = profileData.avatar_key || null
+          const newAvatarUrl = profileData.avatar_url || profileData.avatar || null
+          const cachedAvatarUrl = avatarKey ? getCachedAvatarUrl(avatarKey, newAvatarUrl) : newAvatarUrl
+          
+          // Обновляем данные в authService
+          if (authService.currentUser) {
+            // Создаем обновленный объект пользователя, объединяя данные из auth и профиля
+            const updatedUser = {
+              ...authService.currentUser,
+              full_name: profileData.full_name || authService.currentUser.full_name,
+              role: profileData.role || authService.currentUser.role,
+              avatar_url: cachedAvatarUrl,
+              position: profileData.position || authService.currentUser.position || null,
+              station: profileData.station || profileData.company || authService.currentUser.station || null,
+              email: profileData.email || authService.currentUser.email || null
+            }
+            
+            authService.currentUser = updatedUser
+            
+            // Сохраняем обновленные данные в localStorage
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+          }
+          
+          // Отмечаем, что данные загружены
+          isDataLoaded.value = true
+        }
+      } catch (error) {
+        console.error('[LessonHeader] Error loading user profile:', error)
+        // Не прерываем выполнение, используем данные из authService
+      }
+    } else {
+      // Пользователь не авторизован, отмечаем что загрузка завершена
+      isDataLoaded.value = true
+    }
+  } catch (error) {
+    console.error('[LessonHeader] Error refreshing user data:', error)
+  }
+  
+  userDataVersion.value++ // Принудительно обновляем computed свойства
+}
+
 // User data
 const isAuthenticated = computed(() => {
   return authService.getCurrentUser() !== null
 })
 
 const userName = computed(() => {
+  userDataVersion.value // Зависимость для обновления
   const user = authService.getCurrentUser()
+  
   if (user) {
+    // Приоритет: полное имя > имя пользователя > 'Пользователь'
     return user.full_name || user.username || 'Пользователь'
   }
+  
   return 'Пользователь'
 })
 
 const userAvatar = computed(() => {
+  userDataVersion.value // Зависимость для обновления
   const user = authService.getCurrentUser()
+  
   if (user) {
     return user.avatar_url || user.avatar || null
   }
+  
   return null
 })
 
 const userRole = computed(() => {
+  userDataVersion.value // Зависимость для обновления
   const user = authService.getCurrentUser()
+  
   if (!user) {
     return 'Студент'
   }
+  
   const roles = {
     admin: 'Администратор',
     instructor: 'Преподаватель',
@@ -796,15 +909,26 @@ watch(userAvatar, () => {
   imageError.value = false
 })
 
+// Обработчик обновления профиля
+const handleProfileUpdate = () => {
+  // При обновлении профиля принудительно обновляем данные
+  refreshUserData(true)
+}
+
 // Lifecycle hooks
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   document.addEventListener('keydown', handleKeydown)
+  // Слушаем обновления профиля
+  window.addEventListener('user-profile-updated', handleProfileUpdate)
+  // Загружаем данные пользователя при монтировании
+  await refreshUserData()
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('user-profile-updated', handleProfileUpdate)
   document.body.style.overflow = '' // Cleanup
 })
 </script>
