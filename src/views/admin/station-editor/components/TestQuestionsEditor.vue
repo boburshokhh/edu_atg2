@@ -6,6 +6,16 @@
       </h4>
       <div class="flex gap-2">
         <el-button
+          type="success"
+          size="small"
+          @click="importFromJSON"
+        >
+          <el-icon class="mr-1">
+            <Upload />
+          </el-icon>
+          Импорт из JSON
+        </el-button>
+        <el-button
           v-if="questions.length > 0 && testData"
           type="info"
           size="small"
@@ -165,8 +175,8 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { Plus, Delete, Close, Check, Download } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { Plus, Delete, Close, Check, Download, Upload } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import testService from '@/services/testService'
 
 const props = defineProps({
@@ -267,6 +277,88 @@ const handleSave = async () => {
   }
 
   emit('save', props.testId, questions.value)
+}
+
+const importFromJSON = () => {
+  // Создаем скрытый input для выбора файла
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      const jsonData = JSON.parse(text)
+
+      // Валидация структуры JSON
+      if (!jsonData.questions || !Array.isArray(jsonData.questions)) {
+        ElMessage.error('Неверный формат JSON: отсутствует массив questions')
+        return
+      }
+
+      // Подтверждение импорта
+      try {
+        await ElMessageBox.confirm(
+          `Импортировать ${jsonData.questions.length} вопросов? Текущие вопросы будут заменены.`,
+          'Подтверждение импорта',
+          {
+            confirmButtonText: 'Импортировать',
+            cancelButtonText: 'Отмена',
+            type: 'warning'
+          }
+        )
+      } catch {
+        return // Пользователь отменил
+      }
+
+      // Преобразуем JSON формат в формат БД
+      const importedQuestions = jsonData.questions.map((q, index) => {
+        // Валидация вопроса
+        if (!q.question || !q.question.trim()) {
+          throw new Error(`Вопрос ${index + 1}: отсутствует текст вопроса`)
+        }
+        if (!q.options || !Array.isArray(q.options) || q.options.length < 2) {
+          throw new Error(`Вопрос ${index + 1}: должно быть минимум 2 варианта ответа`)
+        }
+        if (q.correctAnswer === undefined || q.correctAnswer === null) {
+          throw new Error(`Вопрос ${index + 1}: не указан правильный ответ`)
+        }
+        if (q.correctAnswer < 0 || q.correctAnswer >= q.options.length) {
+          throw new Error(`Вопрос ${index + 1}: индекс правильного ответа вне диапазона`)
+        }
+
+        // Проверка на пустые варианты ответов
+        const hasEmptyOptions = q.options.some(opt => !opt || !opt.trim())
+        if (hasEmptyOptions) {
+          throw new Error(`Вопрос ${index + 1}: все варианты ответа должны быть заполнены`)
+        }
+
+        return {
+          question: q.question.trim(),
+          options: q.options.map(opt => opt.trim()),
+          correctAnswer: q.correctAnswer,
+          points: q.points || 1,
+          image: q.image || '',
+          explanation: q.explanation || ''
+        }
+      })
+
+      // Заменяем текущие вопросы на импортированные
+      questions.value = importedQuestions
+
+      ElMessage.success(`Успешно импортировано ${importedQuestions.length} вопросов`)
+    } catch (error) {
+      console.error('Import error:', error)
+      if (error instanceof SyntaxError) {
+        ElMessage.error('Ошибка парсинга JSON: ' + error.message)
+      } else {
+        ElMessage.error('Ошибка импорта: ' + error.message)
+      }
+    }
+  }
+  input.click()
 }
 
 const exportToJSON = () => {
