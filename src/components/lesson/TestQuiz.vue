@@ -100,7 +100,7 @@
           <div class="flex items-center justify-between mb-1.5">
             <div class="flex items-center gap-3">
               <span class="text-xs font-semibold text-gray-600">
-                Вопрос {{ currentQuestionIndex + 1 }} / {{ testData.questions.length }}
+                Вопрос {{ currentQuestionIndex + 1 }} / {{ testData.questions?.length || 0 }}
               </span>
               <el-tag
                 v-if="timeRemaining"
@@ -140,6 +140,7 @@
       <!-- Question Card -->
       <div class="max-w-3xl mx-auto p-3 md:p-4">
         <el-card
+          v-if="currentQuestion"
           shadow="never"
           class="question-card border-none !shadow-none md:!border md:!shadow-sm md:rounded-xl"
         >
@@ -150,28 +151,28 @@
               </div>
               <div class="flex-1">
                 <h3 class="text-base font-bold text-gray-900 mb-1 leading-tight">
-                  {{ currentQuestion.question }}
+                  {{ currentQuestion?.question }}
                 </h3>
                 <el-tag
-                  v-if="currentQuestion.points"
+                  v-if="currentQuestion?.points"
                   size="small"
                   type="warning"
                   effect="plain"
                   class="!h-5 !px-1.5 !text-xs"
                 >
-                  {{ currentQuestion.points }} {{ currentQuestion.points === 1 ? 'балл' : 'балла' }}
+                  {{ currentQuestion?.points }} {{ currentQuestion?.points === 1 ? 'балл' : 'балла' }}
                 </el-tag>
               </div>
             </div>
 
             <!-- Image if exists -->
             <div
-              v-if="currentQuestion.image"
+              v-if="currentQuestion?.image"
               class="mb-3"
             >
               <img
-                :src="currentQuestion.image"
-                :alt="currentQuestion.question"
+                :src="currentQuestion?.image"
+                :alt="currentQuestion?.question"
                 class="max-w-full rounded-lg border border-gray-100"
               >
             </div>
@@ -180,13 +181,14 @@
           <!-- Answer Options -->
           <div class="space-y-2 mb-4">
             <div
+              v-if="currentQuestion"
               v-for="(option, index) in currentQuestion.options"
               :key="index"
               :class="[
                 'option-card',
                 selectedAnswers[currentQuestionIndex] === index ? 'selected' : '',
-                showExplanation && index === currentQuestion.correctAnswer ? 'correct' : '',
-                showExplanation && selectedAnswers[currentQuestionIndex] === index && index !== currentQuestion.correctAnswer ? 'incorrect' : ''
+                showExplanation && currentQuestion && index === currentQuestion.correctAnswer ? 'correct' : '',
+                showExplanation && currentQuestion && selectedAnswers[currentQuestionIndex] === index && index !== currentQuestion.correctAnswer ? 'incorrect' : ''
               ]"
               @click="selectAnswer(index)"
             >
@@ -196,13 +198,13 @@
                 </div>
                 <span class="flex-1 text-sm text-gray-700 leading-snug">{{ option }}</span>
                 <el-icon
-                  v-if="showExplanation && index === currentQuestion.correctAnswer"
+                  v-if="currentQuestion && showExplanation && index === currentQuestion.correctAnswer"
                   class="text-green-600"
                 >
                   <Check />
                 </el-icon>
                 <el-icon
-                  v-if="showExplanation && selectedAnswers[currentQuestionIndex] === index && index !== currentQuestion.correctAnswer"
+                  v-if="currentQuestion && showExplanation && selectedAnswers[currentQuestionIndex] === index && index !== currentQuestion.correctAnswer"
                   class="text-red-600"
                 >
                   <Close />
@@ -226,7 +228,7 @@
               <div class="flex flex-col items-end gap-1.5">
                 <div class="flex gap-2">
                   <el-button
-                    v-if="currentQuestionIndex < testData.questions.length - 1"
+                    v-if="currentQuestion && currentQuestionIndex < testData.questions.length - 1"
                     type="primary"
                     :disabled="selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null"
                     size="default"
@@ -238,7 +240,7 @@
                     </el-icon>
                   </el-button>
                   <el-button
-                    v-else
+                    v-else-if="currentQuestion"
                     type="success"
                     :disabled="selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null"
                     size="default"
@@ -251,7 +253,7 @@
                   </el-button>
                 </div>
                 <p 
-                  v-if="selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null"
+                  v-if="currentQuestion && (selectedAnswers[currentQuestionIndex] === undefined || selectedAnswers[currentQuestionIndex] === null)"
                   class="text-xs text-gray-500 text-right"
                 >
                   Выберите ответ, чтобы продолжить
@@ -262,17 +264,23 @@
 
           <!-- Explanation -->
           <el-alert
-            v-if="showExplanation && currentQuestion.explanation"
-            :type="selectedAnswers[currentQuestionIndex] === currentQuestion.correctAnswer ? 'success' : 'info'"
+            v-if="currentQuestion && showExplanation && currentQuestion.explanation"
+            :type="selectedAnswers[currentQuestionIndex] === currentQuestion?.correctAnswer ? 'success' : 'info'"
             :closable="false"
             class="mt-4"
           >
             <template #title>
               <strong>Пояснение:</strong>
             </template>
-            {{ currentQuestion.explanation }}
+            {{ currentQuestion?.explanation }}
           </el-alert>
         </el-card>
+        
+        <el-empty
+          v-else
+          description="Вопрос не найден"
+          :image-size="80"
+        />
 
         <!-- Question Navigator - REMOVED as requested -->
         <!-- <div class="mt-4">
@@ -469,7 +477,13 @@ const loadingAttempts = ref(false)
 
 // Computed
 const currentQuestion = computed(() => {
-  return props.testData.questions[currentQuestionIndex.value]
+  if (!props.testData?.questions || props.testData.questions.length === 0) {
+    return null
+  }
+  if (currentQuestionIndex.value >= props.testData.questions.length) {
+    return null
+  }
+  return props.testData.questions[currentQuestionIndex.value] || null
 })
 
 const progress = computed(() => {
