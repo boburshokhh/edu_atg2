@@ -526,9 +526,23 @@ const isPassed = computed(() => {
 const checkAttempts = async () => {
   if (!props.testData.id || !props.testData.testType) return true
   
+  // Check if test ID is valid (numeric) for backend queries
+  // Legacy tests from testsData.json have string IDs like 'test-module-1'
+  const testId = props.testData.id
+  const isNumericTestId = typeof testId === 'number' || (typeof testId === 'string' && /^\d+$/.test(testId))
+  
+  if (!isNumericTestId) {
+    // Legacy test - check attempts from localStorage if needed
+    console.warn('[TestQuiz] Legacy test detected (non-numeric ID), skipping backend attempts check:', testId)
+    // For legacy tests, we can check localStorage if needed
+    // For now, just allow the test to start
+    return true
+  }
+  
   loadingAttempts.value = true
   try {
-    const result = await testService.getUserTestResults(props.testData.id, props.testData.testType)
+    const numericTestId = typeof testId === 'string' ? parseInt(testId, 10) : testId
+    const result = await testService.getUserTestResults(numericTestId, props.testData.testType)
     userAttempts.value = result.totalAttempts || 0
     
     // Check if user has exceeded attempts limit
@@ -720,9 +734,31 @@ const saveTestResults = async (timeSpent = null) => {
       }
     })
 
-    // Prepare result data for backend
+    // Check if test ID is valid (numeric) for backend storage
+    // Legacy tests from testsData.json have string IDs like 'test-module-1'
+    const testId = props.testData.id
+    const isNumericTestId = typeof testId === 'number' || (typeof testId === 'string' && /^\d+$/.test(testId))
+    
+    if (!isNumericTestId) {
+      // Legacy test - save only to localStorage
+      console.warn('[TestQuiz] Legacy test detected (non-numeric ID), saving to localStorage only:', testId)
+      const results = {
+        testId: testId,
+        score: score.value,
+        isPassed: isPassed.value,
+        correctAnswers: correctAnswersCount.value,
+        totalQuestions: props.testData.questions.length,
+        timestamp: new Date().toISOString()
+      }
+      const existingResults = JSON.parse(localStorage.getItem('testResults') || '[]')
+      existingResults.push(results)
+      localStorage.setItem('testResults', JSON.stringify(existingResults))
+      return
+    }
+
+    // Prepare result data for backend (only for numeric test IDs)
     const resultData = {
-      test_id: props.testData.id,
+      test_id: typeof testId === 'string' ? parseInt(testId, 10) : testId,
       test_type: props.testData.testType || 'final',
       score: score.value,
       is_passed: isPassed.value,

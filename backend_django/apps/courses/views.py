@@ -733,10 +733,16 @@ class TestResultCreateView(APIView):
             time_spent = request.data.get('time_spent')  # in seconds
             answers_data = request.data.get('answers_data')  # JSON with user answers
             
-            logger.info(f"[TestResultCreateView] Received data: test_id={test_id}, test_type={test_type}, score={score}, user_id={request.user.id if request.user else None}")
+            logger.info(f"[TestResultCreateView] Received data: test_id={test_id} (type: {type(test_id)}), test_type={test_type}, score={score}, user_id={request.user.id if request.user else None}")
             
             if not test_id or not test_type:
                 return JsonResponse({'error': 'test_id and test_type are required'}, status=400)
+            
+            # Validate test_id is numeric
+            try:
+                test_id = int(test_id)
+            except (ValueError, TypeError):
+                return JsonResponse({'error': f'Field \'id\' expected a number but got \'{test_id}\'. test_id must be a numeric value.'}, status=400)
             
             if test_type not in ['lesson', 'final']:
                 return JsonResponse({'error': 'test_type must be "lesson" or "final"'}, status=400)
