@@ -110,42 +110,40 @@
           <!-- Left Column - Course Content -->
           <div class="lg:col-span-2">
             <!-- Modern Tabs -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm dark:shadow-none border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
-              <div class="flex border-b border-gray-200 dark:border-gray-700">
-                <button 
-                  :class="[
-                    'flex-1 py-5 text-center font-medium transition-colors relative group',
-                    activeTab === 'about' 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-                  ]"
-                  @click="activeTab = 'about'"
-                >
-                  О программе
-                  <span
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+              <div class="border-b border-gray-100">
+                <nav class="flex">
+                  <button 
                     :class="[
-                      'absolute bottom-0 left-0 w-full h-0.5 transition-all',
+                      'flex-1 py-2.5 px-4 font-semibold text-xs md:text-sm transition-all relative',
                       activeTab === 'about' 
-                        ? 'bg-blue-600 dark:bg-blue-400' 
-                        : 'bg-transparent group-hover:bg-blue-600/30 dark:group-hover:bg-blue-400/30'
+                        ? 'text-blue-600 bg-blue-50/50' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     ]"
-                  ></span>
-                </button>
-                <button 
-                  :class="[
-                    'flex-1 py-5 text-center font-semibold transition-colors relative',
-                    activeTab === 'curriculum' 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-                  ]"
-                  @click="activeTab = 'curriculum'"
-                >
-                  Программа тренинга
-                  <span
-                    v-if="activeTab === 'curriculum'"
-                    class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"
-                  ></span>
-                </button>
+                    @click="activeTab = 'about'"
+                  >
+                    О программе
+                    <div
+                      v-if="activeTab === 'about'"
+                      class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                    />
+                  </button>
+                  <button 
+                    :class="[
+                      'flex-1 py-2.5 px-4 font-semibold text-xs md:text-sm transition-all relative',
+                      activeTab === 'curriculum' 
+                        ? 'text-blue-600 bg-blue-50/50' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ]"
+                    @click="activeTab = 'curriculum'"
+                  >
+                    Программа тренинга
+                    <div
+                      v-if="activeTab === 'curriculum'"
+                      class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                    />
+                  </button>
+                </nav>
               </div>
 
               <!-- Tab Content -->
@@ -299,9 +297,9 @@
               <!-- Video Player Card -->
               <div
                 v-if="sidebarVideoUrl"
-                class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm dark:shadow-none border border-gray-200 dark:border-gray-700 p-4 overflow-hidden"
+                class="bg-white rounded-xl shadow-lg border border-gray-200 p-3 overflow-hidden"
               >
-                <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4 pl-1">
+                <h3 class="text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">
                   Видео
                 </h3>
                 <div
@@ -335,32 +333,47 @@
               </div>
 
               <!-- Enrollment Card -->
-              <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm dark:shadow-none border border-gray-200 dark:border-gray-700 p-6 md:p-8 relative overflow-hidden">
-                <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
-                <button
-                  class="w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:to-blue-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 mb-6 relative z-10"
-                  @click="startLearning"
-                >
-                  <span class="material-icons-outlined">play_circle_filled</span>
-                  Начать обучение
-                </button>
-                <div class="space-y-6 relative z-10">
-                  <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                      <span class="material-icons-outlined text-lg">public</span>
-                      <span class="text-sm font-medium">Формат</span>
+              <el-card
+                class="enrollment-card"
+                shadow="always"
+                :body-style="{ padding: '16px' }"
+              >
+                <div class="enrollment-card-content">
+                  <el-button 
+                    type="primary"
+                    size="default"
+                    class="start-learning-btn"
+                    @click="startLearning"
+                  >
+                    <template #icon>
+                      <PlayCircleIcon class="w-4 h-4" />
+                    </template>
+                    Начать обучение
+                  </el-button>
+
+                  <el-divider :margin="12" />
+                  
+                  <div class="enrollment-info">
+                    <div class="enrollment-info-item">
+                      <div class="enrollment-info-label">
+                        <ClockIcon class="w-3.5 h-3.5" />
+                        <span>Формат</span>
+                      </div>
+                      <span class="enrollment-info-value">Онлайн</span>
                     </div>
-                    <span class="text-sm font-bold text-gray-900 dark:text-white">Онлайн</span>
-                  </div>
-                  <div class="flex items-center justify-between pt-1">
-                    <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                      <span class="material-icons-outlined text-lg">all_inclusive</span>
-                      <span class="text-sm font-medium">Доступ</span>
+                    
+                    <el-divider :margin="12" />
+                    
+                    <div class="enrollment-info-item">
+                      <div class="enrollment-info-label">
+                        <BookOpenIcon class="w-3.5 h-3.5" />
+                        <span>Доступ</span>
+                      </div>
+                      <span class="enrollment-info-value">Навсегда</span>
                     </div>
-                    <span class="text-sm font-bold text-gray-900 dark:text-white">Навсегда</span>
                   </div>
                 </div>
-              </div>
+              </el-card>
             </div>
           </div>
         </div>
@@ -1216,22 +1229,77 @@ export default {
 }
 
 /* Enrollment Card Styles */
-/* Material Icons support */
-.material-icons-outlined {
-  font-family: 'Material Icons Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-feature-settings: 'liga';
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
+.enrollment-card {
+  border: 2px solid #3b82f6;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.enrollment-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 128px;
+  height: 128px;
+  background: #3b82f6;
+  opacity: 0.1;
+  border-radius: 50%;
+  transform: translate(50%, -50%);
+}
+
+.enrollment-card-content {
+  position: relative;
+  z-index: 1;
+}
+
+.start-learning-btn {
+  width: 100%;
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.start-learning-btn:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.enrollment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.enrollment-info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.enrollment-info-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.enrollment-info-value {
+  font-weight: 600;
+  color: #111827;
+  font-size: 12px;
+}
+
+:deep(.el-divider) {
+  margin: 8px 0;
 }
 </style>
 

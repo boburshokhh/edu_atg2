@@ -1,20 +1,18 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm dark:shadow-none border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 gap-4">
-      <div class="flex items-center gap-3">
-        <span class="material-icons-outlined text-blue-600 text-3xl">menu_book</span>
-        <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Программа тренинга
-        </h2>
-      </div>
-      <div class="bg-gray-50 dark:bg-gray-900 px-4 py-2 rounded-full text-sm font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-        <span class="text-blue-600 dark:text-blue-400 font-bold">{{ courseStats.lessons }}</span> уроков
+    <div class="flex items-center justify-between p-6 border-b border-gray-100">
+      <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <BookOpenIcon class="w-6 h-6 text-blue-600" />
+        Программа тренинга
+      </h2>
+      <div class="text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">
+        <span class="font-semibold text-gray-900">{{ courseStats.lessons }}</span> уроков
         <span v-if="courseStats.topics > 0"> • 
-          <span class="text-blue-600 dark:text-blue-400 font-bold">{{ courseStats.topics }}</span> тем
+          <span class="font-semibold text-gray-900">{{ courseStats.topics }}</span> тем
         </span>
         <span v-if="courseStats.tests > 0"> • 
-          <span class="text-blue-600 dark:text-blue-400 font-bold">{{ courseStats.tests }}</span> тестов
+          <span class="font-semibold text-gray-900">{{ courseStats.tests }}</span> тестов
         </span>
       </div>
     </div>
@@ -25,91 +23,85 @@
         <div 
           v-for="(lesson, lessonIndex) in curriculum" 
           :key="lessonIndex" 
-          :class="[
-            'group rounded-xl p-5 transition-all duration-300 cursor-pointer flex items-center justify-between',
-            expandedLessons.includes(lessonIndex)
-              ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 shadow-inner relative overflow-hidden'
-              : 'bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:shadow-md'
-          ]"
-          @click="toggleLesson(lessonIndex)"
+          class="border-2 border-gray-200 rounded-2xl overflow-hidden transition-all duration-300 hover:border-blue-300 hover:shadow-lg"
         >
-          <div v-if="expandedLessons.includes(lessonIndex)" class="absolute left-0 top-0 w-1 h-full bg-blue-600 dark:bg-blue-400 rounded-l-xl"></div>
-          <div class="flex items-center gap-5 relative z-10">
-            <div :class="[
-              'flex-shrink-0 w-12 h-12 rounded-full text-white flex items-center justify-center text-xl font-bold shadow-lg transition-transform',
-              expandedLessons.includes(lessonIndex)
-                ? 'bg-blue-600 dark:bg-blue-500 shadow-blue-500/30'
-                : 'bg-blue-600 dark:bg-blue-500 shadow-blue-500/30 group-hover:scale-110'
-            ]">
-              {{ lessonIndex + 1 }}
-            </div>
-            <div>
-              <h3 :class="[
-                'text-lg mb-1 transition-colors',
-                expandedLessons.includes(lessonIndex)
-                  ? 'font-bold text-gray-900 dark:text-white'
-                  : 'font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400'
-              ]">
-                {{ getLessonTitle(lesson.title) }}
-              </h3>
-              <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                <div class="flex items-center gap-1">
-                  <span :class="[
-                    'material-icons-outlined text-base',
-                    expandedLessons.includes(lessonIndex) ? 'text-blue-600 dark:text-blue-400' : ''
-                  ]">library_books</span>
-                  <span>{{ lesson.topics?.length || 0 }} тем</span>
+          <!-- Lesson Header -->
+          <button 
+            class="w-full bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-blue-50/50 transition-all duration-300"
+            @click="toggleLesson(lessonIndex)"
+          >
+            <div class="flex items-center justify-between p-5">
+              <div class="flex items-center space-x-4 flex-1 text-left">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
+                  {{ lessonIndex + 1 }}
                 </div>
-                <div
-                  v-if="lesson.duration"
-                  class="flex items-center gap-1"
-                >
-                  <span :class="[
-                    'material-icons-outlined text-base',
-                    expandedLessons.includes(lessonIndex) ? 'text-blue-600 dark:text-blue-400' : ''
-                  ]">schedule</span>
-                  <span>{{ lesson.duration }}</span>
+                <div class="flex-1">
+                  <h3 class="font-bold text-gray-900 text-base mb-0.5">
+                    {{ getLessonTitle(lesson.title) }}
+                  </h3>
+                  <div class="flex items-center gap-3 text-xs text-gray-500">
+                    <span class="flex items-center gap-1">
+                      <BookOpenIcon class="w-4 h-4 text-blue-600" />
+                      {{ lesson.topics?.length || 0 }} тем
+                    </span>
+                    <span
+                      v-if="lesson.duration"
+                      class="flex items-center gap-1"
+                    >
+                      <ClockIcon class="w-4 h-4 text-blue-600" />
+                      {{ lesson.duration }}
+                    </span>
+                  </div>
                 </div>
               </div>
+              <svg 
+                class="w-6 h-6 text-gray-400 transition-transform duration-300 flex-shrink-0"
+                :class="{ 'rotate-180': expandedLessons.includes(lessonIndex) }"
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
             </div>
-          </div>
-          <span :class="[
-            'material-icons-outlined transition-transform relative z-10',
-            expandedLessons.includes(lessonIndex)
-              ? 'text-blue-600 dark:text-blue-400 transform rotate-180'
-              : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-          ]">expand_more</span>
+          </button>
 
-          <!-- Lesson Topics (Expanded Content) -->
+          <!-- Lesson Topics -->
           <transition name="expand">
             <div
               v-if="expandedLessons.includes(lessonIndex)"
-              class="w-full mt-4 pt-4 border-t border-blue-200 dark:border-blue-700"
+              class="border-t-2 border-gray-100 bg-white"
             >
-              <div class="space-y-2">
+              <div class="p-5 space-y-2">
                 <!-- Topics -->
                 <div
                   v-for="(topic, topicIndex) in lesson.topics"
                   :key="topicIndex"
-                  class="flex items-center p-3 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-900/20 transition-all duration-200"
                 >
-                  <div class="flex items-center space-x-3 flex-1">
-                    <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span class="material-icons-outlined text-blue-600 dark:text-blue-400 text-lg">library_books</span>
-                    </div>
-                    <div class="flex-1">
-                      <p class="font-semibold text-gray-900 dark:text-white text-sm">
-                        <span
-                          v-if="topic.code"
-                          class="text-blue-600 dark:text-blue-400 mr-2"
-                        >{{ topic.code }}</span>
-                        {{ topic.title }}
-                      </p>
-                      <div
-                        v-if="topic.duration"
-                        class="flex items-center gap-3 mt-1"
-                      >
-                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ topic.duration }}</span>
+                  <div class="flex items-center p-3 rounded-xl hover:bg-blue-50 transition-all duration-200 border border-transparent hover:border-blue-200">
+                    <div class="flex items-center space-x-3 flex-1">
+                      <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <BookOpenIcon class="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div class="flex-1">
+                        <p class="font-semibold text-gray-900">
+                          <span
+                            v-if="topic.code"
+                            class="text-blue-600 mr-2"
+                          >{{ topic.code }}</span>
+                          {{ topic.title }}
+                        </p>
+                        <div
+                          v-if="topic.duration"
+                          class="flex items-center gap-3 mt-1"
+                        >
+                          <span class="text-xs text-gray-500">{{ topic.duration }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -117,17 +109,27 @@
 
                 <!-- Test -->
                 <div v-if="lesson.test">
-                  <div class="flex items-center p-3 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-900/20 transition-all duration-200">
+                  <div class="flex items-center p-3 rounded-xl hover:bg-blue-50 transition-all duration-200 border border-transparent hover:border-blue-200">
                     <div class="flex items-center space-x-3 flex-1">
-                      <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span class="material-icons-outlined text-blue-600 dark:text-blue-400 text-lg">quiz</span>
+                      <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <svg
+                          class="w-5 h-5 text-blue-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
                       </div>
                       <div class="flex-1">
-                        <p class="font-semibold text-gray-900 dark:text-white text-sm">
+                        <p class="font-semibold text-gray-900">
                           {{ lesson.test.title }}
                         </p>
                         <div class="flex items-center gap-3 mt-1">
-                          <span class="text-xs text-gray-500 dark:text-gray-400">{{ lesson.test.questions || lesson.test.questionsCount || 10 }} вопросов</span>
+                          <span class="text-xs text-gray-500">{{ lesson.test.questions || lesson.test.questionsCount || 10 }} вопросов</span>
                         </div>
                       </div>
                     </div>
@@ -141,18 +143,20 @@
         <!-- Final Test -->
         <div
           v-if="finalTest"
-          class="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-md transition-all duration-300 cursor-pointer"
+          class="border-2 border-gray-200 rounded-2xl overflow-hidden transition-all duration-300 hover:border-blue-300 hover:shadow-lg"
         >
-          <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <span class="material-icons-outlined text-blue-600 dark:text-blue-400 text-lg">emoji_events</span>
-            </div>
-            <div class="flex-1">
-              <p class="font-semibold text-gray-900 dark:text-white text-sm">
-                {{ finalTest.title || 'Итоговый тест' }}
-              </p>
-              <div class="flex items-center gap-3 mt-1">
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{ finalTest.questions || finalTest.questionsCount || 10 }} вопросов</span>
+          <div class="p-5">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                <TrophyIcon class="w-5 h-5 text-blue-600" />
+              </div>
+              <div class="flex-1">
+                <p class="font-semibold text-gray-900">
+                  {{ finalTest.title || 'Итоговый тест' }}
+                </p>
+                <div class="flex items-center gap-3 mt-1">
+                  <span class="text-xs text-gray-500">{{ finalTest.questions || finalTest.questionsCount || 10 }} вопросов</span>
+                </div>
               </div>
             </div>
           </div>
@@ -164,9 +168,15 @@
 
 <script>
 import { ref, computed } from 'vue'
+import { ClockIcon, BookOpenIcon, TrophyIcon } from '@heroicons/vue/24/solid'
 
 export default {
   name: 'CourseCurriculum',
+  components: {
+    ClockIcon,
+    BookOpenIcon,
+    TrophyIcon
+  },
   props: {
     // Структура курса: массив уроков
     lessons: {
@@ -244,24 +254,6 @@ export default {
 </script>
 
 <style scoped>
-/* Material Icons support */
-.material-icons-outlined {
-  font-family: 'Material Icons Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-feature-settings: 'liga';
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-}
-
 /* Expand Animation */
 .expand-enter-active,
 .expand-leave-active {
