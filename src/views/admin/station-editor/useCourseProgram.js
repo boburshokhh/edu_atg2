@@ -33,6 +33,14 @@ const normalizeCourseProgram = (p) => {
           title: l.title || '',
           duration: l.duration || '',
           orderIndex: l.orderIndex ?? l.order_index ?? 0,
+          test: l.test ? {
+            id: l.test.id || null,
+            title: l.test.title || '',
+            questionsCount: l.test.questionsCount ?? l.test.questions_count ?? 0,
+            passingScore: l.test.passingScore ?? l.test.passing_score ?? 70,
+            timeLimit: l.test.timeLimit ?? l.test.time_limit ?? 30,
+            attempts: l.test.attempts || null
+          } : null,
           topics: Array.isArray(l.topics)
             ? l.topics.map(t => ({
                 id: t.id || null,

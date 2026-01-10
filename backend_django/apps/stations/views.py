@@ -193,20 +193,25 @@ def _serialize_course_program(program: CourseProgram) -> dict:
             }
         )
 
-    # Get lesson tests
+    # Get lesson tests - get the latest active test for each lesson
     lesson_tests_by_lesson: dict[int, dict] = {}
     if lesson_ids:
         lesson_tests = list(
             CourseProgramLessonTest.objects.filter(lesson__id__in=lesson_ids, is_active=True)
-            .order_by("lesson__id", "id")
-            .values("id", "lesson__id", "title", "questions_count")
+            .order_by("lesson__id", "-id")  # Order by lesson_id, then by id descending to get latest
+            .values("id", "lesson__id", "title", "questions_count", "passing_score", "time_limit", "attempts")
         )
+        # Use the first (latest) test for each lesson
         for lt in lesson_tests:
-            lesson_tests_by_lesson[lt["lesson__id"]] = {
-                "id": lt["id"],
-                "title": lt["title"],
-                "questionsCount": lt["questions_count"],
-            }
+            if lt["lesson__id"] not in lesson_tests_by_lesson:
+                lesson_tests_by_lesson[lt["lesson__id"]] = {
+                    "id": lt["id"],
+                    "title": lt["title"],
+                    "questionsCount": lt["questions_count"],
+                    "passingScore": lt["passing_score"] or 70,
+                    "timeLimit": lt["time_limit"] or 30,
+                    "attempts": lt["attempts"],
+                }
 
     lessons_out = []
     for l in lessons:
