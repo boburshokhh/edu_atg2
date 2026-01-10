@@ -10,19 +10,19 @@ urlpatterns = [
     path("<uuid:courseId>", views.CourseDetailView.as_view()),
     path("comments", views.CourseCommentsView.as_view()),
     # Test management endpoints
-    path("tests", views.TestsListView.as_view()),
-    path("tests/<str:test_type>/<int:test_id>", views.TestDetailView.as_view()),
-    path("tests/create", views.TestCreateView.as_view()),
-    path("tests/<str:test_type>/<int:test_id>/update", views.TestUpdateView.as_view()),
-    path("tests/<str:test_type>/<int:test_id>/delete", views.TestDeleteView.as_view()),
-    path("tests/<str:test_type>/<int:test_id>/questions", views.TestQuestionsUpdateView.as_view()),
+    # Specific test endpoints must come before generic ones to avoid route conflicts
+    path("tests/lesson/<int:lesson_id>", views.LessonTestView.as_view()),
+    path("tests/course-program/<int:course_program_id>", views.PublicTestView.as_view()),
     path("tests/results", views.TestResultsListView.as_view()),
     path("tests/results/<int:result_id>", views.TestResultDetailView.as_view()),
     path("tests/results/create", views.TestResultCreateView.as_view()),
+    path("tests/create", views.TestCreateView.as_view()),
     path("tests/<str:test_type>/<int:test_id>/results", views.UserTestResultsView.as_view()),
-    # Test endpoints
-    path("tests/lesson/<int:lesson_id>", views.LessonTestView.as_view()),
-    path("tests/course-program/<int:course_program_id>", views.PublicTestView.as_view()),
+    path("tests/<str:test_type>/<int:test_id>/questions", views.TestQuestionsUpdateView.as_view()),
+    path("tests/<str:test_type>/<int:test_id>/update", views.TestUpdateView.as_view()),
+    path("tests/<str:test_type>/<int:test_id>/delete", views.TestDeleteView.as_view()),
+    path("tests/<str:test_type>/<int:test_id>", views.TestDetailView.as_view()),
+    path("tests", views.TestsListView.as_view()),
 ]
 
 
