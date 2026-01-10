@@ -351,7 +351,7 @@
                     Начать обучение
                   </el-button>
 
-                  <el-divider :margin="12" />
+                  <el-divider :margin="6" />
                   
                   <div class="enrollment-info">
                     <div class="enrollment-info-item">
@@ -362,7 +362,7 @@
                       <span class="enrollment-info-value">Онлайн</span>
                     </div>
                     
-                    <el-divider :margin="12" />
+                    <el-divider :margin="6" />
                     
                     <div class="enrollment-info-item">
                       <div class="enrollment-info-label">
@@ -1280,7 +1280,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 0;
+  padding: 2px 0;
 }
 
 .enrollment-info-label {
@@ -1299,7 +1299,7 @@ export default {
 }
 
 :deep(.el-divider) {
-  margin: 8px 0;
+  margin: 4px 0;
 }
 </style>
 
