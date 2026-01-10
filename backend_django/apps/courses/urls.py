@@ -10,9 +10,7 @@ urlpatterns = [
     path("<uuid:courseId>", views.CourseDetailView.as_view()),
     path("comments", views.CourseCommentsView.as_view()),
     # Test management endpoints
-    # Specific test endpoints must come before generic ones to avoid route conflicts
-    path("tests/lesson/<int:lesson_id>", views.LessonTestView.as_view()),
-    path("tests/course-program/<int:course_program_id>", views.PublicTestView.as_view()),
+    # Paths with suffixes (/update, /delete, etc.) must come before simple paths to avoid conflicts
     path("tests/results", views.TestResultsListView.as_view()),
     path("tests/results/<int:result_id>", views.TestResultDetailView.as_view()),
     path("tests/results/create", views.TestResultCreateView.as_view()),
@@ -22,6 +20,9 @@ urlpatterns = [
     path("tests/<str:test_type>/<int:test_id>/update", views.TestUpdateView.as_view()),
     path("tests/<str:test_type>/<int:test_id>/delete", views.TestDeleteView.as_view()),
     path("tests/<str:test_type>/<int:test_id>", views.TestDetailView.as_view()),
+    # Simple paths (without suffixes) come last
+    path("tests/lesson/<int:lesson_id>", views.LessonTestView.as_view()),
+    path("tests/course-program/<int:course_program_id>", views.PublicTestView.as_view()),
     path("tests", views.TestsListView.as_view()),
 ]
 
