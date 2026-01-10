@@ -216,6 +216,68 @@
           </div>
         </div>
       </div>
+
+      <!-- Final Course Test -->
+      <div
+        v-if="finalTest"
+        :class="[
+          'border-t-2 mt-2',
+          isDark ? 'border-gray-700' : 'border-gray-200'
+        ]"
+      >
+        <div
+          :class="[
+            'flex items-start gap-3 px-4 py-4 cursor-pointer border-l-4 transition-all',
+            isCurrentFinalTest()
+              ? isDark 
+                ? 'bg-green-900/20 border-green-500' 
+                : 'bg-green-50 border-green-500'
+              : isDark
+                ? 'hover:bg-gray-700/50 border-transparent'
+                : 'hover:bg-gray-100 border-transparent'
+          ]"
+          @click="selectFinalTest()"
+        >
+          <div 
+            :class="[
+              'mt-0.5',
+              isFinalTestPassed() 
+                ? 'text-green-500' 
+                : isDark ? 'text-gray-500' : 'text-gray-400'
+            ]"
+          >
+            <span class="material-symbols-outlined text-lg">
+              {{ isFinalTestPassed() ? 'check_circle' : 'quiz' }}
+            </span>
+          </div>
+          <div class="flex-1">
+            <p 
+              :class="[
+                'text-sm font-medium',
+                isCurrentFinalTest() 
+                  ? 'text-green-600' 
+                  : isDark ? 'text-gray-100' : 'text-gray-900'
+              ]"
+            >
+              Финальный тест курса
+            </p>
+            <p 
+              :class="[
+                'text-xs mt-0.5',
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              ]"
+            >
+              {{ finalTest.questions_count || 0 }} вопросов
+            </p>
+          </div>
+          <span 
+            v-if="isCurrentFinalTest()"
+            class="material-symbols-outlined text-green-600 text-sm ml-auto"
+          >
+            play_arrow
+          </span>
+        </div>
+      </div>
     </div>
   </aside>
 </template>
@@ -256,6 +318,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  finalTest: {
+    type: Object,
+    default: null
+  },
   isMobile: {
     type: Boolean,
     default: false
@@ -266,7 +332,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['select-lesson', 'select-test', 'select-file', 'toggle-sidebar'])
+const emit = defineEmits(['select-lesson', 'select-test', 'select-final-test', 'select-file', 'toggle-sidebar'])
 
 const expandedLessons = ref([props.currentLessonIndex])
 
@@ -304,6 +370,19 @@ const isCurrentTopic = (lessonIndex, topicIndex) => {
 
 const isCurrentTest = (lessonIndex) => {
   return lessonIndex === props.currentLessonIndex && props.isTestMode
+}
+
+const isCurrentFinalTest = () => {
+  return props.isTestMode && props.currentLessonIndex === -1
+}
+
+const isFinalTestPassed = () => {
+  if (!props.finalTest?.id) return false
+  return props.passedTests.has(`final_${props.finalTest.id}`)
+}
+
+const selectFinalTest = () => {
+  emit('select-final-test')
 }
 
 const isCurrentFile = (lessonIndex, topicIndex, file) => {

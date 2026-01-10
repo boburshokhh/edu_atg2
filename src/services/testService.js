@@ -195,6 +195,15 @@ class TestService {
     const data = await apiRequest(`/courses/tests/results/${resultId}`)
     return data.data || null
   }
+
+  /**
+   * Get test by course program ID (public access)
+   * @param {number} courseProgramId - Course program ID
+   */
+  async getTestByCourseProgram(courseProgramId) {
+    const data = await apiRequest(`/courses/tests/course-program/${courseProgramId}`)
+    return data.test || null
+  }
 }
 
 // Create and export singleton instance

@@ -18,6 +18,8 @@ urlpatterns = [
     path("tests/<str:test_type>/<int:test_id>/questions", views.TestQuestionsUpdateView.as_view()),
     path("tests/results", views.TestResultsListView.as_view()),
     path("tests/results/<int:result_id>", views.TestResultDetailView.as_view()),
+    # Public test endpoint
+    path("tests/course-program/<int:course_program_id>", views.PublicTestView.as_view()),
 ]
 
 

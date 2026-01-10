@@ -93,12 +93,23 @@ def _serialize_course_program(program: CourseProgram) -> dict:
         .values_list("audience_text", flat=True)
     )
 
-    final_test = (
+    # Get final test with full details
+    final_test = None
+    final_test_obj = (
         FinalTest.objects.filter(course_program_id=program.id, is_active=True)
         .order_by("id")
-        .values("title", "questions_count")
         .first()
     )
+    if final_test_obj:
+        final_test = {
+            "id": final_test_obj.id,
+            "title": final_test_obj.title,
+            "description": final_test_obj.description or "",
+            "questions_count": final_test_obj.questions_count or 0,
+            "passing_score": final_test_obj.passing_score or 70,
+            "time_limit": final_test_obj.time_limit or 30,
+            "attempts": final_test_obj.attempts
+        }
 
     lessons = list(
         CourseProgramLesson.objects.filter(course_program_id=program.id, is_active=True)
@@ -226,11 +237,7 @@ def _serialize_course_program(program: CourseProgram) -> dict:
         "learningOutcomes": outcomes,
         "requirements": requirements,
         "targetAudience": target_audience,
-        "finalTest": (
-            {"title": final_test["title"], "questionsCount": final_test["questions_count"]}
-            if final_test
-            else None
-        ),
+        "finalTest": final_test,
         "lessons": lessons_out,
     }
 

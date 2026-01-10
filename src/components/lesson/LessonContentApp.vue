@@ -31,17 +31,19 @@
         <LessonSidebar
           v-show="showSidebar && !isFullscreen"
           :lessons="processedLessons"
-          :current-lesson-index="currentLessonIndex"
+          :current-lesson-index="isFinalTestMode ? -1 : currentLessonIndex"
           :current-topic-index="currentTopicIndex"
           :current-file="currentFile"
           :completed-topics="completedTopics"
           :passed-tests="passedTests"
           :is-test-mode="isTestMode"
           :course-title="courseTitle"
+          :final-test="courseProgram?.finalTest"
           :is-mobile="isMobile"
           :is-dark="isDark"
           @select-lesson="handleSelectLesson"
           @select-test="handleSelectTest"
+          @select-final-test="handleSelectFinalTest"
           @select-file="handleSelectFile"
           @toggle-sidebar="handleToggleSidebar"
         />
@@ -75,8 +77,13 @@
               @test-started="handleTestStarted"
             />
             <el-empty
+              v-else-if="loadingTest"
+              description="Загрузка теста..."
+              :image-size="80"
+            />
+            <el-empty
               v-else
-              description="Тест для этого модуля пока недоступен"
+              description="Тест для этого курса пока недоступен"
               :image-size="80"
             />
           </div>
@@ -155,6 +162,7 @@ import testsData from '@/data/testsData.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'
 import stationService from '@/services/stationService'
+import testService from '@/services/testService'
 import { useFullscreen } from '@/composables/useFullscreen'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 
@@ -189,6 +197,7 @@ const stationId = computed(() => parseInt(route.params.id))
 const currentLessonIndex = ref(parseInt(route.params.lessonIndex) || 0)
 const currentTopicIndex = ref(parseInt(route.params.topicIndex) || 0)
 const isTestMode = ref(false)
+const isFinalTestMode = ref(false)
 
 // Data
 const station = ref(null)
@@ -322,7 +331,11 @@ const downloadFile = async (file) => {
 
 // Tests
 const passedTests = ref(new Set())
+const courseTest = ref(null)
+const loadingTest = ref(false)
+
 const currentTopicTest = computed(() => {
+  // Legacy support - can be removed later
   return testsData.tests.find(test => 
     test.lessonIndex === currentLessonIndex.value && 
     test.topicIndex === currentTopicIndex.value
@@ -330,11 +343,53 @@ const currentTopicTest = computed(() => {
 })
 
 const currentLessonTest = computed(() => {
+  // If in final test mode, use course test
+  if (isFinalTestMode.value && courseTest.value) {
+    return courseTest.value
+  }
+  
+  // Use course test from API if available (for any test mode)
+  if (courseTest.value && isTestMode.value) {
+    return courseTest.value
+  }
+  
+  // Legacy fallback for lesson tests
   return testsData.tests.find(test => 
     test.lessonIndex === currentLessonIndex.value && 
     test.topicIndex === null
   )
 })
+
+const loadCourseTest = async () => {
+  if (!courseProgram.value?.id) {
+    courseTest.value = null
+    return
+  }
+
+  loadingTest.value = true
+  try {
+    const test = await testService.getTestByCourseProgram(courseProgram.value.id)
+    if (test) {
+      // Transform API data to TestQuiz format
+      courseTest.value = {
+        id: test.id,
+        title: test.title,
+        description: test.description,
+        questions: test.questions || [],
+        passingScore: test.passingScore,
+        timeLimit: test.timeLimit,
+        attempts: test.attempts
+      }
+    } else {
+      courseTest.value = null
+    }
+  } catch (error) {
+    console.error('[LessonContentApp] Failed to load course test:', error)
+    courseTest.value = null
+  } finally {
+    loadingTest.value = false
+  }
+}
 
 // Progress
 const completedTopics = ref(new Set())
@@ -578,6 +633,15 @@ const handleSelectLesson = ({ lessonIndex, topicIndex }) => {
 const handleSelectTest = ({ lessonIndex }) => {
   currentLessonIndex.value = lessonIndex
   isTestMode.value = true
+  isFinalTestMode.value = false
+  if (isMobile.value) {
+    showSidebar.value = false
+  }
+}
+
+const handleSelectFinalTest = () => {
+  isTestMode.value = true
+  isFinalTestMode.value = true
   if (isMobile.value) {
     showSidebar.value = false
   }
@@ -652,12 +716,37 @@ const handleSelectFile = async ({ lessonIndex, topicIndex, file }) => {
   }
 }
 
-const handleTestCompleted = ({ score, isPassed }) => {
+const handleTestCompleted = async ({ score, isPassed }) => {
   const testToSave = isTestMode.value ? currentLessonTest.value : currentTopicTest.value
   
   if (isPassed && testToSave) {
-    passedTests.value.add(testToSave.id)
-    savePassedTests()
+    // Save test result to backend
+    try {
+      const user = authService.getCurrentUser()
+      if (user && testToSave.id) {
+        // Save result to database via API
+        // This will be implemented in the next step
+        const testId = testToSave.id
+        const testType = isFinalTestMode.value ? 'final' : 'lesson'
+        
+        // For now, save to localStorage
+        const testKey = isFinalTestMode.value ? `final_${testId}` : testId
+        passedTests.value.add(testKey)
+        savePassedTests()
+      } else {
+        // Fallback to localStorage
+        const testKey = isFinalTestMode.value ? `final_${testToSave.id}` : testToSave.id
+        passedTests.value.add(testKey)
+        savePassedTests()
+      }
+    } catch (error) {
+      console.error('[LessonContentApp] Error saving test result:', error)
+      // Fallback to localStorage
+      const testKey = isFinalTestMode.value ? `final_${testToSave.id}` : testToSave.id
+      passedTests.value.add(testKey)
+      savePassedTests()
+    }
+    
     ElMessage.success(`Поздравляем! Вы успешно прошли тест с результатом ${score}%`)
     
     if (!isTestMode.value && !isTopicCompleted.value) {
@@ -706,6 +795,13 @@ watch(() => [currentLessonIndex.value, currentTopicIndex.value], () => {
   }
 }, { immediate: true })
 
+// Watch for course program changes to load test
+watch(() => courseProgram.value?.id, (newId) => {
+  if (newId) {
+    loadCourseTest()
+  }
+}, { immediate: true })
+
 onMounted(async () => {
   loadDarkModePreference()
   
@@ -721,6 +817,11 @@ onMounted(async () => {
   loadCompletedTopics()
   loadPassedTests()
   loadTopicMaterials()
+  
+  // Load course test if program is available
+  if (courseProgram.value?.id) {
+    await loadCourseTest()
+  }
 })
 </script>
 

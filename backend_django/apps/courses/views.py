@@ -513,6 +513,76 @@ class TestQuestionsUpdateView(APIView):
         return JsonResponse({'success': True})
 
 
+class PublicTestView(APIView):
+    """Get test by course_program_id - Public access"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, course_program_id):
+        try:
+            # Get final test for course program
+            final_test = FinalTest.objects.filter(
+                course_program_id=course_program_id, 
+                is_active=True
+            ).order_by("id").first()
+            
+            if not final_test:
+                return JsonResponse({'test': None})
+            
+            # Get questions with options
+            questions = TestQuestion.objects.filter(
+                test_id=final_test.id, 
+                test_type='final'
+            ).order_by('order_index', 'id').values()
+            
+            questions_list = []
+            for q in questions:
+                options = TestQuestionOption.objects.filter(
+                    question_id=q['id']
+                ).order_by('order_index', 'id').values('id', 'option_text', 'is_correct', 'order_index')
+                
+                # Find correct answer index
+                correct_answer = None
+                options_list = []
+                for idx, opt in enumerate(options):
+                    options_list.append(opt['option_text'])
+                    if opt['is_correct']:
+                        correct_answer = idx
+                
+                questions_list.append({
+                    'id': q['id'],
+                    'question': q['question'],
+                    'options': options_list,
+                    'correctAnswer': correct_answer,
+                    'points': q['points'] or 1,
+                    'image': q['image'] or '',
+                    'explanation': q['explanation'] or '',
+                    'order_index': q['order_index']
+                })
+            
+            # Format test data for TestQuiz component
+            test_data = {
+                'id': final_test.id,
+                'title': final_test.title,
+                'description': final_test.description or '',
+                'questions': questions_list,
+                'passingScore': final_test.passing_score or 70,
+                'timeLimit': final_test.time_limit or 30,
+                'attempts': final_test.attempts
+            }
+            
+            return JsonResponse({'test': test_data})
+        except Exception as e:
+            import traceback
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"[PublicTestView] Error: {e}", exc_info=True)
+            from django.conf import settings
+            error_response = {'error': str(e)}
+            if settings.DEBUG:
+                error_response['traceback'] = traceback.format_exc()
+            return JsonResponse(error_response, status=500)
+
+
 class TestResultsListView(APIView):
     """List test results - Admin only"""
     permission_classes = [IsAdmin]
