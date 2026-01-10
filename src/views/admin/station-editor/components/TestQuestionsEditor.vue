@@ -4,16 +4,29 @@
       <h4 class="text-md font-semibold">
         Вопросы теста
       </h4>
-      <el-button
-        type="primary"
-        size="small"
-        @click="addQuestion"
-      >
-        <el-icon class="mr-1">
-          <Plus />
-        </el-icon>
-        Добавить вопрос
-      </el-button>
+      <div class="flex gap-2">
+        <el-button
+          v-if="questions.length > 0 && testData"
+          type="info"
+          size="small"
+          @click="exportToJSON"
+        >
+          <el-icon class="mr-1">
+            <Download />
+          </el-icon>
+          Экспорт в JSON
+        </el-button>
+        <el-button
+          type="primary"
+          size="small"
+          @click="addQuestion"
+        >
+          <el-icon class="mr-1">
+            <Plus />
+          </el-icon>
+          Добавить вопрос
+        </el-button>
+      </div>
     </div>
 
     <div
@@ -152,7 +165,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { Plus, Delete, Close, Check } from '@element-plus/icons-vue'
+import { Plus, Delete, Close, Check, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import testService from '@/services/testService'
 
@@ -171,6 +184,7 @@ const emit = defineEmits(['save'])
 
 const questions = ref([])
 const loading = ref(false)
+const testData = ref(null)
 
 const loadQuestions = async () => {
   if (!props.testId) return
@@ -178,6 +192,7 @@ const loadQuestions = async () => {
   loading.value = true
   try {
     const test = await testService.getTest(props.testId, 'final')
+    testData.value = test
     questions.value = (test.questions || []).map(q => ({
       question: q.question || '',
       options: [...(q.options || [])],
@@ -254,11 +269,75 @@ const handleSave = async () => {
   emit('save', props.testId, questions.value)
 }
 
+const exportToJSON = () => {
+  if (!questions.value || questions.value.length === 0) {
+    ElMessage.warning('Нет вопросов для экспорта')
+    return
+  }
+
+  if (!testData.value) {
+    ElMessage.warning('Данные теста не загружены')
+    return
+  }
+
+  try {
+    // Преобразуем данные теста в формат testsData.json
+    const exportData = {
+      id: `test-final-${testData.value.id}`,
+      lessonIndex: null,
+      topicIndex: null,
+      isFinalTest: true,
+      title: testData.value.title || '',
+      description: testData.value.description || '',
+      timeLimit: testData.value.time_limit || 30,
+      passingScore: testData.value.passing_score || 70,
+      attempts: testData.value.attempts || null,
+      questions: questions.value.map((q, index) => ({
+        id: `q${index + 1}`,
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: q.correctAnswer !== undefined && q.correctAnswer !== null ? q.correctAnswer : 0,
+        points: q.points || 1,
+        image: q.image || '',
+        explanation: q.explanation || ''
+      }))
+    }
+
+    // Создаем JSON строку с форматированием (2 пробела для отступов)
+    const jsonString = JSON.stringify(exportData, null, 2)
+    
+    // Создаем blob и скачиваем файл
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    // Генерируем безопасное имя файла
+    const safeTitle = (testData.value.title || 'test')
+      .replace(/[^a-z0-9а-яё\s]/gi, '_')
+      .replace(/\s+/g, '_')
+      .toLowerCase()
+      .substring(0, 50)
+    
+    link.download = `test_${testData.value.id}_${safeTitle}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    ElMessage.success('Тест успешно экспортирован в JSON')
+  } catch (error) {
+    console.error('Export error:', error)
+    ElMessage.error('Ошибка экспорта: ' + error.message)
+  }
+}
+
 watch(() => props.testId, (newId) => {
   if (newId) {
     loadQuestions()
   } else {
     questions.value = []
+    testData.value = null
   }
 }, { immediate: true })
 </script>

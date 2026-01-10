@@ -17,9 +17,6 @@ import DepartmentList from '@/views/admin/DepartmentList.vue'
 import DepartmentEditor from '@/views/admin/DepartmentEditor.vue'
 import HeroSettings from '@/views/admin/HeroSettings.vue'
 import AdminHome from '@/views/admin/AdminHome.vue'
-import TestList from '@/views/admin/TestList.vue'
-import TestEditor from '@/views/admin/TestEditor.vue'
-import TestResults from '@/views/admin/TestResults.vue'
 import RegisterProfile from '@/views/user/RegisterProfile.vue'
 import authService from '@/services/auth'
 
@@ -142,25 +139,6 @@ const routes = [
     name: 'AdminDepartmentEdit',
     component: DepartmentEditor,
     props: true,
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/tests',
-    name: 'AdminTests',
-    component: TestList,
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/tests/:testType/:testId',
-    name: 'AdminTestEdit',
-    component: TestEditor,
-    props: true,
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/tests/results',
-    name: 'AdminTestResults',
-    component: TestResults,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
 ]
