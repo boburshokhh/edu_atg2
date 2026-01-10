@@ -204,6 +204,39 @@ class TestService {
     const data = await apiRequest(`/courses/tests/course-program/${courseProgramId}`)
     return data.test || null
   }
+
+  /**
+   * Save test result
+   * @param {Object} resultData - Test result data
+   * @param {number} resultData.test_id - Test ID
+   * @param {string} resultData.test_type - 'lesson' or 'final'
+   * @param {number} resultData.score - Score percentage
+   * @param {boolean} resultData.is_passed - Whether test was passed
+   * @param {number} resultData.correct_answers - Number of correct answers
+   * @param {number} resultData.total_questions - Total number of questions
+   * @param {number} resultData.time_spent - Time spent in seconds (optional)
+   * @param {Object} resultData.answers_data - User answers data (optional)
+   */
+  async saveTestResult(resultData) {
+    const data = await apiRequest('/courses/tests/results/create', {
+      method: 'POST',
+      body: JSON.stringify(resultData),
+    })
+    return data.data || null
+  }
+
+  /**
+   * Get user's test results for a specific test
+   * @param {number} testId - Test ID
+   * @param {string} testType - 'lesson' or 'final'
+   */
+  async getUserTestResults(testId, testType) {
+    const data = await apiRequest(`/courses/tests/${testType}/${testId}/results`)
+    return {
+      results: data.data || [],
+      totalAttempts: data.total_attempts || 0
+    }
+  }
 }
 
 // Create and export singleton instance

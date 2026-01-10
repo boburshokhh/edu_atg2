@@ -53,7 +53,7 @@
             </div>
             <div class="stat-card p-3 md:p-4">
               <div class="text-xl md:text-2xl font-bold text-orange-600">
-                {{ testData.attempts || '∞' }}
+                {{ testData.attempts ? `${userAttempts}/${testData.attempts}` : '∞' }}
               </div>
               <div class="text-[10px] md:text-xs text-gray-600">
                 Попыток
@@ -65,13 +65,26 @@
             type="primary"
             size="large"
             class="px-8"
+            :loading="loadingAttempts"
+            :disabled="testData.attempts && userAttempts >= testData.attempts"
             @click="startTest"
           >
             <el-icon class="mr-2">
               <VideoPlay />
             </el-icon>
-            Начать тест
+            {{ testData.attempts && userAttempts >= testData.attempts ? 'Попытки исчерпаны' : 'Начать тест' }}
           </el-button>
+          
+          <el-alert
+            v-if="testData.attempts && userAttempts >= testData.attempts"
+            type="warning"
+            :closable="false"
+            class="mt-4"
+          >
+            <template #title>
+              Вы использовали все доступные попытки ({{ testData.attempts }})
+            </template>
+          </el-alert>
         </div>
       </el-card>
     </div>
@@ -430,6 +443,8 @@ import {
   View,
   RefreshRight
 } from '@element-plus/icons-vue'
+import testService from '@/services/testService'
+import authService from '@/services/auth'
 
 const props = defineProps({
   testData: {
@@ -448,6 +463,9 @@ const selectedAnswers = ref({})
 const timeRemaining = ref(0)
 const timerInterval = ref(null)
 const showExplanation = ref(false)
+const startTime = ref(null)
+const userAttempts = ref(0)
+const loadingAttempts = ref(false)
 
 // Computed
 const currentQuestion = computed(() => {
@@ -491,12 +509,42 @@ const isPassed = computed(() => {
 })
 
 // Methods
-const startTest = () => {
+const checkAttempts = async () => {
+  if (!props.testData.id || !props.testData.testType) return true
+  
+  loadingAttempts.value = true
+  try {
+    const result = await testService.getUserTestResults(props.testData.id, props.testData.testType)
+    userAttempts.value = result.totalAttempts || 0
+    
+    // Check if user has exceeded attempts limit
+    if (props.testData.attempts && userAttempts.value >= props.testData.attempts) {
+      ElMessage.warning(`Вы использовали все доступные попытки (${props.testData.attempts})`)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error('[TestQuiz] Error checking attempts:', error)
+    // Don't block test start if check fails
+    return true
+  } finally {
+    loadingAttempts.value = false
+  }
+}
+
+const startTest = async () => {
+  // Check attempts before starting
+  const canStart = await checkAttempts()
+  if (!canStart) {
+    return
+  }
+  
   testStarted.value = true
   testCompleted.value = false
   currentQuestionIndex.value = 0
   selectedAnswers.value = {}
   showExplanation.value = false
+  startTime.value = Date.now()
   
   // Start timer if time limit exists
   if (props.testData.timeLimit) {
@@ -575,8 +623,11 @@ const submitTest = async () => {
   testCompleted.value = true
   testStarted.value = false
 
-  // Save results to localStorage
-  saveTestResults()
+  // Calculate time spent
+  const timeSpent = startTime.value ? Math.floor((Date.now() - startTime.value) / 1000) : null
+
+  // Save results to backend
+  await saveTestResults(timeSpent)
 
   ElMessage.success('Тест завершен!')
 }
@@ -620,24 +671,98 @@ const confirmExit = async () => {
   }
 }
 
-const saveTestResults = () => {
+const saveTestResults = async (timeSpent = null) => {
   try {
-    const results = {
-      testId: props.testData.id,
-      score: score.value,
-      isPassed: isPassed.value,
-      correctAnswers: correctAnswersCount.value,
-      totalQuestions: props.testData.questions.length,
-      timestamp: new Date().toISOString()
+    // Get current user
+    const user = authService.getCurrentUser()
+    if (!user || !user.id) {
+      console.warn('[TestQuiz] No user found, saving to localStorage only')
+      // Fallback to localStorage if no user
+      const results = {
+        testId: props.testData.id,
+        score: score.value,
+        isPassed: isPassed.value,
+        correctAnswers: correctAnswersCount.value,
+        totalQuestions: props.testData.questions.length,
+        timestamp: new Date().toISOString()
+      }
+      const existingResults = JSON.parse(localStorage.getItem('testResults') || '[]')
+      existingResults.push(results)
+      localStorage.setItem('testResults', JSON.stringify(existingResults))
+      return
     }
 
-    const existingResults = JSON.parse(localStorage.getItem('testResults') || '[]')
-    existingResults.push(results)
-    localStorage.setItem('testResults', JSON.stringify(existingResults))
+    // Prepare answers data
+    const answersData = {}
+    props.testData.questions.forEach((q, index) => {
+      answersData[index] = {
+        questionId: q.id,
+        selectedAnswer: selectedAnswers.value[index],
+        correctAnswer: q.correctAnswer,
+        isCorrect: selectedAnswers.value[index] === q.correctAnswer
+      }
+    })
+
+    // Prepare result data for backend
+    const resultData = {
+      test_id: props.testData.id,
+      test_type: props.testData.testType || 'final',
+      score: score.value,
+      is_passed: isPassed.value,
+      correct_answers: correctAnswersCount.value,
+      total_questions: props.testData.questions.length,
+      time_spent: timeSpent,
+      answers_data: answersData
+    }
+
+    // Save to backend
+    const savedResult = await testService.saveTestResult(resultData)
+    
+    if (savedResult) {
+      console.log('[TestQuiz] Test result saved to backend:', savedResult)
+      // Also save to localStorage as backup
+      const results = {
+        testId: props.testData.id,
+        score: score.value,
+        isPassed: isPassed.value,
+        correctAnswers: correctAnswersCount.value,
+        totalQuestions: props.testData.questions.length,
+        timestamp: new Date().toISOString(),
+        backendId: savedResult.id
+      }
+      const existingResults = JSON.parse(localStorage.getItem('testResults') || '[]')
+      existingResults.push(results)
+      localStorage.setItem('testResults', JSON.stringify(existingResults))
+    }
   } catch (error) {
-    console.error('Error saving test results:', error)
+    console.error('[TestQuiz] Error saving test results:', error)
+    ElMessage.error('Ошибка сохранения результатов: ' + (error.message || 'Неизвестная ошибка'))
+    
+    // Fallback to localStorage
+    try {
+      const results = {
+        testId: props.testData.id,
+        score: score.value,
+        isPassed: isPassed.value,
+        correctAnswers: correctAnswersCount.value,
+        totalQuestions: props.testData.questions.length,
+        timestamp: new Date().toISOString()
+      }
+      const existingResults = JSON.parse(localStorage.getItem('testResults') || '[]')
+      existingResults.push(results)
+      localStorage.setItem('testResults', JSON.stringify(existingResults))
+    } catch (localError) {
+      console.error('[TestQuiz] Error saving to localStorage:', localError)
+    }
   }
 }
+
+onMounted(async () => {
+  // Load user attempts on mount
+  if (props.testData.id && props.testData.testType) {
+    await checkAttempts()
+  }
+})
 
 onUnmounted(() => {
   if (timerInterval.value) {

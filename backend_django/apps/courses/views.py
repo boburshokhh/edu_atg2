@@ -643,3 +643,104 @@ class TestResultDetailView(APIView):
         })
 
 
+class TestResultCreateView(APIView):
+    """Create test result - Authenticated users"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        test_id = request.data.get('test_id')
+        test_type = request.data.get('test_type')
+        score = request.data.get('score')
+        is_passed = request.data.get('is_passed', False)
+        correct_answers = request.data.get('correct_answers', 0)
+        total_questions = request.data.get('total_questions', 0)
+        time_spent = request.data.get('time_spent')  # in seconds
+        answers_data = request.data.get('answers_data')  # JSON with user answers
+        
+        if not test_id or not test_type:
+            return JsonResponse({'error': 'test_id and test_type are required'}, status=400)
+        
+        if test_type not in ['lesson', 'final']:
+            return JsonResponse({'error': 'test_type must be "lesson" or "final"'}, status=400)
+        
+        if score is None:
+            return JsonResponse({'error': 'score is required'}, status=400)
+        
+        # Get user ID from request
+        user_id = request.user.id
+        
+        # Check if test exists
+        if test_type == 'final':
+            test = FinalTest.objects.filter(id=test_id, is_active=True).first()
+        else:
+            test = CourseProgramLessonTest.objects.filter(id=test_id, is_active=True).first()
+        
+        if not test:
+            return JsonResponse({'error': 'Test not found or inactive'}, status=404)
+        
+        # Check attempts limit
+        if test.attempts is not None:
+            user_attempts = TestResult.objects.filter(
+                test_id=test_id,
+                test_type=test_type,
+                user_id=user_id
+            ).count()
+            
+            if user_attempts >= test.attempts:
+                return JsonResponse({
+                    'error': f'Превышен лимит попыток ({test.attempts}). Вы уже использовали все доступные попытки.'
+                }, status=400)
+        
+        # Create test result
+        result = TestResult.objects.create(
+            test_id=test_id,
+            test_type=test_type,
+            user_id=user_id,
+            score=score,
+            is_passed=is_passed,
+            correct_answers=correct_answers,
+            total_questions=total_questions,
+            time_spent=time_spent,
+            answers_data=answers_data
+        )
+        
+        return JsonResponse({
+            'data': {
+                'id': result.id,
+                'test_id': result.test_id,
+                'test_type': result.test_type,
+                'score': result.score,
+                'is_passed': result.is_passed,
+                'correct_answers': result.correct_answers,
+                'total_questions': result.total_questions,
+                'time_spent': result.time_spent,
+                'completed_at': result.completed_at.isoformat() if result.completed_at else None
+            }
+        }, status=201)
+
+
+class UserTestResultsView(APIView):
+    """Get user's test results for a specific test - Authenticated users"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, test_id, test_type):
+        if test_type not in ['lesson', 'final']:
+            return JsonResponse({'error': 'Invalid test_type'}, status=400)
+        
+        user_id = request.user.id
+        
+        results = TestResult.objects.filter(
+            test_id=test_id,
+            test_type=test_type,
+            user_id=user_id
+        ).order_by('-completed_at').values(
+            'id', 'score', 'is_passed', 'correct_answers', 
+            'total_questions', 'time_spent', 'completed_at'
+        )
+        
+        return JsonResponse({
+            'data': list(results),
+            'total_attempts': len(results)
+        })
+
+

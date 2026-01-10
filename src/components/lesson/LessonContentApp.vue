@@ -378,7 +378,8 @@ const loadCourseTest = async () => {
         questions: test.questions || [],
         passingScore: test.passingScore,
         timeLimit: test.timeLimit,
-        attempts: test.attempts
+        attempts: test.attempts,
+        testType: 'final' // Always 'final' for course program tests
       }
     } else {
       courseTest.value = null
