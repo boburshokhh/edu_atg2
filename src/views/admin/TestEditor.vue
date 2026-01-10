@@ -219,19 +219,32 @@
         </el-form>
       </div>
 
-      <el-button
-        v-if="test.questions && test.questions.length > 0"
-        type="success"
-        size="large"
-        :loading="savingQuestions"
-        class="mt-4"
-        @click="saveQuestions"
-      >
-        <el-icon class="mr-2">
-          <Check />
-        </el-icon>
-        Сохранить все вопросы
-      </el-button>
+      <div class="flex gap-4 mt-4">
+        <el-button
+          v-if="test.questions && test.questions.length > 0"
+          type="success"
+          size="large"
+          :loading="savingQuestions"
+          @click="saveQuestions"
+        >
+          <el-icon class="mr-2">
+            <Check />
+          </el-icon>
+          Сохранить все вопросы
+        </el-button>
+        
+        <el-button
+          v-if="test.questions && test.questions.length > 0 && test.id"
+          type="primary"
+          size="large"
+          @click="exportToJSON"
+        >
+          <el-icon class="mr-2">
+            <Download />
+          </el-icon>
+          Экспорт в JSON
+        </el-button>
+      </div>
     </el-card>
   </div>
 </template>
@@ -239,7 +252,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Plus, Delete, Close, Check } from '@element-plus/icons-vue'
+import { ArrowLeft, Plus, Delete, Close, Check, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import testService from '@/services/testService'
 
@@ -403,6 +416,71 @@ const saveQuestions = async () => {
     ElMessage.error('Ошибка сохранения вопросов: ' + error.message)
   } finally {
     savingQuestions.value = false
+  }
+}
+
+const exportToJSON = () => {
+  if (!test.value.questions || test.value.questions.length === 0) {
+    ElMessage.warning('Нет вопросов для экспорта')
+    return
+  }
+
+  try {
+    // Определяем тип теста из route
+    const testType = route.params.testType || 'final'
+    
+    // Преобразуем данные теста в формат testsData.json
+    const exportData = {
+      id: testType === 'final' ? `test-final-${test.value.id}` : `test-${test.value.id}`,
+      lessonIndex: testType === 'lesson' ? 0 : null, // Для финальных тестов null
+      topicIndex: null,
+      title: test.value.title || '',
+      description: test.value.description || '',
+      timeLimit: test.value.time_limit || 30,
+      passingScore: test.value.passing_score || 70,
+      attempts: test.value.attempts || null,
+      questions: test.value.questions.map((q, index) => ({
+        id: `q${index + 1}`,
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: q.correctAnswer !== undefined && q.correctAnswer !== null ? q.correctAnswer : 0,
+        points: q.points || 1,
+        image: q.image || '',
+        explanation: q.explanation || ''
+      }))
+    }
+
+    // Если это финальный тест, добавляем флаг isFinalTest
+    if (testType === 'final') {
+      exportData.isFinalTest = true
+    }
+
+    // Создаем JSON строку с форматированием (2 пробела для отступов)
+    const jsonString = JSON.stringify(exportData, null, 2)
+    
+    // Создаем blob и скачиваем файл
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    // Генерируем безопасное имя файла
+    const safeTitle = (test.value.title || 'test')
+      .replace(/[^a-z0-9а-яё\s]/gi, '_')
+      .replace(/\s+/g, '_')
+      .toLowerCase()
+      .substring(0, 50)
+    
+    link.download = `test_${test.value.id}_${safeTitle}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    ElMessage.success('Тест успешно экспортирован в JSON')
+  } catch (error) {
+    console.error('Export error:', error)
+    ElMessage.error('Ошибка экспорта: ' + error.message)
   }
 }
 
