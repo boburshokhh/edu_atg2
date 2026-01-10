@@ -471,6 +471,7 @@ const selectedAnswers = ref({})
 const timeRemaining = ref(0)
 const timerInterval = ref(null)
 const showExplanation = ref(false)
+const isReviewMode = ref(false)
 const startTime = ref(null)
 const userAttempts = ref(0)
 const loadingAttempts = ref(false)
@@ -572,6 +573,7 @@ const startTest = async () => {
   currentQuestionIndex.value = 0
   selectedAnswers.value = {}
   showExplanation.value = false
+  isReviewMode.value = false
   startTime.value = Date.now()
   
   // Start timer if time limit exists
@@ -602,7 +604,7 @@ const formatTime = (seconds) => {
 }
 
 const selectAnswer = (index) => {
-  if (!showExplanation.value) {
+  if (!showExplanation.value && !isReviewMode.value) {
     selectedAnswers.value[currentQuestionIndex.value] = index
   }
 }
@@ -610,20 +612,26 @@ const selectAnswer = (index) => {
 const nextQuestion = () => {
   if (currentQuestionIndex.value < props.testData.questions.length - 1) {
     currentQuestionIndex.value++
-    showExplanation.value = false
+    if (!isReviewMode.value) {
+      showExplanation.value = false
+    }
   }
 }
 
 const previousQuestion = () => {
   if (currentQuestionIndex.value > 0) {
     currentQuestionIndex.value--
-    showExplanation.value = false
+    if (!isReviewMode.value) {
+      showExplanation.value = false
+    }
   }
 }
 
 const goToQuestion = (index) => {
   currentQuestionIndex.value = index
-  showExplanation.value = false
+  if (!isReviewMode.value) {
+    showExplanation.value = false
+  }
 }
 
 const submitTest = async () => {
@@ -665,6 +673,7 @@ const reviewAnswers = () => {
   testStarted.value = true
   currentQuestionIndex.value = 0
   showExplanation.value = true
+  isReviewMode.value = true
 }
 
 const retryTest = () => {
@@ -674,6 +683,7 @@ const retryTest = () => {
   selectedAnswers.value = {}
   timeRemaining.value = 0
   showExplanation.value = false
+  isReviewMode.value = false
 }
 
 const confirmExit = async () => {
