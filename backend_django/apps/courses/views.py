@@ -233,22 +233,35 @@ class TestsListView(APIView):
         
         try:
             if not test_type or test_type == 'lesson':
-                # Get lesson tests - use lesson_id which Django creates for ForeignKey
+                # Get lesson tests with all fields
                 lesson_tests = CourseProgramLessonTest.objects.all().values(
-                    'id', 'title', 'description', 'questions_count', 'passing_score',
-                    'time_limit', 'attempts', 'is_active', 'created_at', 'updated_at'
+                    'id', 'title', 'questions_count', 'is_active', 'created_at', 'updated_at'
                 )
-                # Get lesson_id using raw query since db_column is used
+                # Get additional fields and lesson_id using raw query
                 from django.db import connection
-                lesson_ids_map = {}
+                lesson_data_map = {}
                 with connection.cursor() as cursor:
-                    cursor.execute("SELECT id, course_program_lesson_id FROM course_program_lesson_tests")
+                    cursor.execute("""
+                        SELECT id, course_program_lesson_id, 
+                               COALESCE(description, '') as description,
+                               COALESCE(passing_score, 70) as passing_score,
+                               COALESCE(time_limit, 30) as time_limit,
+                               attempts
+                        FROM course_program_lesson_tests
+                    """)
                     for row in cursor.fetchall():
-                        lesson_ids_map[row[0]] = row[1]
+                        lesson_data_map[row[0]] = {
+                            'course_program_lesson_id': row[1],
+                            'description': row[2] or '',
+                            'passing_score': row[3] or 70,
+                            'time_limit': row[4] or 30,
+                            'attempts': row[5]
+                        }
                 
                 for test in lesson_tests:
                     test_dict = dict(test)
-                    test_dict['course_program_lesson_id'] = lesson_ids_map.get(test['id'])
+                    additional_data = lesson_data_map.get(test['id'], {})
+                    test_dict.update(additional_data)
                     test_dict['test_type'] = 'lesson'
                     test_dict['test_id'] = test['id']
                     data.append(test_dict)
