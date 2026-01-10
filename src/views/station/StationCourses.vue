@@ -1,6 +1,6 @@
 <template>
   <!-- Hero Section с фото станции -->
-    <div class="relative h-[80vh] min-h-[700px] overflow-hidden">
+    <div class="relative h-[50vh] min-h-[400px] max-h-[500px] overflow-hidden">
       <!-- Изображение станции -->
       <div class="absolute inset-0">
         <img 
@@ -15,19 +15,19 @@
       </div>
 
       <!-- Контент хедера -->
-      <div class="relative h-full page-container flex flex-col gap-6 md:gap-10 pt-28 pb-16">
+      <div class="relative h-full page-container flex flex-col gap-4 md:gap-6 pt-20 pb-10">
         <!-- Навигация -->
         <div>
           <button 
-            class="inline-flex items-center bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all duration-300 group px-4 py-2.5 rounded-xl border border-white/20 hover:border-white/40"
+            class="inline-flex items-center bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all duration-300 group px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/40"
             @click="$router.push('/stations')"
           >
-            <ChevronLeftIcon class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
-            <span class="text-sm font-semibold">Все станции</span>
+            <ChevronLeftIcon class="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1" />
+            <span class="text-xs font-semibold">Все станции</span>
           </button>
 
           <!-- Breadcrumb сразу под кнопкой -->
-          <nav class="mt-4 flex items-center space-x-2 text-sm text-white/70">
+          <nav class="mt-3 flex items-center space-x-2 text-xs md:text-sm text-white/70">
             <a
               href="/stations"
               class="hover:text-white transition-colors"
@@ -44,56 +44,56 @@
 
         <!-- Основная информация -->
         <div class="max-w-4xl">
-          <div class="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md px-3.5 py-1.5 rounded-full mb-3 border border-white/20">
-            <BookOpenIcon class="w-4 h-4 mr-2 text-white" />
-            <span class="text-sm font-semibold text-white">Онлайн-тренинг</span>
+          <div class="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md px-2.5 py-1 rounded-full mb-2 border border-white/20">
+            <BookOpenIcon class="w-3.5 h-3.5 mr-1.5 text-white" />
+            <span class="text-xs font-semibold text-white">Онлайн-тренинг</span>
           </div>
 
-          <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-3 leading-tight">
+          <h1 class="text-2xl md:text-4xl font-extrabold text-white mb-2 leading-tight">
             {{ courseProgram?.title }}
           </h1>
           
-          <p class="text-base md:text-lg text-white/90 mb-6 max-w-3xl leading-relaxed">
+          <p class="text-sm md:text-base text-white/90 mb-4 max-w-3xl leading-relaxed line-clamp-2">
             {{ courseProgram?.description }}
           </p>
 
           <!-- Статистика курса -->
-          <div class="flex flex-wrap gap-4">
-            <div class="flex items-center gap-2">
-              <div class="w-9 h-9 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
-                <ClockIcon class="w-5 h-5 text-white" />
+          <div class="flex flex-wrap gap-3">
+            <div class="flex items-center gap-1.5">
+              <div class="w-7 h-7 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
+                <ClockIcon class="w-4 h-4 text-white" />
               </div>
               <div>
-                <div class="text-white/70 text-xs">
+                <div class="text-white/70 text-[10px] leading-tight">
                   Длительность
                 </div>
-                <div class="text-white font-bold">
+                <div class="text-white font-bold text-sm">
                   {{ courseStats.duration }}
                 </div>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <div class="w-9 h-9 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
-                <PlayCircleIcon class="w-5 h-5 text-white" />
+            <div class="flex items-center gap-1.5">
+              <div class="w-7 h-7 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
+                <PlayCircleIcon class="w-4 h-4 text-white" />
               </div>
               <div>
-                <div class="text-white/70 text-xs">
+                <div class="text-white/70 text-[10px] leading-tight">
                   Видеоуроков
                 </div>
-                <div class="text-white font-bold">
+                <div class="text-white font-bold text-sm">
                   {{ courseStats.videos }}
                 </div>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <div class="w-9 h-9 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
-                <DocumentTextIcon class="w-5 h-5 text-white" />
+            <div class="flex items-center gap-1.5">
+              <div class="w-7 h-7 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
+                <DocumentTextIcon class="w-4 h-4 text-white" />
               </div>
               <div>
-                <div class="text-white/70 text-xs">
+                <div class="text-white/70 text-[10px] leading-tight">
                   Материалов
                 </div>
-                <div class="text-white font-bold">
+                <div class="text-white font-bold text-sm">
                   {{ courseStats.materials }}
                 </div>
               </div>
@@ -105,17 +105,17 @@
 
     <!-- Main Content -->
     <div class="bg-gray-50">
-      <div class="page-container py-12">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="page-container py-6 md:py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Left Column - Course Content -->
           <div class="lg:col-span-2">
             <!-- Modern Tabs -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
               <div class="border-b border-gray-100">
                 <nav class="flex">
                   <button 
                     :class="[
-                      'flex-1 py-3 px-4 font-semibold text-sm transition-all relative',
+                      'flex-1 py-2.5 px-4 font-semibold text-xs md:text-sm transition-all relative',
                       activeTab === 'about' 
                         ? 'text-blue-600 bg-blue-50/50' 
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -130,7 +130,7 @@
                   </button>
                   <button 
                     :class="[
-                      'flex-1 py-3 px-4 font-semibold text-sm transition-all relative',
+                      'flex-1 py-2.5 px-4 font-semibold text-xs md:text-sm transition-all relative',
                       activeTab === 'curriculum' 
                         ? 'text-blue-600 bg-blue-50/50' 
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -147,19 +147,19 @@
               </div>
 
               <!-- Tab Content -->
-              <div class="p-8">
+              <div class="p-5 md:p-6">
                 <!-- About Tab -->
                 <div v-show="activeTab === 'about'">
-                  <h2 class="text-3xl font-bold text-gray-900 mb-6">
+                  <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                     О программе
                   </h2>
                   
                   <!-- Learning Outcomes -->
-                  <div class="mb-10">
-                    <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
-                      <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                  <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center">
+                      <div class="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center mr-2">
                         <svg
-                          class="w-5 h-5 text-green-600"
+                          class="w-4 h-4 text-green-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -172,14 +172,14 @@
                       </div>
                       Что вы изучите
                     </h3>
-                    <div class="grid md:grid-cols-2 gap-4">
+                    <div class="grid md:grid-cols-2 gap-3">
                       <div
                         v-for="(item, index) in courseProgram?.learningOutcomes"
                         :key="index" 
-                        class="flex items-start p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                        class="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         <svg
-                          class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-0.5"
+                          class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -189,17 +189,17 @@
                             clip-rule="evenodd"
                           />
                         </svg>
-                        <span class="text-gray-700">{{ item }}</span>
+                        <span class="text-sm text-gray-700">{{ item }}</span>
                       </div>
                     </div>
                   </div>
 
                   <!-- Requirements -->
-                  <div class="mb-10">
-                    <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
-                      <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                  <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center">
+                      <div class="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center mr-2">
                         <svg
-                          class="w-5 h-5 text-blue-600"
+                          class="w-4 h-4 text-blue-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -212,14 +212,14 @@
                       </div>
                       Требования
                     </h3>
-                    <ul class="space-y-3">
+                    <ul class="space-y-2">
                       <li
                         v-for="(req, index) in courseProgram?.requirements"
                         :key="index" 
-                        class="flex items-start p-4 bg-blue-50 rounded-xl"
+                        class="flex items-start p-3 bg-blue-50 rounded-lg"
                       >
                         <svg
-                          class="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5"
+                          class="w-4 h-4 text-blue-600 mr-2 flex-shrink-0 mt-0.5"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -229,17 +229,17 @@
                             clip-rule="evenodd"
                           />
                         </svg>
-                        <span class="text-gray-700">{{ req }}</span>
+                        <span class="text-sm text-gray-700">{{ req }}</span>
                       </li>
                     </ul>
                   </div>
 
                   <!-- Target Audience -->
                   <div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
-                      <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                    <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center">
+                      <div class="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center mr-2">
                         <svg
-                          class="w-5 h-5 text-purple-600"
+                          class="w-4 h-4 text-purple-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -252,15 +252,15 @@
                       </div>
                       Целевая аудитория
                     </h3>
-                    <div class="grid md:grid-cols-2 gap-4">
+                    <div class="grid md:grid-cols-2 gap-3">
                       <div
                         v-for="(audience, index) in courseProgram?.targetAudience"
                         :key="index" 
-                        class="flex items-center space-x-3 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
+                        class="flex items-center space-x-2 p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
                       >
-                        <div class="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-200 rounded-full flex items-center justify-center flex-shrink-0">
                           <svg
-                            class="w-5 h-5 text-purple-700"
+                            class="w-4 h-4 text-purple-700"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -271,7 +271,7 @@
                             />
                           </svg>
                         </div>
-                        <span class="font-medium text-gray-900">{{ audience }}</span>
+                        <span class="font-medium text-sm text-gray-900">{{ audience }}</span>
                       </div>
                     </div>
                   </div>
@@ -293,13 +293,13 @@
 
           <!-- Right Column - Sidebar -->
           <div class="lg:col-span-1">
-            <div class="sticky top-28 space-y-6">
+            <div class="sticky top-20 space-y-4">
               <!-- Video Player Card -->
               <div
                 v-if="sidebarVideoUrl"
-                class="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 overflow-hidden"
+                class="bg-white rounded-xl shadow-lg border border-gray-200 p-3 overflow-hidden"
               >
-                <h3 class="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">
+                <h3 class="text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">
                   Видео
                 </h3>
                 <div
@@ -336,36 +336,37 @@
               <el-card
                 class="enrollment-card"
                 shadow="always"
+                :body-style="{ padding: '16px' }"
               >
                 <div class="enrollment-card-content">
                   <el-button 
                     type="primary"
-                    size="large"
+                    size="default"
                     class="start-learning-btn"
                     @click="startLearning"
                   >
                     <template #icon>
-                      <PlayCircleIcon class="w-5 h-5" />
+                      <PlayCircleIcon class="w-4 h-4" />
                     </template>
                     Начать обучение
                   </el-button>
 
-                  <el-divider />
+                  <el-divider :margin="12" />
                   
                   <div class="enrollment-info">
                     <div class="enrollment-info-item">
                       <div class="enrollment-info-label">
-                        <ClockIcon class="w-4 h-4" />
+                        <ClockIcon class="w-3.5 h-3.5" />
                         <span>Формат</span>
                       </div>
                       <span class="enrollment-info-value">Онлайн</span>
                     </div>
                     
-                    <el-divider />
+                    <el-divider :margin="12" />
                     
                     <div class="enrollment-info-item">
                       <div class="enrollment-info-label">
-                        <BookOpenIcon class="w-4 h-4" />
+                        <BookOpenIcon class="w-3.5 h-3.5" />
                         <span>Доступ</span>
                       </div>
                       <span class="enrollment-info-value">Навсегда</span>
@@ -1255,18 +1256,18 @@ export default {
 
 .start-learning-btn {
   width: 100%;
-  margin-bottom: 24px;
-  font-weight: 700;
-  font-size: 16px;
-  padding: 16px 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
 }
 
 .start-learning-btn:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .enrollment-info {
@@ -1279,26 +1280,26 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .enrollment-info-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: #6b7280;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
 .enrollment-info-value {
-  font-weight: 700;
+  font-weight: 600;
   color: #111827;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 :deep(.el-divider) {
-  margin: 12px 0;
+  margin: 8px 0;
 }
 </style>
 
