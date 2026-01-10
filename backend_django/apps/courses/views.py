@@ -267,17 +267,37 @@ class TestsListView(APIView):
                     data.append(test_dict)
             
             if not test_type or test_type == 'final':
-                final_tests = FinalTest.objects.all().values(
-                    'id', 'title', 'description', 'questions_count', 'passing_score',
-                    'time_limit', 'attempts', 'is_active', 'created_at', 'updated_at',
-                    'course_program_id'
-                )
-                for test in final_tests:
-                    data.append({
-                        **test,
-                        'test_type': 'final',
-                        'test_id': test['id']
-                    })
+                # Get final tests with all fields using raw query for consistency
+                from django.db import connection
+                final_tests_data = {}
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT id, course_program_id, title,
+                               COALESCE(description, '') as description,
+                               COALESCE(questions_count, 0) as questions_count,
+                               COALESCE(passing_score, 70) as passing_score,
+                               COALESCE(time_limit, 30) as time_limit,
+                               attempts, is_active, created_at, updated_at
+                        FROM final_tests
+                    """)
+                    for row in cursor.fetchall():
+                        final_tests_data[row[0]] = {
+                            'id': row[0],
+                            'course_program_id': row[1],
+                            'title': row[2],
+                            'description': row[3] or '',
+                            'questions_count': row[4] or 0,
+                            'passing_score': row[5] or 70,
+                            'time_limit': row[6] or 30,
+                            'attempts': row[7],
+                            'is_active': row[8],
+                            'created_at': row[9],
+                            'updated_at': row[10],
+                            'test_type': 'final',
+                            'test_id': row[0]
+                        }
+                
+                data.extend(final_tests_data.values())
             
             return JsonResponse({'data': data})
         except Exception as e:

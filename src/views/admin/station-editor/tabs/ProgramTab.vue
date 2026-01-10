@@ -379,14 +379,234 @@
       </el-collapse-item>
     </el-collapse>
 
+    <el-divider />
+
+    <!-- Tests Section -->
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-lg font-bold text-gray-800">
+        Тесты курса
+      </h3>
+      <el-button
+        type="primary"
+        size="small"
+        :disabled="!courseProgram.id"
+        @click="openTestDialog()"
+      >
+        <el-icon class="mr-2">
+          <Plus />
+        </el-icon>
+        Добавить тест
+      </el-button>
+    </div>
+
+    <div
+      v-if="!courseProgram.id"
+      class="text-sm text-gray-500 mb-4"
+    >
+      Сначала сохраните программу курса, чтобы добавить тесты
+    </div>
+
+    <el-table
+      v-else
+      v-loading="loadingTests"
+      :data="tests"
+      stripe
+      border
+      class="mb-4"
+    >
+      <el-table-column
+        prop="title"
+        label="Название"
+        min-width="200"
+      />
+      <el-table-column
+        prop="description"
+        label="Описание"
+        min-width="250"
+        show-overflow-tooltip
+      />
+      <el-table-column
+        prop="questions_count"
+        label="Вопросов"
+        width="100"
+        align="center"
+      />
+      <el-table-column
+        prop="passing_score"
+        label="Проходной балл"
+        width="130"
+        align="center"
+      >
+        <template #default="{ row }">
+          {{ row.passing_score }}%
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="time_limit"
+        label="Время (мин)"
+        width="120"
+        align="center"
+      />
+      <el-table-column
+        prop="is_active"
+        label="Статус"
+        width="100"
+        align="center"
+      >
+        <template #default="{ row }">
+          <el-tag
+            :type="row.is_active ? 'success' : 'info'"
+            size="small"
+          >
+            {{ row.is_active ? 'Активен' : 'Неактивен' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="Действия"
+        width="200"
+        fixed="right"
+      >
+        <template #default="{ row }">
+          <el-button
+            type="primary"
+            size="small"
+            @click="openTestDialog(row)"
+          >
+            Редактировать
+          </el-button>
+          <el-popconfirm
+            title="Удалить тест?"
+            @confirm="deleteTest(row)"
+          >
+            <template #reference>
+              <el-button
+                type="danger"
+                size="small"
+              >
+                Удалить
+              </el-button>
+            </template>
+          </el-popconfirm>
+        </template>
+      </el-table-column>
+    </el-table>
+
     <TopicFilesDialog />
+    
+    <!-- Test Dialog -->
+    <el-dialog
+      v-model="showTestDialog"
+      :title="editingTest ? 'Редактирование теста' : 'Создание теста'"
+      width="900px"
+      :close-on-click-modal="false"
+    >
+      <el-tabs v-model="testDialogTab">
+        <el-tab-pane
+          label="Настройки"
+          name="settings"
+        >
+          <el-form
+            :model="testForm"
+            label-width="150px"
+            class="mt-4"
+          >
+            <el-form-item
+              label="Название"
+              required
+            >
+              <el-input
+                v-model="testForm.title"
+                placeholder="Введите название теста"
+              />
+            </el-form-item>
+
+            <el-form-item label="Описание">
+              <el-input
+                v-model="testForm.description"
+                type="textarea"
+                :rows="3"
+                placeholder="Введите описание теста"
+              />
+            </el-form-item>
+
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="Проходной балл (%)">
+                  <el-input-number
+                    v-model="testForm.passing_score"
+                    :min="0"
+                    :max="100"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="Время (минут)">
+                  <el-input-number
+                    v-model="testForm.time_limit"
+                    :min="1"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-form-item label="Попыток">
+              <el-input-number
+                v-model="testForm.attempts"
+                :min="1"
+                style="width: 100%"
+                placeholder="Оставьте пустым для неограниченного"
+              />
+            </el-form-item>
+
+            <el-form-item label="Статус">
+              <el-switch
+                v-model="testForm.is_active"
+                active-text="Активен"
+                inactive-text="Неактивен"
+              />
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+
+        <el-tab-pane
+          v-if="editingTest"
+          label="Вопросы"
+          name="questions"
+        >
+          <TestQuestionsEditor
+            :test-id="editingTest.id"
+            :saving="savingQuestions"
+            @save="(testId, questions) => saveTestQuestions(testId, questions)"
+          />
+        </el-tab-pane>
+      </el-tabs>
+
+      <template #footer>
+        <el-button @click="showTestDialog = false">
+          Отмена
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="savingTest"
+          @click="saveTest"
+        >
+          {{ editingTest ? 'Сохранить' : 'Создать' }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
+import { ref, watch, onMounted } from 'vue'
 import { Upload, Plus } from '@element-plus/icons-vue'
 import { useStationEditorContext } from '../context'
 import TopicFilesDialog from '../dialogs/TopicFilesDialog.vue'
+import { useTestsCrud } from '../useTestsCrud'
+import TestQuestionsEditor from '../components/TestQuestionsEditor.vue'
 
 const {
   courseProgram,
@@ -402,5 +622,34 @@ const {
   handlePromoVideoUpload,
   deletePromoVideo
 } = useStationEditorContext()
+
+const {
+  loadingTests,
+  tests,
+  showTestDialog,
+  editingTest,
+  savingTest,
+  savingQuestions,
+  testForm,
+  testDialogTab,
+  loadTests,
+  openTestDialog,
+  saveTest,
+  saveTestQuestions,
+  deleteTest
+} = useTestsCrud(courseProgram, saveCourseProgram)
+
+// Watch for course program ID changes to load tests
+watch(() => courseProgram.value?.id, (newId) => {
+  if (newId) {
+    loadTests()
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  if (courseProgram.value?.id) {
+    loadTests()
+  }
+})
 </script>
 
