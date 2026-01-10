@@ -375,6 +375,74 @@
               </template>
             </el-table-column>
           </el-table>
+
+          <!-- Lesson Test Section -->
+          <el-divider />
+          <div class="flex items-center justify-between mb-3 mt-4">
+            <h4 class="font-semibold text-gray-700">
+              Тест урока
+            </h4>
+            <div class="flex gap-2">
+              <el-button
+                v-if="lesson.test && lesson.test.id"
+                size="small"
+                type="primary"
+                @click="openLessonTestDialog(lesson, lessonIdx)"
+              >
+                <el-icon class="mr-1">
+                  <Edit />
+                </el-icon>
+                Редактировать тест
+              </el-button>
+              <el-button
+                v-else
+                size="small"
+                type="primary"
+                @click="openLessonTestDialog(lesson, lessonIdx)"
+              >
+                <el-icon class="mr-1">
+                  <Plus />
+                </el-icon>
+                Добавить тест
+              </el-button>
+              <el-popconfirm
+                v-if="lesson.test && lesson.test.id"
+                title="Удалить тест урока?"
+                @confirm="deleteLessonTest(lesson, lessonIdx)"
+              >
+                <template #reference>
+                  <el-button
+                    size="small"
+                    type="danger"
+                  >
+                    Удалить тест
+                  </el-button>
+                </template>
+              </el-popconfirm>
+            </div>
+          </div>
+
+          <div
+            v-if="lesson.test && lesson.test.id"
+            class="p-3 bg-gray-50 rounded-lg"
+          >
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-gray-900">{{ lesson.test.title }}</p>
+                <p class="text-sm text-gray-600 mt-1">
+                  Вопросов: {{ lesson.test.questionsCount || 0 }} | 
+                  Проходной балл: {{ lesson.test.passingScore || 70 }}% | 
+                  Время: {{ lesson.test.timeLimit || 30 }} мин
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            v-else
+            class="p-3 bg-gray-50 rounded-lg text-center text-gray-500 text-sm"
+          >
+            Тест для этого урока не создан
+          </div>
         </div>
       </el-collapse-item>
     </el-collapse>
@@ -578,6 +646,7 @@
         >
           <TestQuestionsEditor
             :test-id="editingTest.id"
+            test-type="final"
             :saving="savingQuestions"
             @save="(testId, questions) => saveTestQuestions(testId, questions)"
           />
@@ -597,15 +666,122 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- Lesson Test Dialog -->
+    <el-dialog
+      v-if="currentLessonTestContext"
+      v-model="showLessonTestDialog"
+      :title="currentLessonTestContext.editingTest ? 'Редактирование теста урока' : 'Создание теста урока'"
+      width="900px"
+      :close-on-click-modal="false"
+    >
+      <el-tabs v-model="currentLessonTestContext.testDialogTab">
+        <el-tab-pane
+          label="Настройки"
+          name="settings"
+        >
+          <el-form
+            :model="currentLessonTestContext.testForm"
+            label-width="150px"
+            class="mt-4"
+          >
+            <el-form-item
+              label="Название"
+              required
+            >
+              <el-input
+                v-model="currentLessonTestContext.testForm.title"
+                placeholder="Введите название теста"
+              />
+            </el-form-item>
+
+            <el-form-item label="Описание">
+              <el-input
+                v-model="currentLessonTestContext.testForm.description"
+                type="textarea"
+                :rows="3"
+                placeholder="Введите описание теста"
+              />
+            </el-form-item>
+
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="Проходной балл (%)">
+                  <el-input-number
+                    v-model="currentLessonTestContext.testForm.passing_score"
+                    :min="0"
+                    :max="100"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="Время (минут)">
+                  <el-input-number
+                    v-model="currentLessonTestContext.testForm.time_limit"
+                    :min="1"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-form-item label="Попыток">
+              <el-input-number
+                v-model="currentLessonTestContext.testForm.attempts"
+                :min="1"
+                style="width: 100%"
+                placeholder="Оставьте пустым для неограниченного"
+              />
+            </el-form-item>
+
+            <el-form-item label="Статус">
+              <el-switch
+                v-model="currentLessonTestContext.testForm.is_active"
+                active-text="Активен"
+                inactive-text="Неактивен"
+              />
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+
+        <el-tab-pane
+          v-if="currentLessonTestContext.editingTest && currentLessonTestContext.editingTest.test_id"
+          label="Вопросы"
+          name="questions"
+        >
+          <TestQuestionsEditor
+            :test-id="currentLessonTestContext.editingTest.test_id"
+            test-type="lesson"
+            :saving="currentLessonTestContext.savingQuestions"
+            @save="(testId, questions) => currentLessonTestContext.saveTestQuestions(testId, questions)"
+          />
+        </el-tab-pane>
+      </el-tabs>
+
+      <template #footer>
+        <el-button @click="showLessonTestDialog = false">
+          Отмена
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="currentLessonTestContext.savingTest"
+          @click="currentLessonTestContext.saveTest()"
+        >
+          {{ currentLessonTestContext.editingTest ? 'Сохранить' : 'Создать' }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { Upload, Plus } from '@element-plus/icons-vue'
+import { Upload, Plus, Edit } from '@element-plus/icons-vue'
 import { useStationEditorContext } from '../context'
 import TopicFilesDialog from '../dialogs/TopicFilesDialog.vue'
 import { useTestsCrud } from '../useTestsCrud'
+import { useLessonTestsCrud } from '../useLessonTestsCrud'
 import TestQuestionsEditor from '../components/TestQuestionsEditor.vue'
 
 const {
@@ -638,6 +814,36 @@ const {
   saveTestQuestions,
   deleteTest
 } = useTestsCrud(courseProgram, saveCourseProgram)
+
+// Lesson tests management
+const showLessonTestDialog = ref(false)
+const currentLessonTestContext = ref(null)
+
+const openLessonTestDialog = async (lesson, lessonIdx) => {
+  // Create context for this lesson's test
+  const lessonRef = ref(lesson)
+  const lessonTestCrud = useLessonTestsCrud(lessonRef, saveCourseProgram)
+  
+  currentLessonTestContext.value = {
+    lesson,
+    lessonIdx,
+    ...lessonTestCrud
+  }
+  
+  // Open dialog with lesson test data
+  const lessonTest = lesson.test ? { test_id: lesson.test.id } : null
+  await lessonTestCrud.openTestDialog(lessonTest)
+  showLessonTestDialog.value = true
+}
+
+const deleteLessonTest = async (lesson, lessonIdx) => {
+  if (!lesson.test || !lesson.test.id) return
+  
+  const lessonRef = ref(lesson)
+  const { deleteTest: deleteLessonTestInternal } = useLessonTestsCrud(lessonRef, saveCourseProgram)
+  
+  await deleteLessonTestInternal({ test_id: lesson.test.id })
+}
 
 // Watch for course program ID changes to load tests
 watch(() => courseProgram.value?.id, (newId) => {

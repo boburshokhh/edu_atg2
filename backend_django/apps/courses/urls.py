@@ -20,7 +20,8 @@ urlpatterns = [
     path("tests/results/<int:result_id>", views.TestResultDetailView.as_view()),
     path("tests/results/create", views.TestResultCreateView.as_view()),
     path("tests/<str:test_type>/<int:test_id>/results", views.UserTestResultsView.as_view()),
-    # Public test endpoint
+    # Test endpoints
+    path("tests/lesson/<int:lesson_id>", views.LessonTestView.as_view()),
     path("tests/course-program/<int:course_program_id>", views.PublicTestView.as_view()),
 ]
 

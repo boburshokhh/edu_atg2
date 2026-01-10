@@ -333,6 +333,7 @@ const downloadFile = async (file) => {
 const passedTests = ref(new Set())
 const courseTest = ref(null)
 const loadingTest = ref(false)
+const lessonTest = ref(null)
 
 const currentTopicTest = computed(() => {
   // Legacy support - can be removed later
@@ -346,6 +347,11 @@ const currentLessonTest = computed(() => {
   // If in final test mode, use course test
   if (isFinalTestMode.value && courseTest.value) {
     return courseTest.value
+  }
+  
+  // Use lesson test from API if available
+  if (lessonTest.value && isTestMode.value && !isFinalTestMode.value) {
+    return lessonTest.value
   }
   
   // Use course test from API if available (for any test mode)
@@ -387,6 +393,38 @@ const loadCourseTest = async () => {
   } catch (error) {
     console.error('[LessonContentApp] Failed to load course test:', error)
     courseTest.value = null
+  } finally {
+    loadingTest.value = false
+  }
+}
+
+const loadLessonTest = async (lessonId) => {
+  if (!lessonId) {
+    lessonTest.value = null
+    return
+  }
+
+  loadingTest.value = true
+  try {
+    const test = await testService.getLessonTest(lessonId)
+    if (test) {
+      // Transform API data to TestQuiz format
+      lessonTest.value = {
+        id: test.id,
+        title: test.title,
+        description: test.description,
+        questions: test.questions || [],
+        passingScore: test.passingScore,
+        timeLimit: test.timeLimit,
+        attempts: test.attempts,
+        testType: 'lesson' // Always 'lesson' for lesson tests
+      }
+    } else {
+      lessonTest.value = null
+    }
+  } catch (error) {
+    console.error('[LessonContentApp] Failed to load lesson test:', error)
+    lessonTest.value = null
   } finally {
     loadingTest.value = false
   }
@@ -789,6 +827,16 @@ const savePassedTests = () => {
     console.error('Error saving passed tests:', error)
   }
 }
+
+// Watch for lesson changes to load lesson test
+watch(() => currentLesson.value?.id, async (lessonId) => {
+  // Load lesson test when lesson changes
+  if (lessonId && !isFinalTestMode.value) {
+    await loadLessonTest(lessonId)
+  } else {
+    lessonTest.value = null
+  }
+}, { immediate: true })
 
 watch(() => [currentLessonIndex.value, currentTopicIndex.value], () => {
   if (!isTestMode.value) {

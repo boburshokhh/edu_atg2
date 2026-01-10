@@ -206,6 +206,15 @@ class TestService {
   }
 
   /**
+   * Get lesson test by lesson ID (authenticated users)
+   * @param {number} lessonId - Lesson ID
+   */
+  async getLessonTest(lessonId) {
+    const data = await apiRequest(`/courses/tests/lesson/${lessonId}`)
+    return data.test || null
+  }
+
+  /**
    * Save test result
    * @param {Object} resultData - Test result data
    * @param {number} resultData.test_id - Test ID

@@ -513,6 +513,76 @@ class TestQuestionsUpdateView(APIView):
         return JsonResponse({'success': True})
 
 
+class LessonTestView(APIView):
+    """Get lesson test by lesson_id - Authenticated users"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, lesson_id):
+        try:
+            # Get lesson test
+            lesson_test = CourseProgramLessonTest.objects.filter(
+                lesson_id=lesson_id,
+                is_active=True
+            ).order_by("id").first()
+            
+            if not lesson_test:
+                return JsonResponse({'test': None})
+            
+            # Get questions with options
+            questions = TestQuestion.objects.filter(
+                test_id=lesson_test.id,
+                test_type='lesson'
+            ).order_by('order_index', 'id').values()
+            
+            questions_list = []
+            for q in questions:
+                options = TestQuestionOption.objects.filter(
+                    question_id=q['id']
+                ).order_by('order_index', 'id').values('id', 'option_text', 'is_correct', 'order_index')
+                
+                # Find correct answer index
+                correct_answer = None
+                options_list = []
+                for idx, opt in enumerate(options):
+                    options_list.append(opt['option_text'])
+                    if opt['is_correct']:
+                        correct_answer = idx
+                
+                questions_list.append({
+                    'id': q['id'],
+                    'question': q['question'],
+                    'options': options_list,
+                    'correctAnswer': correct_answer,
+                    'points': q['points'] or 1,
+                    'image': q['image'] or '',
+                    'explanation': q['explanation'] or '',
+                    'order_index': q['order_index']
+                })
+            
+            # Format test data for TestQuiz component
+            test_data = {
+                'id': lesson_test.id,
+                'title': lesson_test.title,
+                'description': lesson_test.description or '',
+                'questions': questions_list,
+                'passingScore': lesson_test.passing_score or 70,
+                'timeLimit': lesson_test.time_limit or 30,
+                'attempts': lesson_test.attempts
+            }
+            
+            return JsonResponse({'test': test_data})
+        except Exception as e:
+            import traceback
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"[LessonTestView] Error: {e}", exc_info=True)
+            from django.conf import settings
+            error_response = {'error': str(e)}
+            if settings.DEBUG:
+                error_response['traceback'] = traceback.format_exc()
+            return JsonResponse(error_response, status=500)
+
+
 class PublicTestView(APIView):
     """Get test by course_program_id - Public access"""
     permission_classes = [AllowAny]

@@ -184,6 +184,11 @@ const props = defineProps({
     type: Number,
     required: true
   },
+  testType: {
+    type: String,
+    default: 'final',
+    validator: (value) => ['lesson', 'final'].includes(value)
+  },
   saving: {
     type: Boolean,
     default: false
@@ -201,7 +206,7 @@ const loadQuestions = async () => {
 
   loading.value = true
   try {
-    const test = await testService.getTest(props.testId, 'final')
+    const test = await testService.getTest(props.testId, props.testType)
     testData.value = test
     questions.value = (test.questions || []).map(q => ({
       question: q.question || '',

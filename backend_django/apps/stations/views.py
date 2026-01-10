@@ -203,6 +203,7 @@ def _serialize_course_program(program: CourseProgram) -> dict:
         )
         for lt in lesson_tests:
             lesson_tests_by_lesson[lt["lesson__id"]] = {
+                "id": lt["id"],
                 "title": lt["title"],
                 "questionsCount": lt["questions_count"],
             }
