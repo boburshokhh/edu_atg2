@@ -709,11 +709,14 @@ const saveTestResults = async (timeSpent = null) => {
     // Prepare answers data
     const answersData = {}
     props.testData.questions.forEach((q, index) => {
+      const selectedAnswer = selectedAnswers.value[index] !== undefined 
+        ? selectedAnswers.value[index] 
+        : null
       answersData[index] = {
-        questionId: q.id,
-        selectedAnswer: selectedAnswers.value[index],
-        correctAnswer: q.correctAnswer,
-        isCorrect: selectedAnswers.value[index] === q.correctAnswer
+        questionId: q.id || null,
+        selectedAnswer: selectedAnswer,
+        correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
+        isCorrect: selectedAnswer !== null && selectedAnswer === q.correctAnswer
       }
     })
 

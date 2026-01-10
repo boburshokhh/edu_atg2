@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
@@ -718,75 +719,125 @@ class TestResultCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        test_id = request.data.get('test_id')
-        test_type = request.data.get('test_type')
-        score = request.data.get('score')
-        is_passed = request.data.get('is_passed', False)
-        correct_answers = request.data.get('correct_answers', 0)
-        total_questions = request.data.get('total_questions', 0)
-        time_spent = request.data.get('time_spent')  # in seconds
-        answers_data = request.data.get('answers_data')  # JSON with user answers
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
         
-        if not test_id or not test_type:
-            return JsonResponse({'error': 'test_id and test_type are required'}, status=400)
-        
-        if test_type not in ['lesson', 'final']:
-            return JsonResponse({'error': 'test_type must be "lesson" or "final"'}, status=400)
-        
-        if score is None:
-            return JsonResponse({'error': 'score is required'}, status=400)
-        
-        # Get user ID from request
-        user_id = request.user.id
-        
-        # Check if test exists
-        if test_type == 'final':
-            test = FinalTest.objects.filter(id=test_id, is_active=True).first()
-        else:
-            test = CourseProgramLessonTest.objects.filter(id=test_id, is_active=True).first()
-        
-        if not test:
-            return JsonResponse({'error': 'Test not found or inactive'}, status=404)
-        
-        # Check attempts limit
-        if test.attempts is not None:
-            user_attempts = TestResult.objects.filter(
+        try:
+            test_id = request.data.get('test_id')
+            test_type = request.data.get('test_type')
+            score = request.data.get('score')
+            is_passed = request.data.get('is_passed', False)
+            correct_answers = request.data.get('correct_answers', 0)
+            total_questions = request.data.get('total_questions', 0)
+            time_spent = request.data.get('time_spent')  # in seconds
+            answers_data = request.data.get('answers_data')  # JSON with user answers
+            
+            logger.info(f"[TestResultCreateView] Received data: test_id={test_id}, test_type={test_type}, score={score}, user_id={request.user.id if request.user else None}")
+            
+            if not test_id or not test_type:
+                return JsonResponse({'error': 'test_id and test_type are required'}, status=400)
+            
+            if test_type not in ['lesson', 'final']:
+                return JsonResponse({'error': 'test_type must be "lesson" or "final"'}, status=400)
+            
+            if score is None:
+                return JsonResponse({'error': 'score is required'}, status=400)
+            
+            # Get user ID from request
+            user_id = request.user.id
+            if not user_id:
+                return JsonResponse({'error': 'User ID is required'}, status=401)
+            
+            # Check if test exists
+            if test_type == 'final':
+                test = FinalTest.objects.filter(id=test_id, is_active=True).first()
+            else:
+                test = CourseProgramLessonTest.objects.filter(id=test_id, is_active=True).first()
+            
+            if not test:
+                return JsonResponse({'error': 'Test not found or inactive'}, status=404)
+            
+            # Check attempts limit
+            if test.attempts is not None:
+                user_attempts = TestResult.objects.filter(
+                    test_id=test_id,
+                    test_type=test_type,
+                    user_id=user_id
+                ).count()
+                
+                if user_attempts >= test.attempts:
+                    return JsonResponse({
+                        'error': f'Превышен лимит попыток ({test.attempts}). Вы уже использовали все доступные попытки.'
+                    }, status=400)
+            
+            # Validate and prepare data
+            # Ensure score is integer
+            score = int(score)
+            if score < 0 or score > 100:
+                return JsonResponse({'error': 'Score must be between 0 and 100'}, status=400)
+            
+            # Ensure correct_answers and total_questions are integers
+            correct_answers = int(correct_answers) if correct_answers is not None else 0
+            total_questions = int(total_questions) if total_questions is not None else 0
+            
+            # Ensure time_spent is integer or None
+            if time_spent is not None:
+                time_spent = int(time_spent)
+            
+            # Ensure is_passed is boolean
+            is_passed = bool(is_passed)
+            
+            # Validate and parse answers_data - should be dict or None
+            if answers_data is not None:
+                if isinstance(answers_data, str):
+                    try:
+                        answers_data = json.loads(answers_data)
+                    except json.JSONDecodeError:
+                        logger.warning(f"[TestResultCreateView] Failed to parse answers_data as JSON: {answers_data}")
+                        answers_data = None
+                elif not isinstance(answers_data, dict):
+                    logger.warning(f"[TestResultCreateView] answers_data is not dict: {type(answers_data)}")
+                    answers_data = None
+            
+            logger.info(f"[TestResultCreateView] Creating result: test_id={test_id}, test_type={test_type}, user_id={user_id}, score={score}")
+            
+            # Create test result
+            result = TestResult.objects.create(
                 test_id=test_id,
                 test_type=test_type,
-                user_id=user_id
-            ).count()
+                user_id=user_id,
+                score=score,
+                is_passed=is_passed,
+                correct_answers=correct_answers,
+                total_questions=total_questions,
+                time_spent=time_spent,
+                answers_data=answers_data
+            )
             
-            if user_attempts >= test.attempts:
-                return JsonResponse({
-                    'error': f'Превышен лимит попыток ({test.attempts}). Вы уже использовали все доступные попытки.'
-                }, status=400)
-        
-        # Create test result
-        result = TestResult.objects.create(
-            test_id=test_id,
-            test_type=test_type,
-            user_id=user_id,
-            score=score,
-            is_passed=is_passed,
-            correct_answers=correct_answers,
-            total_questions=total_questions,
-            time_spent=time_spent,
-            answers_data=answers_data
-        )
-        
-        return JsonResponse({
-            'data': {
-                'id': result.id,
-                'test_id': result.test_id,
-                'test_type': result.test_type,
-                'score': result.score,
-                'is_passed': result.is_passed,
-                'correct_answers': result.correct_answers,
-                'total_questions': result.total_questions,
-                'time_spent': result.time_spent,
-                'completed_at': result.completed_at.isoformat() if result.completed_at else None
-            }
-        }, status=201)
+            logger.info(f"[TestResultCreateView] Result created successfully: id={result.id}")
+            
+            return JsonResponse({
+                'data': {
+                    'id': result.id,
+                    'test_id': result.test_id,
+                    'test_type': result.test_type,
+                    'score': result.score,
+                    'is_passed': result.is_passed,
+                    'correct_answers': result.correct_answers,
+                    'total_questions': result.total_questions,
+                    'time_spent': result.time_spent,
+                    'completed_at': result.completed_at.isoformat() if result.completed_at else None
+                }
+            }, status=201)
+            
+        except Exception as e:
+            logger.error(f"[TestResultCreateView] Error: {e}", exc_info=True)
+            from django.conf import settings
+            error_response = {'error': str(e)}
+            if settings.DEBUG:
+                error_response['traceback'] = traceback.format_exc()
+            return JsonResponse(error_response, status=500)
 
 
 class UserTestResultsView(APIView):
