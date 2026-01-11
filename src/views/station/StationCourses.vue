@@ -103,7 +103,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import useNotify from '@/composables/useNotify'
 import VideoPlayer from '@/components/course/VideoPlayer.vue'
@@ -133,7 +133,6 @@ export default {
     const stationId = computed(() => parseInt(route.params.id))
     const station = ref(null)
     const courseProgramData = ref(null)
-    const expandedLessons = ref([]) // Все уроки закрыты по умолчанию
     const activeTab = ref('curriculum') // Программа тренинга по умолчанию
     
     // Проверка авторизации
@@ -241,74 +240,6 @@ export default {
     const handleVideoError = (event) => {
       console.error('Ошибка воспроизведения видео:', event)
       loadingSidebarVideo.value = false
-    }
-
-    // Гибкое определение основного материала (оставлено для совместимости, если нужно)
-    const isMainMaterial = (fileName, topicCode, topicTitle) => {
-      if (!fileName || !topicCode) return false
-      
-      const normalizedFileName = fileName.toLowerCase().trim()
-      const normalizedTopicCode = topicCode.toLowerCase().trim()
-      
-      // Извлекаем код темы (например, "1.2" из "Тема 1.2")
-      const codeMatch = normalizedTopicCode.match(/тема\s*(\d+\.\d+)/i)
-      if (codeMatch) {
-        const fullCode = codeMatch[1] // Например, "1.2"
-        
-        // Вариант 1: Файл начинается с "Тема X.Y " (с пробелом после кода)
-        // Например: "Тема 1.2 Вычислители расхода газа.pdf"
-        const patternWithSpace = new RegExp(`^тема\\s*${fullCode.replace('.', '\\.')}\\s+`, 'i')
-        if (patternWithSpace.test(normalizedFileName)) {
-          return true
-        }
-        
-        // Вариант 2: Файл начинается с "Тема X.Y." (с точкой после кода)
-        // Например: "Тема 1.2. Вычислители расхода газа.pdf"
-        const patternWithDot = new RegExp(`^тема\\s*${fullCode.replace('.', '\\.')}\\.`, 'i')
-        if (patternWithDot.test(normalizedFileName)) {
-          return true
-        }
-      }
-      
-      // Вариант 3: Файл начинается с "Тема X." где X - номер урока
-      const topicMatch = normalizedTopicCode.match(/тема\s*(\d+)\.\d+/i)
-      if (topicMatch) {
-        const lessonNumber = topicMatch[1]
-        // Проверяем "Тема 1.", "Тема 1.1.", "Тема1." и т.д.
-        const patterns = [
-          new RegExp(`^тема\\s*${lessonNumber}\\.`, 'i'),
-          new RegExp(`^тема\\s*${lessonNumber}\\.\\d+\\.`, 'i')
-        ]
-        if (patterns.some(pattern => pattern.test(normalizedFileName))) {
-          return true
-        }
-      }
-      
-      // Вариант 4: Файл содержит полный код темы (например, "Тема 1.1")
-      if (normalizedFileName.includes(normalizedTopicCode.replace(/тема\s*/i, 'тема '))) {
-        return true
-      }
-      
-      // Вариант 5: Файл начинается с кода темы и содержит название темы
-      // Например: "Тема 1.2 Вычислители" содержит "Тема 1.2" и часть названия
-      if (codeMatch && topicTitle) {
-        const fullCode = codeMatch[1]
-        const startsWithCode = normalizedFileName.startsWith(`тема ${fullCode}`) || 
-                               normalizedFileName.startsWith(`тема${fullCode}`)
-        const containsTitle = normalizedFileName.includes(topicTitle.toLowerCase().substring(0, 10))
-        if (startsWithCode && containsTitle) {
-          return true
-        }
-      }
-      
-      // Вариант 6: Файл содержит название темы и ключевые слова "основной", "главный"
-      const mainKeywords = ['основной', 'главный', 'main', 'primary']
-      const hasMainKeyword = mainKeywords.some(keyword => normalizedFileName.includes(keyword))
-      if (topicTitle && normalizedFileName.includes(topicTitle.toLowerCase()) && hasMainKeyword) {
-        return true
-      }
-      
-      return false
     }
 
     // Загрузка материалов темы из JSON конфигурации
@@ -606,42 +537,10 @@ export default {
              fileType.includes('video')
     }
 
-    // Проверка наличия видео в теме (по additionals)
-    const hasVideoFiles = (topic) => {
-      return (topic.additionals || []).some(file => isVideoFile(file))
-    }
-
     // Получить все видео из списка файлов
     const getVideoFiles = (files) => {
       if (!files) return []
       return files.filter(file => isVideoFile(file))
-    }
-
-    // Обработка клика на файл
-    const handleFileClick = (file, allFiles, fileIndex) => {
-      if (!isAuthenticated.value) {
-        ElMessage.warning('Для просмотра файлов необходимо войти в систему')
-        return
-      }
-      if (isVideoFile(file)) {
-        const videos = getVideoFiles(allFiles)
-        playVideos(videos, videos.findIndex(v => (v.objectName || v.id) === (file.objectName || file.id)))
-      } else {
-        // Для всех остальных файлов (включая PDF) - скачиваем
-        downloadFile(file)
-      }
-    }
-
-    // Воспроизвести все видео из темы
-    const playTopicVideos = (topic) => {
-      if (!isAuthenticated.value) {
-        ElMessage.warning('Для просмотра видео необходимо войти в систему')
-        return
-      }
-      const videos = getVideoFiles(topic.additionals)
-      if (videos.length > 0) {
-        playVideos(videos, 0)
-      }
     }
 
     // Воспроизвести видео
@@ -727,28 +626,6 @@ export default {
       currentVideoIndex.value = 0
     }
 
-    // Скачать материал (теперь не используется для PDF, только для других файлов)
-    const downloadMaterial = (file) => {
-      if (file.file_url || file.url) {
-        const link = document.createElement('a')
-        link.href = file.file_url || file.url
-        link.download = file.original_name || file.originalName
-        link.target = '_blank'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-      }
-    }
-
-    const toggleLesson = (index) => {
-      const idx = expandedLessons.value.indexOf(index)
-      if (idx > -1) {
-        expandedLessons.value.splice(idx, 1)
-      } else {
-        expandedLessons.value.push(index)
-      }
-    }
-
     // Обработчики для тестов из компоненты CourseCurriculum
     const handleStartTest = (test) => {
       ElMessage.info(`Запуск теста: ${test.title}`)
@@ -758,11 +635,6 @@ export default {
     const handleStartFinalTest = (finalTest) => {
       ElMessage.info(`Запуск итогового теста: ${finalTest?.title || 'Итоговый тест'}`)
       // TODO: Реализовать логику запуска итогового теста
-    }
-
-    // Обработчик для воспроизведения видео из компоненты CourseMaterials
-    const handlePlayVideos = ({ videos, startIndex }) => {
-      playVideos(videos, startIndex)
     }
 
     // Начать обучение
@@ -829,22 +701,14 @@ export default {
       stationImageSrc,
       courseProgram,
       courseStats,
-      expandedLessons,
       activeTab,
       loadingLessons,
-      curriculum,
-      toggleLesson,
-      downloadMaterial,
       isAuthenticated,
       // Video Player
       showVideoPlayer,
       currentVideo,
       currentVideoIndex,
       allVideos,
-      isVideoFile,
-      hasVideoFiles,
-      handleFileClick,
-      playTopicVideos,
       playVideos,
       playNextVideo,
       playPreviousVideo,
@@ -853,8 +717,6 @@ export default {
       // Test handlers
       handleStartTest,
       handleStartFinalTest,
-      // Materials handlers
-      handlePlayVideos,
       // Start learning
       startLearning,
       // Sidebar video
