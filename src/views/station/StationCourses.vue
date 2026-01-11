@@ -1,107 +1,12 @@
 <template>
   <!-- Hero Section с фото станции -->
-    <div class="relative h-[80vh] min-h-[700px] overflow-hidden">
-      <!-- Изображение станции -->
-      <div class="absolute inset-0">
-        <img 
-          :src="stationImageSrc" 
-          :alt="station?.name"
-          class="w-full h-full object-cover"
-        >
-        <!-- Градиентный оверлей -->
-        <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
-        <!-- Дополнительный вертикальный градиент для читаемости текста -->
-        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
-      </div>
-
-      <!-- Контент хедера -->
-      <div class="relative h-full page-container flex flex-col gap-6 md:gap-10 pt-28 pb-16">
-        <!-- Навигация -->
-        <div>
-          <button 
-            class="inline-flex items-center bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all duration-300 group px-4 py-2.5 rounded-xl border border-white/20 hover:border-white/40"
-            @click="$router.push('/stations')"
-          >
-            <ChevronLeftIcon class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
-            <span class="text-sm font-semibold">Все станции</span>
-          </button>
-
-          <!-- Breadcrumb сразу под кнопкой -->
-          <nav class="mt-4 flex items-center space-x-2 text-sm text-white/70">
-            <a
-              href="/stations"
-              class="hover:text-white transition-colors"
-            >Станции</a>
-            <ChevronRightIcon class="w-4 h-4" />
-            <a
-              :href="`/station/${stationId}`"
-              class="hover:text-white transition-colors"
-            >{{ station?.short_name || station?.shortName }}</a>
-            <ChevronRightIcon class="w-4 h-4" />
-            <span class="text-white font-medium">Обучающая программа</span>
-          </nav>
-        </div>
-
-        <!-- Основная информация -->
-        <div class="max-w-4xl">
-          <div class="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md px-3.5 py-1.5 rounded-full mb-3 border border-white/20">
-            <BookOpenIcon class="w-4 h-4 mr-2 text-white" />
-            <span class="text-sm font-semibold text-white">Онлайн-тренинг</span>
-          </div>
-
-          <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-3 leading-tight">
-            {{ courseProgram?.title }}
-          </h1>
-          
-          <p class="text-base md:text-lg text-white/90 mb-6 max-w-3xl leading-relaxed">
-            {{ courseProgram?.description }}
-          </p>
-
-          <!-- Статистика курса -->
-          <div class="flex flex-wrap gap-4">
-            <div class="flex items-center gap-2">
-              <div class="w-9 h-9 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
-                <ClockIcon class="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div class="text-white/70 text-xs">
-                  Длительность
-                </div>
-                <div class="text-white font-bold">
-                  {{ courseStats.duration }}
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-9 h-9 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
-                <PlayCircleIcon class="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div class="text-white/70 text-xs">
-                  Видеоуроков
-                </div>
-                <div class="text-white font-bold">
-                  {{ courseStats.videos }}
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-9 h-9 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center">
-                <DocumentTextIcon class="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div class="text-white/70 text-xs">
-                  Материалов
-                </div>
-                <div class="text-white font-bold">
-                  {{ courseStats.materials }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <StationHero
+    :station="station"
+    :station-id="stationId"
+    :station-image-src="stationImageSrc"
+    :course-program="courseProgram"
+    :course-stats="courseStats"
+  />
 
     <!-- Main Content -->
     <div class="bg-gray-50">
@@ -149,133 +54,10 @@
               <!-- Tab Content -->
               <div class="p-8">
                 <!-- About Tab -->
-                <div v-show="activeTab === 'about'">
-                  <h2 class="text-3xl font-bold text-gray-900 mb-6">
-                    О программе
-                  </h2>
-                  
-                  <!-- Learning Outcomes -->
-                  <div class="mb-10">
-                    <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
-                      <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                        <svg
-                          class="w-5 h-5 text-green-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                      Что вы изучите
-                    </h3>
-                    <div class="grid md:grid-cols-2 gap-4">
-                      <div
-                        v-for="(item, index) in courseProgram?.learningOutcomes"
-                        :key="index" 
-                        class="flex items-start p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                      >
-                        <svg
-                          class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-0.5"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                        <span class="text-gray-700">{{ item }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Requirements -->
-                  <div class="mb-10">
-                    <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
-                      <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                        <svg
-                          class="w-5 h-5 text-blue-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                      Требования
-                    </h3>
-                    <ul class="space-y-3">
-                      <li
-                        v-for="(req, index) in courseProgram?.requirements"
-                        :key="index" 
-                        class="flex items-start p-4 bg-blue-50 rounded-xl"
-                      >
-                        <svg
-                          class="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                        <span class="text-gray-700">{{ req }}</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <!-- Target Audience -->
-                  <div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center">
-                      <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                        <svg
-                          class="w-5 h-5 text-purple-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                      Целевая аудитория
-                    </h3>
-                    <div class="grid md:grid-cols-2 gap-4">
-                      <div
-                        v-for="(audience, index) in courseProgram?.targetAudience"
-                        :key="index" 
-                        class="flex items-center space-x-3 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
-                      >
-                        <div class="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center flex-shrink-0">
-                          <svg
-                            class="w-5 h-5 text-purple-700"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fill-rule="evenodd"
-                              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                              clip-rule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                        <span class="font-medium text-gray-900">{{ audience }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <CourseAboutTab 
+                  v-show="activeTab === 'about'"
+                  :course-program="courseProgram"
+                />
 
                 <!-- Curriculum Tab -->
                 <div v-show="activeTab === 'curriculum'">
@@ -293,87 +75,12 @@
 
           <!-- Right Column - Sidebar -->
           <div class="lg:col-span-1">
-            <div class="sticky top-28 space-y-6">
-              <!-- Video Player Card -->
-              <div
-                v-if="sidebarVideoUrl"
-                class="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 overflow-hidden"
-              >
-                <h3 class="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">
-                  Видео
-                </h3>
-                <div
-                  class="relative w-full rounded-lg overflow-hidden bg-black"
-                  style="aspect-ratio: 16/9;"
-                >
-                  <video
-                    ref="sidebarVideoPlayer"
-                    class="w-full h-full"
-                    :src="sidebarVideoUrl"
-                    controls
-                    preload="metadata"
-                    playsinline
-                    crossorigin="anonymous"
-                    @error="handleVideoError"
-                  >
-                    Ваш браузер не поддерживает воспроизведение видео.
-                  </video>
-                  <div
-                    v-if="loadingSidebarVideo"
-                    class="absolute inset-0 bg-black/50 flex items-center justify-center"
-                  >
-                    <div class="text-white text-center">
-                      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2" />
-                      <p class="text-xs">
-                        Загрузка видео...
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Enrollment Card -->
-              <el-card
-                class="enrollment-card"
-                shadow="always"
-              >
-                <div class="enrollment-card-content">
-                  <el-button 
-                    type="primary"
-                    size="large"
-                    class="start-learning-btn"
-                    @click="startLearning"
-                  >
-                    <template #icon>
-                      <PlayCircleIcon class="w-5 h-5" />
-                    </template>
-                    Начать обучение
-                  </el-button>
-
-                  <el-divider />
-                  
-                  <div class="enrollment-info">
-                    <div class="enrollment-info-item">
-                      <div class="enrollment-info-label">
-                        <ClockIcon class="w-4 h-4" />
-                        <span>Формат</span>
-                      </div>
-                      <span class="enrollment-info-value">Онлайн</span>
-                    </div>
-                    
-                    <el-divider />
-                    
-                    <div class="enrollment-info-item">
-                      <div class="enrollment-info-label">
-                        <BookOpenIcon class="w-4 h-4" />
-                        <span>Доступ</span>
-                      </div>
-                      <span class="enrollment-info-value">Навсегда</span>
-                    </div>
-                  </div>
-                </div>
-              </el-card>
-            </div>
+            <CourseSidebar
+              :sidebar-video-url="sidebarVideoUrl"
+              :loading-sidebar-video="loadingSidebarVideo"
+              @start-learning="startLearning"
+              @video-error="handleVideoError"
+            />
           </div>
         </div>
       </div>
@@ -401,26 +108,23 @@ import { useRoute, useRouter } from 'vue-router'
 import useNotify from '@/composables/useNotify'
 import VideoPlayer from '@/components/course/VideoPlayer.vue'
 import CourseCurriculum from '@/components/course/CourseCurriculum.vue'
+import StationHero from '@/components/course/StationHero.vue'
+import CourseAboutTab from '@/components/course/CourseAboutTab.vue'
+import CourseSidebar from '@/components/course/CourseSidebar.vue'
 import courseMaterials from '@/data/courseMaterials.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'
 import stationService from '@/services/stationService'
 import { ElMessage } from 'element-plus'
-import { ClockIcon, PlayCircleIcon, DocumentTextIcon, BookOpenIcon, ChevronRightIcon, ChevronLeftIcon, TrophyIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
 export default {
   name: 'StationCourses',
   components: {
     VideoPlayer,
     CourseCurriculum,
-    ClockIcon,
-    PlayCircleIcon,
-    DocumentTextIcon,
-    BookOpenIcon,
-    ChevronRightIcon,
-    ChevronLeftIcon,
-    TrophyIcon,
-    ArrowDownTrayIcon
+    StationHero,
+    CourseAboutTab,
+    CourseSidebar
   },
   setup() {
     const route = useRoute()
@@ -464,7 +168,6 @@ export default {
     // Sidebar Video Player State
     const sidebarVideoUrl = ref(null)
     const loadingSidebarVideo = ref(false)
-    const sidebarVideoPlayer = ref(null)
     
     // Video Player State
     const showVideoPlayer = ref(false)
@@ -1157,7 +860,6 @@ export default {
       // Sidebar video
       sidebarVideoUrl,
       loadingSidebarVideo,
-      sidebarVideoPlayer,
       handleVideoError
     }
   }
@@ -1227,78 +929,5 @@ export default {
   }
 }
 
-/* Enrollment Card Styles */
-.enrollment-card {
-  border: 2px solid #3b82f6;
-  border-radius: 16px;
-  overflow: hidden;
-  position: relative;
-}
-
-.enrollment-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 128px;
-  height: 128px;
-  background: #3b82f6;
-  opacity: 0.1;
-  border-radius: 50%;
-  transform: translate(50%, -50%);
-}
-
-.enrollment-card-content {
-  position: relative;
-  z-index: 1;
-}
-
-.start-learning-btn {
-  width: 100%;
-  margin-bottom: 24px;
-  font-weight: 700;
-  font-size: 16px;
-  padding: 16px 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-}
-
-.start-learning-btn:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.enrollment-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.enrollment-info-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
-}
-
-.enrollment-info-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.enrollment-info-value {
-  font-weight: 700;
-  color: #111827;
-  font-size: 14px;
-}
-
-:deep(.el-divider) {
-  margin: 12px 0;
-}
 </style>
 
