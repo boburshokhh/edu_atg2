@@ -1,7 +1,7 @@
 <template>
   <header
     :class="[
-      'h-16 border-b flex items-center justify-between px-6 shrink-0 z-30 transition-colors duration-200',
+      'h-16 border-b flex items-center justify-between px-6 shrink-0 z-50 transition-colors duration-200',
       isDark 
         ? 'bg-gray-800 border-gray-700' 
         : 'bg-white border-gray-200'
