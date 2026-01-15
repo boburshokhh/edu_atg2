@@ -1,7 +1,7 @@
 <template>
   <header
     :class="[
-      'h-16 border-b flex items-center justify-between px-6 shrink-0 z-20 transition-colors duration-200',
+      'h-16 border-b flex items-center justify-between px-6 shrink-0 z-30 transition-colors duration-200',
       isDark 
         ? 'bg-gray-800 border-gray-700' 
         : 'bg-white border-gray-200'
@@ -248,7 +248,7 @@
           <div 
             v-if="userDropdownOpen"
             :class="[
-              'absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-1 border z-50',
+              'absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-1 border z-[9999]',
               isDark 
                 ? 'bg-gray-800 border-gray-700' 
                 : 'bg-white border-gray-100'
