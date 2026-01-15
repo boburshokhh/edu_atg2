@@ -841,9 +841,9 @@ class AdminAnalyticsStationDetailView(APIView):
 
             test_stats = {"average_score": 0, "total_attempts": 0, "pass_rate": 0}
             if program_ids:
-            with connection.cursor() as cursor:
-                # Get lesson test IDs for programs in this station
-                cursor.execute(
+                with connection.cursor() as cursor:
+                    # Get lesson test IDs for programs in this station
+                    cursor.execute(
                     """
                     SELECT lt.id
                     FROM course_program_lesson_tests lt
@@ -949,57 +949,57 @@ class AdminAnalyticsStationDetailView(APIView):
             most_viewed = []
             with connection.cursor() as cursor:
                 cursor.execute(
-                """
-                SELECT ucm.material_key, ucm.material_type, cp.title, COUNT(*) AS view_count
-                FROM user_course_materials ucm
-                JOIN course_programs cp ON cp.id = ucm.course_program_id
-                WHERE ucm.is_completed = true AND cp.station_id = %s
-                GROUP BY ucm.material_key, ucm.material_type, cp.title
-                ORDER BY view_count DESC
-                LIMIT 20
-                """,
-                [stationId],
-            )
-            for material_key, material_type, title, view_count in cursor.fetchall():
-                most_viewed.append(
-                    {
-                        "material_key": material_key,
-                        "material_type": material_type,
-                        "course_title": title,
-                        "view_count": int(view_count),
-                    }
+                    """
+                    SELECT ucm.material_key, ucm.material_type, cp.title, COUNT(*) AS view_count
+                    FROM user_course_materials ucm
+                    JOIN course_programs cp ON cp.id = ucm.course_program_id
+                    WHERE ucm.is_completed = true AND cp.station_id = %s
+                    GROUP BY ucm.material_key, ucm.material_type, cp.title
+                    ORDER BY view_count DESC
+                    LIMIT 20
+                    """,
+                    [stationId],
                 )
+                for material_key, material_type, title, view_count in cursor.fetchall():
+                    most_viewed.append(
+                        {
+                            "material_key": material_key,
+                            "material_type": material_type,
+                            "course_title": title,
+                            "view_count": int(view_count),
+                        }
+                    )
 
             activity_timeline = _build_station_activity_timeline(30, stationId)
 
             return JsonResponse(
-            {
-                "data": {
-                    "station": station,
-                    "overview": {
-                        "total_courses": len(programs),
-                        "total_enrollments": total_enrollments,
-                        "active_enrollments": status_counts["in_progress"],
-                        "completed_enrollments": status_counts["completed"],
-                        "unique_users": unique_users,
-                        "average_progress": round(float(avg_progress or 0), 2),
-                        "average_test_score": test_stats["average_score"],
-                        "total_hours_studied": float(total_hours or 0),
-                    },
-                    "enrollments": {
-                        "by_status": status_counts,
-                        "progress_distribution": [
-                            {"range": key, "count": value} for key, value in buckets.items()
-                        ],
-                    },
-                    "materials": {
-                        "by_type": material_stats,
-                        "most_viewed": most_viewed,
-                    },
-                    "test_results": test_stats,
-                    "courses": courses_data,
-                    "activity_timeline": activity_timeline,
-                }
+                {
+                    "data": {
+                        "station": station,
+                        "overview": {
+                            "total_courses": len(programs),
+                            "total_enrollments": total_enrollments,
+                            "active_enrollments": status_counts["in_progress"],
+                            "completed_enrollments": status_counts["completed"],
+                            "unique_users": unique_users,
+                            "average_progress": round(float(avg_progress or 0), 2),
+                            "average_test_score": test_stats["average_score"],
+                            "total_hours_studied": float(total_hours or 0),
+                        },
+                        "enrollments": {
+                            "by_status": status_counts,
+                            "progress_distribution": [
+                                {"range": key, "count": value} for key, value in buckets.items()
+                            ],
+                        },
+                        "materials": {
+                            "by_type": material_stats,
+                            "most_viewed": most_viewed,
+                        },
+                        "test_results": test_stats,
+                        "courses": courses_data,
+                        "activity_timeline": activity_timeline,
+                    }
                 }
             )
         except Exception as e:
