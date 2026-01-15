@@ -59,7 +59,7 @@
       <!-- Main Content Area -->
       <main 
         :class="[
-          'flex-1 flex flex-col h-full relative min-h-0 transition-colors duration-200',
+          'flex-1 flex flex-col h-full relative min-h-0 min-w-0 transition-colors duration-200',
           isDark ? 'bg-black/40' : 'bg-gray-100'
         ]"
       >

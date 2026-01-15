@@ -140,7 +140,7 @@
       <div 
         ref="pagesWrapper"
         class="pdf-pages-wrapper flex flex-col items-center py-4 min-h-full"
-        :style="{ minWidth: containerWidth + 'px' }"
+        :style="{ minWidth: Math.min(containerWidth, maxPageWidth) + 'px' }"
       >
         <!-- Virtual Pages -->
         <div
@@ -218,7 +218,7 @@
 </template>
 
 <script setup>
-import { ref, shallowRef, watch, onMounted, onBeforeUnmount, nextTick, markRaw } from 'vue'
+import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, nextTick, markRaw } from 'vue'
 import * as pdfjsLib from 'pdfjs-dist'
 
 // Configure PDF.js worker
@@ -264,6 +264,13 @@ const pageWidths = ref({})
 const pageHeights = ref({})
 const estimatedPageHeight = ref(1130)
 const containerWidth = ref(0)
+
+// Computed: maximum page width to limit minWidth of pages wrapper
+const maxPageWidth = computed(() => {
+  const widths = Object.values(pageWidths.value)
+  if (widths.length === 0) return containerWidth.value
+  return Math.max(...widths)
+})
 
 // Virtualization
 const renderedPages = ref(new Set())
@@ -410,22 +417,32 @@ async function calculateAllPageDimensions() {
 function calculateOptimalScale(originalWidth) {
   if (!scrollContainer.value) return
   
-  const containerW = scrollContainer.value.clientWidth - 48
-  containerWidth.value = containerW
+  // Get available width, ensuring we don't exceed parent container limits
+  const scrollContainerWidth = scrollContainer.value.clientWidth
+  const availableWidth = Math.max(0, scrollContainerWidth - 48)
   
-  const optimalScale = containerW / originalWidth
+  // Ensure containerWidth doesn't exceed available width
+  containerWidth.value = Math.min(availableWidth, scrollContainerWidth)
+  
+  const optimalScale = availableWidth / originalWidth
   scale.value = Math.min(Math.max(optimalScale, 0.5), 2)
 }
 
 // Fit to width
 async function fitToWidth() {
-  if (!pdfDoc.value) return
+  if (!pdfDoc.value || !scrollContainer.value) return
   
   const firstPage = await pdfDoc.value.getPage(1)
   const viewport = firstPage.getViewport({ scale: 1 })
   
-  const containerW = scrollContainer.value.clientWidth - 48
-  scale.value = containerW / viewport.width
+  // Get available width, ensuring we don't exceed parent container limits
+  const scrollContainerWidth = scrollContainer.value.clientWidth
+  const availableWidth = Math.max(0, scrollContainerWidth - 48)
+  
+  // Update containerWidth to match available width
+  containerWidth.value = Math.min(availableWidth, scrollContainerWidth)
+  
+  scale.value = availableWidth / viewport.width
   
   debouncedRender()
 }
@@ -846,8 +863,10 @@ onMounted(() => {
   resizeObserver = new ResizeObserver((entries) => {
     if (!pdfDoc.value || !scrollContainer.value) return
     
-    const newWidth = scrollContainer.value.clientWidth - 48
-    containerWidth.value = newWidth
+    // Get available width, ensuring we don't exceed parent container limits
+    const scrollContainerWidth = scrollContainer.value.clientWidth
+    const newWidth = Math.max(0, scrollContainerWidth - 48)
+    containerWidth.value = Math.min(newWidth, scrollContainerWidth)
     
     // Don't auto-fit if we're in fullscreen mode or just exited it
     // This prevents unwanted scale changes during fullscreen transitions
@@ -874,7 +893,8 @@ onMounted(() => {
   
   if (scrollContainer.value) {
     resizeObserver.observe(scrollContainer.value)
-    previousContainerWidth = scrollContainer.value.clientWidth - 48
+    const scrollContainerWidth = scrollContainer.value.clientWidth
+    previousContainerWidth = Math.max(0, scrollContainerWidth - 48)
   }
 })
 
@@ -922,6 +942,8 @@ defineExpose({
 }
 
 .pdf-scroll-container {
+  max-width: 100%;
+  width: 100%;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
   touch-action: pan-x pan-y;
@@ -945,6 +967,11 @@ defineExpose({
 
 .pdf-scroll-container::-webkit-scrollbar-thumb:hover {
   background-color: rgba(107, 114, 128, 0.8);
+}
+
+.pdf-pages-wrapper {
+  max-width: 100%;
+  width: 100%;
 }
 
 .pdf-page-container {
