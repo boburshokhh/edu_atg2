@@ -218,7 +218,7 @@ export function useCourseProgram(station, isEditing) {
   const deleteTopicFile = async (row) => {
     if (!activeTopic.value?.id) return
     try {
-      await stationService.deleteCourseProgramTopicFile(route.params.id, activeTopic.value.id, row.id, { deleteObject: false })
+      await stationService.deleteCourseProgramTopicFile(route.params.id, activeTopic.value.id, row.id, { deleteObject: true })
       const allFiles = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
       topicFiles.value = allFiles.filter(f => f.isActive !== false)
       activeTopic.value.files = topicFiles.value

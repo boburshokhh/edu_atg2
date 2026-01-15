@@ -10,29 +10,20 @@
       @close="handleClose"
     >
       <div
+        ref="playerContainer"
         class="video-wrapper relative bg-black rounded-lg overflow-hidden" 
         @contextmenu.prevent
         @dragstart.prevent
         @selectstart.prevent
       >
-        <!-- Native HTML5 Video Player -->
+        <!-- Plyr Video Player -->
         <video
           ref="videoElement"
+          :key="videoKey"
           class="w-full h-full"
-          :controls="true"
           preload="metadata"
           :playsinline="true"
           crossorigin="anonymous"
-          @loadedmetadata="handleLoadedMetadata"
-          @loadstart="handleLoadStart"
-          @canplay="handleCanPlay"
-          @canplaythrough="handleCanPlayThrough"
-          @waiting="handleWaiting"
-          @playing="handlePlaying"
-          @ended="handleEnded"
-          @error="handleError"
-          @timeupdate="handleTimeUpdate"
-          @progress="handleProgress"
           @contextmenu.prevent
           @dragstart.prevent
         />
@@ -40,7 +31,7 @@
         <!-- Loading Overlay -->
         <div
           v-if="loading"
-          class="absolute inset-0 bg-black/50 flex items-center justify-center z-50 pointer-events-none"
+          class="absolute inset-0 bg-black/50 flex items-center justify-center z-10 pointer-events-none"
         >
           <div class="text-white text-center">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4" />
@@ -95,8 +86,10 @@
 </template>
 
 <script>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import Plyr from 'plyr'
+import 'plyr/dist/plyr.css'
 
 export default {
   name: 'VideoPlayer',
@@ -137,11 +130,60 @@ export default {
   emits: ['update:modelValue', 'close', 'video-end', 'next', 'previous'],
   setup(props, { emit }) {
     const videoElement = ref(null)
+    const playerContainer = ref(null)
+    const player = ref(null)
+    const videoKey = ref(0)
     const visible = ref(props.modelValue)
     const loading = ref(true)
     const loadingText = ref('Загрузка видео...')
     const currentTime = ref(0)
     const duration = ref(0)
+
+    // Конфигурация Plyr
+    const plyrConfig = {
+      controls: [
+        'play-large',
+        'play',
+        'progress',
+        'current-time',
+        'duration',
+        'mute',
+        'volume',
+        'settings',
+        'fullscreen'
+      ],
+      settings: ['speed', 'quality'],
+      speed: {
+        selected: 1,
+        options: [0.5, 0.75, 1, 1.25, 1.5, 2]
+      },
+      quality: {
+        default: 720,
+        options: [1080, 720, 480, 360]
+      },
+      ratio: '16:9',
+      autopause: true,
+      resetOnEnd: false,
+      hideControls: true,
+      loadSprite: true,
+      iconUrl: null,
+      blankVideo: null,
+      storage: {
+        enabled: true,
+        key: 'plyr'
+      },
+      invertTime: false,
+      toggleInvert: true,
+      clickToPlay: true,
+      keyboard: {
+        focused: true,
+        global: false
+      },
+      tooltips: {
+        controls: true,
+        seek: true
+      }
+    }
 
     // Видимость модального окна
     watch(() => props.modelValue, (val) => {
@@ -165,8 +207,116 @@ export default {
       }
     })
 
+    // Инициализация Plyr плеера
+    const initPlayer = async () => {
+      if (!videoElement.value || !playerContainer.value) {
+        return
+      }
+
+      // Уничтожаем старый плеер, если есть
+      if (player.value) {
+        try {
+          player.value.destroy()
+        } catch (e) {
+          console.warn('Error destroying old player:', e)
+        }
+        player.value = null
+      }
+
+      try {
+        loading.value = true
+        loadingText.value = 'Инициализация плеера...'
+
+        // Ждем, пока элемент будет готов
+        await nextTick()
+
+        // Создаем Plyr плеер
+        player.value = new Plyr(videoElement.value, plyrConfig)
+
+        // Подписываемся на события Plyr
+        setupPlayerEvents()
+
+        loading.value = false
+      } catch (error) {
+        console.error('Error initializing player:', error)
+        loading.value = false
+        loadingText.value = 'Ошибка инициализации видеоплеера'
+      }
+    }
+
+    // Настройка событий Plyr
+    const setupPlayerEvents = () => {
+      if (!player.value) return
+
+      player.value.on('ready', () => {
+        loading.value = false
+        loadingText.value = ''
+      })
+
+      player.value.on('loadstart', () => {
+        loading.value = true
+        loadingText.value = 'Подключение к серверу...'
+      })
+
+      player.value.on('loadedmetadata', () => {
+        if (player.value) {
+          duration.value = player.value.duration || 0
+        }
+        loading.value = false
+        loadingText.value = ''
+      })
+
+      player.value.on('canplay', () => {
+        loading.value = false
+        loadingText.value = ''
+      })
+
+      player.value.on('canplaythrough', () => {
+        loading.value = false
+        loadingText.value = ''
+      })
+
+      player.value.on('waiting', () => {
+        loading.value = true
+        loadingText.value = 'Буферизация...'
+      })
+
+      player.value.on('playing', () => {
+        loading.value = false
+        loadingText.value = ''
+      })
+
+      player.value.on('ended', () => {
+        emit('video-end', props.videoId)
+      })
+
+      player.value.on('timeupdate', () => {
+        if (player.value) {
+          currentTime.value = player.value.currentTime || 0
+        }
+      })
+
+      player.value.on('progress', () => {
+        // Видео загружает данные
+        if (player.value && videoElement.value) {
+          const buffered = videoElement.value.buffered
+          if (buffered.length > 0 && duration.value > 0) {
+            const bufferedEnd = buffered.end(buffered.length - 1)
+            const bufferedPercent = (bufferedEnd / duration.value) * 100
+            // Можно использовать для показа прогресса загрузки
+          }
+        }
+      })
+
+      player.value.on('error', (event) => {
+        console.error('Video error:', event)
+        loading.value = false
+        loadingText.value = 'Ошибка воспроизведения видео'
+      })
+    }
+
     // Загрузка видео с поддержкой streaming
-    const loadVideo = (url) => {
+    const loadVideo = async (url) => {
       if (!videoElement.value || !url) return
 
       try {
@@ -182,11 +332,11 @@ export default {
           if (isNativeHlsSupported) {
             // Используем нативную поддержку HLS (Safari, Chrome на Android)
             video.src = url
-            loading.value = false
-            loadingText.value = ''
+            videoKey.value++
+            await nextTick()
+            await initPlayer()
           } else {
             // Для браузеров без нативной поддержки HLS показываем ошибку
-            // В будущем можно использовать vue-plyr, который поддерживает HLS
             loading.value = false
             loadingText.value = 'HLS не поддерживается в вашем браузере. Используйте Safari или Chrome на Android.'
             console.warn('HLS not supported in this browser')
@@ -207,19 +357,13 @@ export default {
             video.type = 'video/mp4'
           }
 
-          // Используем preload="metadata" для оптимизации
-          // Видео будет загружаться только по мере необходимости
-          video.preload = 'metadata'
-          
           // Устанавливаем источник
           video.src = url
           
-          // Важно: не вызываем load() явно - браузер сам начнет загрузку metadata
-          // Это позволяет начать воспроизведение сразу после загрузки metadata,
-          // а остальное будет загружаться по мере необходимости (Range requests)
-          
-          loading.value = false
-          loadingText.value = ''
+          // Обновляем ключ для пересоздания элемента
+          videoKey.value++
+          await nextTick()
+          await initPlayer()
         }
       } catch (error) {
         console.error('Error loading video:', error)
@@ -228,69 +372,6 @@ export default {
       }
     }
 
-    // Обработчики событий видео
-    const handleLoadedMetadata = () => {
-      if (videoElement.value) {
-        duration.value = videoElement.value.duration || 0
-      loading.value = false
-        loadingText.value = ''
-      }
-    }
-
-    const handleLoadStart = () => {
-      loadingText.value = 'Подключение к серверу...'
-    }
-
-    const handleCanPlay = () => {
-      // Видео готово к воспроизведению (достаточно данных для начала)
-      loading.value = false
-      loadingText.value = ''
-    }
-
-    const handleCanPlayThrough = () => {
-      // Весь контент загружен или загрузится без остановок
-      loading.value = false
-      loadingText.value = ''
-    }
-
-    const handleProgress = () => {
-      // Видео загружает данные (Range requests работают)
-      // Можно показать прогресс загрузки буфера
-      if (videoElement.value) {
-        const buffered = videoElement.value.buffered
-        if (buffered.length > 0 && duration.value > 0) {
-          const bufferedEnd = buffered.end(buffered.length - 1)
-          const bufferedPercent = (bufferedEnd / duration.value) * 100
-          // Можно использовать для показа прогресса загрузки
-        }
-      }
-    }
-
-    const handleWaiting = () => {
-      loading.value = true
-      loadingText.value = 'Буферизация...'
-    }
-
-    const handlePlaying = () => {
-      loading.value = false
-      loadingText.value = ''
-    }
-
-    const handleEnded = () => {
-      emit('video-end', props.videoId)
-    }
-
-    const handleError = (event) => {
-      console.error('Video error:', event)
-      loading.value = false
-      loadingText.value = 'Ошибка воспроизведения видео'
-    }
-
-    const handleTimeUpdate = () => {
-      if (videoElement.value) {
-        currentTime.value = videoElement.value.currentTime || 0
-      }
-    }
 
     // Форматирование времени
     const formatTime = (seconds) => {
@@ -307,6 +388,16 @@ export default {
 
     // Закрытие плеера
     const handleClose = () => {
+      // Уничтожаем Plyr плеер
+      if (player.value) {
+        try {
+          player.value.destroy()
+          player.value = null
+        } catch (e) {
+          console.warn('Error destroying player:', e)
+        }
+      }
+
       if (videoElement.value) {
         try {
           videoElement.value.pause()
@@ -333,6 +424,16 @@ export default {
     })
 
     onBeforeUnmount(() => {
+      // Уничтожаем Plyr плеер
+      if (player.value) {
+        try {
+          player.value.destroy()
+          player.value = null
+        } catch (e) {
+          console.warn('Error destroying player:', e)
+        }
+      }
+
       if (videoElement.value) {
         videoElement.value.pause()
         videoElement.value.src = ''
@@ -341,6 +442,8 @@ export default {
 
     return {
       videoElement,
+      playerContainer,
+      videoKey,
       visible,
       loading,
       loadingText,
@@ -376,20 +479,50 @@ export default {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  -webkit-touch-callout: none;
+  -khtml-user-select: none;
   pointer-events: auto;
 }
 
-.video-wrapper video::-webkit-media-controls-panel {
-  background-color: rgba(0, 0, 0, 0.8);
+/* Plyr стилизация */
+:deep(.plyr) {
+  width: 100%;
+  height: 100%;
 }
 
-/* Защита от скачивания */
-.video-wrapper video {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
+:deep(.plyr__video-wrapper) {
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.plyr__video) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+:deep(.plyr__controls) {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+}
+
+:deep(.plyr__control--overlaid) {
+  background: rgba(59, 130, 246, 0.9);
+  border-radius: 50%;
+}
+
+:deep(.plyr__control--overlaid:hover) {
+  background: rgba(37, 99, 235, 1);
+}
+
+:deep(.plyr--full-ui input[type=range]) {
+  color: #3B82F6;
+}
+
+:deep(.plyr__control.plyr__tab-focus) {
+  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.5);
+}
+
+:deep(.plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before) {
+  background: #3B82F6;
 }
 </style>

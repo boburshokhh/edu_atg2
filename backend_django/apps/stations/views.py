@@ -829,10 +829,24 @@ class StationCourseProgramTopicFileDeleteView(APIView):
             try:
                 from django.conf import settings
                 from apps.files.minio_client import s3_client
+                from botocore.exceptions import ClientError
+                import logging
 
-                s3_client().delete_object(Bucket=settings.MINIO_BUCKET, Key=str(object_key))
-            except Exception:
-                pass
+                logger = logging.getLogger(__name__)
+                client = s3_client()
+                client.delete_object(Bucket=settings.MINIO_BUCKET, Key=str(object_key))
+                logger.info(f"[StationCourseProgramTopicFileDeleteView] Deleted MinIO object: {object_key}")
+            except ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code", "Unknown")
+                if error_code in ("NoSuchKey", "404", "NotFound"):
+                    # File already deleted - idempotent delete
+                    logger.info(f"[StationCourseProgramTopicFileDeleteView] MinIO object already deleted: {object_key}")
+                else:
+                    logger.error(f"[StationCourseProgramTopicFileDeleteView] Failed to delete MinIO object {object_key}: {e}")
+                    # Continue anyway - record is already soft-deleted
+            except Exception as e:
+                logger.error(f"[StationCourseProgramTopicFileDeleteView] Unexpected error deleting MinIO object {object_key}: {e}")
+                # Continue anyway - record is already soft-deleted
 
         return JsonResponse({"ok": True, "deleted": True, "objectKey": object_key})
 
