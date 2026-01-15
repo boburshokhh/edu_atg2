@@ -34,7 +34,7 @@
           ]"
           @click="$emit('toggle-sidebar')"
         >
-          <span class="material-symbols-outlined text-sm">menu</span>
+          <Menu :size="16" />
         </button>
       </div>
       <p 
@@ -53,7 +53,7 @@
       <!-- Main Materials -->
       <div v-if="mainMaterials.length > 0">
         <div class="flex items-center gap-2 text-primary mb-3">
-          <span class="material-symbols-outlined text-lg">description</span>
+          <FileText :size="18" />
           <h3 class="text-sm font-semibold uppercase tracking-wider">Основные материалы</h3>
         </div>
         <div class="space-y-3 pl-2">
@@ -90,7 +90,7 @@
                 isDark ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'
               ]"
             >
-              <span class="material-symbols-outlined text-xs">check_circle</span>
+              <CheckCircle2 :size="12" />
             </div>
             
             <div 
@@ -140,17 +140,16 @@
                 {{ formatFileSize(material.file_size) }} • {{ getMaterialType(material) }}
               </p>
             </div>
-            <span 
+            <Download 
+              :size="16"
               :class="[
-                'material-symbols-outlined text-sm transition-opacity',
+                'transition-opacity',
                 isActiveMaterial(material)
                   ? 'opacity-100 text-primary'
                   : 'opacity-0 group-hover:opacity-100 text-primary',
                 isDark ? 'text-blue-400' : ''
               ]"
-            >
-              download
-            </span>
+            />
           </a>
         </div>
       </div>
@@ -163,7 +162,7 @@
             isDark ? 'text-gray-400' : 'text-gray-500'
           ]"
         >
-          <span class="material-symbols-outlined text-lg">folder_open</span>
+          <FolderOpen :size="18" />
           <h3 class="text-sm font-semibold uppercase tracking-wider">Дополнительные материалы</h3>
         </div>
         <div class="space-y-4 pl-2">
@@ -199,7 +198,7 @@
                 isDark ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'
               ]"
             >
-              <span class="material-symbols-outlined text-xs">check_circle</span>
+              <CheckCircle2 :size="12" />
             </div>
             
             <div class="mt-0.5 flex items-center justify-center">
@@ -262,6 +261,7 @@
 </template>
 
 <script setup>
+import { Menu, FileText, CheckCircle2, FolderOpen, Download } from 'lucide-vue-next'
 import FileTypeIcon from '@/components/ui/FileTypeIcon.vue'
 
 const props = defineProps({
