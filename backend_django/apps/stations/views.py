@@ -613,7 +613,7 @@ class StationCourseProgramTopicFilesView(APIView):
                     mime_type,
                     is_active
                 from course_program_topic_files
-                where course_program_topic_id = %s
+                where course_program_topic_id = %s AND is_active = true
                 order by order_index, id
                 """,
                 [topic_id],

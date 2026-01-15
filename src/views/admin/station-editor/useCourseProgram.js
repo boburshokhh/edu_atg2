@@ -142,7 +142,7 @@ export function useCourseProgram(station, isEditing) {
 
     try {
       const rows = await stationService.getCourseProgramTopicFiles(route.params.id, topic.id)
-      topicFiles.value = rows
+      topicFiles.value = rows.filter(f => f.isActive !== false)
     } catch (e) {
       ElMessage.error('Ошибка загрузки файлов темы: ' + (e?.message || e))
     }
@@ -190,8 +190,9 @@ export function useCourseProgram(station, isEditing) {
 
       const created = resp?.data
       if (created) {
-        topicFiles.value = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
-        activeTopic.value.files = topicFiles.value.filter(f => f.isActive !== false)
+        const allFiles = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
+        topicFiles.value = allFiles.filter(f => f.isActive !== false)
+        activeTopic.value.files = topicFiles.value
       }
       ElMessage.success('Файл добавлен')
     } catch (e) {
@@ -206,8 +207,9 @@ export function useCourseProgram(station, isEditing) {
     if (!activeTopic.value?.id) return
     try {
       await stationService.updateCourseProgramTopicFile(route.params.id, activeTopic.value.id, row.id, patch)
-      topicFiles.value = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
-      activeTopic.value.files = topicFiles.value.filter(f => f.isActive !== false)
+      const allFiles = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
+      topicFiles.value = allFiles.filter(f => f.isActive !== false)
+      activeTopic.value.files = topicFiles.value
     } catch (e) {
       ElMessage.error('Ошибка обновления: ' + (e?.message || e))
     }
@@ -217,8 +219,9 @@ export function useCourseProgram(station, isEditing) {
     if (!activeTopic.value?.id) return
     try {
       await stationService.deleteCourseProgramTopicFile(route.params.id, activeTopic.value.id, row.id, { deleteObject: false })
-      topicFiles.value = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
-      activeTopic.value.files = topicFiles.value.filter(f => f.isActive !== false)
+      const allFiles = await stationService.getCourseProgramTopicFiles(route.params.id, activeTopic.value.id)
+      topicFiles.value = allFiles.filter(f => f.isActive !== false)
+      activeTopic.value.files = topicFiles.value
       ElMessage.success('Удалено')
     } catch (e) {
       ElMessage.error('Ошибка удаления: ' + (e?.message || e))
