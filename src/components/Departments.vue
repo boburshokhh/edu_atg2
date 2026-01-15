@@ -1,5 +1,5 @@
 <template>
-  <div class="section-padding bg-gray-50 min-h-screen">
+  <div class="section-padding bg-gray-50 min-h-screen pt-20 lg:pt-24">
     <div class="page-container">
       <!-- Header -->
       <div class="text-center mb-12">
