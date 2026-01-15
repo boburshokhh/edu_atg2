@@ -14,7 +14,6 @@ async function apiRequest(url, options = {}) {
     'Content-Type': 'application/json',
     ...options.headers
   }
-
   if (token) {
     headers.Authorization = token
   }
@@ -31,8 +30,8 @@ async function apiRequest(url, options = {}) {
     } catch {
       errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
     }
-    const errorMessage = errorData.error || errorData.message || errorData.detail || `HTTP ${response.status}`
-    throw new Error(errorMessage)
+    const message = errorData.error || errorData.message || errorData.detail || `HTTP ${response.status}`
+    throw new Error(message)
   }
 
   const contentType = response.headers.get('content-type')
@@ -43,14 +42,39 @@ async function apiRequest(url, options = {}) {
 }
 
 class AdminAnalyticsService {
-  async getCourseAnalytics(stationId) {
-    try {
-      const data = await apiRequest(`/courses/admin/course-analytics?station_id=${stationId}`)
-      return { success: true, data: data.data }
-    } catch (error) {
-      console.error('Error loading course analytics:', error)
-      return { success: false, error: error.message }
-    }
+  async getOverviewStats() {
+    const data = await apiRequest('/courses/admin/analytics/overview')
+    return data.data
+  }
+
+  async getCoursesAnalytics() {
+    const data = await apiRequest('/courses/admin/analytics/courses')
+    return data.data || []
+  }
+
+  async getCourseDetail(courseProgramId) {
+    const data = await apiRequest(`/courses/admin/analytics/courses/${courseProgramId}`)
+    return data.data
+  }
+
+  async getCourseParticipants(courseProgramId) {
+    const data = await apiRequest(`/courses/admin/analytics/courses/${courseProgramId}/participants`)
+    return data.data || []
+  }
+
+  async getUsersAnalytics() {
+    const data = await apiRequest('/courses/admin/analytics/users')
+    return data.data || []
+  }
+
+  async getUserDetail(userId) {
+    const data = await apiRequest(`/courses/admin/analytics/users/${userId}`)
+    return data.data
+  }
+
+  async getMaterialsAnalytics() {
+    const data = await apiRequest('/courses/admin/analytics/materials')
+    return data.data
   }
 }
 

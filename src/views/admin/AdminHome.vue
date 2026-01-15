@@ -23,7 +23,7 @@
       </div>
 
       <!-- Admin Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <!-- Stations Card -->
         <el-card
           shadow="hover"
@@ -57,39 +57,6 @@
           </div>
         </el-card>
 
-        <!-- Analytics Card -->
-        <el-card
-          shadow="hover"
-          class="cursor-pointer"
-          @click="$router.push('/admin/course-analytics')"
-        >
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <div class="flex items-center mb-3">
-                <el-icon class="text-purple-600 mr-2" :size="20">
-                  <DataLine />
-                </el-icon>
-                <h3 class="text-lg font-medium text-gray-900">
-                  Аналитика курсов
-                </h3>
-              </div>
-              <p class="text-sm text-gray-500 mb-4">
-                Подписки, прогресс, материалы и результаты тестов по станциям
-              </p>
-              <el-button
-                text
-                type="primary"
-                size="small"
-              >
-                Перейти
-                <el-icon class="ml-1">
-                  <ArrowRight />
-                </el-icon>
-              </el-button>
-            </div>
-          </div>
-        </el-card>
-
         <!-- Departments Card -->
         <el-card
           shadow="hover"
@@ -108,6 +75,39 @@
               </div>
               <p class="text-sm text-gray-500 mb-4">
                 Управление структурными подразделениями компании, их описаниями и изображениями
+              </p>
+              <el-button
+                text
+                type="primary"
+                size="small"
+              >
+                Перейти
+                <el-icon class="ml-1">
+                  <ArrowRight />
+                </el-icon>
+              </el-button>
+            </div>
+          </div>
+        </el-card>
+
+        <!-- Analytics Card -->
+        <el-card
+          shadow="hover"
+          class="cursor-pointer"
+          @click="$router.push('/admin/analytics')"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center mb-3">
+                <el-icon class="text-purple-600 mr-2" :size="20">
+                  <DataAnalysis />
+                </el-icon>
+                <h3 class="text-lg font-medium text-gray-900">
+                  Аналитика
+                </h3>
+              </div>
+              <p class="text-sm text-gray-500 mb-4">
+                Детальная статистика по курсам, пользователям и материалам
               </p>
               <el-button
                 text
@@ -171,7 +171,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, ArrowRight, OfficeBuilding, Folder, DataLine } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, OfficeBuilding, Folder, DataAnalysis } from '@element-plus/icons-vue'
 import stationService from '@/services/stationService'
 import departmentService from '@/services/departmentService'
 
