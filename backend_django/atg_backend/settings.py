@@ -131,9 +131,14 @@ REST_FRAMEWORK = {
 }
 
 # File upload settings
-DATA_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+# Keep request size limited; large files are uploaded via multipart chunks.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+# Multipart upload settings
+MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024  # 10MB
+MULTIPART_THRESHOLD = 100 * 1024 * 1024  # 100MB
 
 # JWT
 JWT_ACCESS_SECRET = env("JWT_ACCESS_SECRET", "dev-access-secret-change-me")

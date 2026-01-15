@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import mimetypes
 import re
 
@@ -96,6 +97,155 @@ class PresignUploadView(APIView):
         expires_in = int(request.data.get("expiresIn") or 900)
         url = presign_put(key, content_type=content_type, expires_in=expires_in)
         return JsonResponse({"url": url})
+
+
+class MultipartUploadInitiateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        key = request.data.get("key")
+        if not key:
+            return JsonResponse({"error": "Missing key"}, status=400)
+
+        key = key.lstrip("/")
+        content_type = request.data.get("contentType") or "application/octet-stream"
+
+        client = s3_client()
+        try:
+            response = client.create_multipart_upload(
+                Bucket=settings.MINIO_BUCKET,
+                Key=key,
+                ContentType=content_type,
+            )
+            upload_id = response.get("UploadId")
+            if not upload_id:
+                return JsonResponse({"error": "Failed to initiate multipart upload"}, status=500)
+            return JsonResponse({"uploadId": upload_id, "key": key, "bucket": settings.MINIO_BUCKET})
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            message = (e.response.get("Error") or {}).get("Message", "Upload failed")
+            if code == "InvalidAccessKeyId":
+                error_msg = (
+                    f"MinIO credentials error: {message}. "
+                    "Please check MINIO_ACCESS_KEY and MINIO_SECRET_KEY in backend_django/.env file."
+                )
+            elif code == "SignatureDoesNotMatch":
+                error_msg = (
+                    f"MinIO credentials error: {message}. "
+                    "Please check MINIO_SECRET_KEY in backend_django/.env file."
+                )
+            else:
+                error_msg = f"Upload failed: {code} - {message}"
+            return JsonResponse({"error": error_msg}, status=500)
+
+
+class MultipartUploadPartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        key = request.data.get("key")
+        upload_id = request.data.get("uploadId")
+        part_number = int(request.data.get("partNumber") or 0)
+        file_obj = request.FILES.get("file")
+
+        if not key or not upload_id or part_number < 1:
+            return JsonResponse({"error": "Missing key, uploadId, or partNumber"}, status=400)
+        if not file_obj:
+            return JsonResponse({"error": "Missing file"}, status=400)
+
+        max_chunk = getattr(settings, "MULTIPART_CHUNK_SIZE", 10 * 1024 * 1024)
+        if getattr(file_obj, "size", 0) > max_chunk:
+            return JsonResponse({"error": "Chunk size exceeds server limit"}, status=400)
+
+        key = key.lstrip("/")
+        client = s3_client()
+        try:
+            response = client.upload_part(
+                Bucket=settings.MINIO_BUCKET,
+                Key=key,
+                UploadId=upload_id,
+                PartNumber=part_number,
+                Body=file_obj,
+            )
+            etag = response.get("ETag")
+            if not etag:
+                return JsonResponse({"error": "Missing ETag from upload_part"}, status=500)
+            return JsonResponse({"etag": etag, "partNumber": part_number})
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            message = (e.response.get("Error") or {}).get("Message", "Upload failed")
+            return JsonResponse({"error": f"Upload failed: {code} - {message}"}, status=500)
+
+
+class MultipartUploadCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        key = request.data.get("key")
+        upload_id = request.data.get("uploadId")
+        parts = request.data.get("parts")
+        content_type = request.data.get("contentType") or None
+
+        if not key or not upload_id or parts is None:
+            return JsonResponse({"error": "Missing key, uploadId, or parts"}, status=400)
+
+        if isinstance(parts, str):
+            try:
+                parts = json.loads(parts)
+            except json.JSONDecodeError:
+                return JsonResponse({"error": "Invalid parts payload"}, status=400)
+
+        if not isinstance(parts, list) or not parts:
+            return JsonResponse({"error": "Parts must be a non-empty list"}, status=400)
+
+        parts_payload = []
+        for item in parts:
+            part_number = int((item or {}).get("partNumber") or (item or {}).get("PartNumber") or 0)
+            etag = (item or {}).get("etag") or (item or {}).get("ETag")
+            if part_number < 1 or not etag:
+                return JsonResponse({"error": "Invalid parts entry"}, status=400)
+            parts_payload.append({"ETag": etag, "PartNumber": part_number})
+
+        parts_payload.sort(key=lambda p: p["PartNumber"])
+        key = key.lstrip("/")
+        client = s3_client()
+        try:
+            client.complete_multipart_upload(
+                Bucket=settings.MINIO_BUCKET,
+                Key=key,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": parts_payload},
+            )
+            url = presign_get(key, expires_in=60 * 60 * 24 * 7, response_content_type=content_type)
+            return JsonResponse({"key": key, "url": url})
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            message = (e.response.get("Error") or {}).get("Message", "Upload failed")
+            return JsonResponse({"error": f"Upload failed: {code} - {message}"}, status=500)
+
+
+class MultipartUploadAbortView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        key = request.data.get("key")
+        upload_id = request.data.get("uploadId")
+        if not key or not upload_id:
+            return JsonResponse({"error": "Missing key or uploadId"}, status=400)
+
+        key = key.lstrip("/")
+        client = s3_client()
+        try:
+            client.abort_multipart_upload(
+                Bucket=settings.MINIO_BUCKET,
+                Key=key,
+                UploadId=upload_id,
+            )
+            return JsonResponse({"ok": True})
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code")
+            message = (e.response.get("Error") or {}).get("Message", "Upload failed")
+            return JsonResponse({"error": f"Upload failed: {code} - {message}"}, status=500)
 
 
 class FolderContentsView(APIView):

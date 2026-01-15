@@ -1,4 +1,5 @@
 // Service for managing stations via Django REST API
+import { uploadFile as multipartUploadFile, MULTIPART_THRESHOLD } from '@/services/multipartUploadService'
 
 // Unified API base - always use /api proxy (works in both dev and prod)
 const API_BASE_URL = '/api'
@@ -577,9 +578,14 @@ class StationService {
    * @param {string} prefix - Folder prefix (e.g., 'stations/photos')
    * @returns {Promise<string>} - The uploaded file key (path in Minio)
    */
-  async uploadFile(file, prefix = 'uploads') {
+  async uploadFile(file, prefix = 'uploads', { onProgress } = {}) {
     const key = `${prefix}/${Date.now()}_${file.name}`.replace(/\s+/g, '_')
     
+    if (file.size > MULTIPART_THRESHOLD) {
+      const result = await multipartUploadFile(file, key, onProgress)
+      return result.key || key
+    }
+
     // Use FormData for multipart upload
     const formData = new FormData()
     formData.append('file', file)
@@ -619,6 +625,9 @@ class StationService {
       throw new Error(data.error || 'Upload failed')
     }
 
+    if (onProgress) {
+      onProgress(100, file.size, file.size)
+    }
     return key
   }
 }

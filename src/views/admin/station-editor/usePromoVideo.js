@@ -9,6 +9,7 @@ export function usePromoVideo(station, isEditing) {
   const promoVideo = ref(null)
   const promoVideoUrl = ref('')
   const uploadingPromoVideo = ref(false)
+  const promoVideoProgress = ref(0)
 
   const loadPromoVideo = async () => {
     if (!isEditing.value) return
@@ -33,8 +34,17 @@ export function usePromoVideo(station, isEditing) {
     const file = event.target.files?.[0]
     if (!file) return
     uploadingPromoVideo.value = true
+    promoVideoProgress.value = 0
     try {
-      const key = await stationService.uploadFile(file, `stations/${station.value.id}/promo_video`)
+      const key = await stationService.uploadFile(
+        file,
+        `stations/${station.value.id}/promo_video`,
+        {
+          onProgress: (percent) => {
+            promoVideoProgress.value = percent
+          },
+        }
+      )
       const payload = {
         title: file.name,
         objectKey: key
@@ -47,6 +57,7 @@ export function usePromoVideo(station, isEditing) {
       ElMessage.error('Ошибка загрузки видео: ' + (e?.message || e))
     } finally {
       uploadingPromoVideo.value = false
+      promoVideoProgress.value = 0
       event.target.value = ''
     }
   }
@@ -66,6 +77,7 @@ export function usePromoVideo(station, isEditing) {
     promoVideo,
     promoVideoUrl,
     uploadingPromoVideo,
+    promoVideoProgress,
     loadPromoVideo,
     handlePromoVideoUpload,
     deletePromoVideo

@@ -153,6 +153,7 @@ const {
   promoVideo,
   promoVideoUrl,
   uploadingPromoVideo,
+  promoVideoProgress,
   loadPromoVideo,
   handlePromoVideoUpload,
   deletePromoVideo
@@ -254,6 +255,7 @@ provideStationEditorContext({
   promoVideo,
   promoVideoUrl,
   uploadingPromoVideo,
+  promoVideoProgress,
   handlePromoVideoUpload,
   deletePromoVideo,
   // Equipment

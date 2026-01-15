@@ -96,6 +96,12 @@
           </el-popconfirm>
         </div>
       </div>
+      <div
+        v-if="uploadingPromoVideo"
+        class="mt-2"
+      >
+        <el-progress :percentage="promoVideoProgress" :stroke-width="8" />
+      </div>
 
       <div
         v-if="promoVideoUrl"
@@ -795,6 +801,7 @@ const {
   promoVideo,
   promoVideoUrl,
   uploadingPromoVideo,
+  promoVideoProgress,
   handlePromoVideoUpload,
   deletePromoVideo
 } = useStationEditorContext()
