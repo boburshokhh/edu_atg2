@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8 pt-20 lg:pt-24">
     <div class="flex justify-between items-center mb-6">
       <div class="flex items-center gap-4">
         <el-button @click="$router.push('/admin')">

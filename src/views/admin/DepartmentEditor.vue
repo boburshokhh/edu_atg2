@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8 pt-20 lg:pt-24">
     <div class="flex items-center mb-6">
       <el-button
         class="mr-4"
