@@ -53,8 +53,23 @@
           <template #icon>
             <PlayCircleIcon class="w-5 h-5" />
           </template>
-          Начать обучение
+          {{ startButtonLabel }}
         </el-button>
+
+        <div v-if="isEnrolled" class="mb-4">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+            <span>Прогресс</span>
+            <span class="font-medium text-gray-700">{{ progressPercent }}%</span>
+          </div>
+          <el-progress
+            :percentage="progressPercent"
+            :stroke-width="8"
+            :show-text="false"
+          />
+          <div class="mt-2 text-xs text-gray-500">
+            Статус: <span class="font-medium text-gray-700">{{ statusLabel }}</span>
+          </div>
+        </div>
 
         <el-divider />
         
@@ -83,7 +98,7 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ClockIcon, PlayCircleIcon, BookOpenIcon } from '@heroicons/vue/24/solid'
 
 export default {
@@ -101,11 +116,36 @@ export default {
     loadingSidebarVideo: {
       type: Boolean,
       default: false
+    },
+    progressPercent: {
+      type: Number,
+      default: 0
+    },
+    status: {
+      type: String,
+      default: 'not_started'
+    },
+    isEnrolled: {
+      type: Boolean,
+      default: false
     }
   },
   emits: ['start-learning', 'video-error'],
   setup(props, { emit }) {
     const sidebarVideoPlayer = ref(null)
+    const startButtonLabel = computed(() => {
+      if (!props.isEnrolled) return 'Начать обучение'
+      if (props.status === 'completed') return 'Повторить обучение'
+      return 'Продолжить обучение'
+    })
+    const statusLabel = computed(() => {
+      const map = {
+        not_started: 'Не начат',
+        in_progress: 'В процессе',
+        completed: 'Завершен'
+      }
+      return map[props.status] || props.status
+    })
 
     const handleVideoError = (event) => {
       console.error('Ошибка воспроизведения видео:', event)
@@ -114,6 +154,8 @@ export default {
 
     return {
       sidebarVideoPlayer,
+      startButtonLabel,
+      statusLabel,
       handleVideoError
     }
   }

@@ -101,6 +101,7 @@
             @previous="previousLesson"
             @next="nextLesson"
             @mark-complete="markAsCompleted"
+            @material-viewed="handleMaterialViewed"
           />
         </div>
       </main>
@@ -163,6 +164,7 @@ import minioService from '@/services/minioService'
 import authService from '@/services/auth'
 import stationService from '@/services/stationService'
 import testService from '@/services/testService'
+import courseService from '@/services/courseService'
 import { useFullscreen } from '@/composables/useFullscreen'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 
@@ -253,6 +255,7 @@ const currentTopicId = computed(() => `${stationId.value}-${currentLessonIndex.v
 const currentFile = ref(null)
 const mainMaterials = ref([])
 const additionalMaterials = ref([])
+const completedMaterialKeys = new Set()
 
 const currentFileType = computed(() => {
   const f = currentFile.value
@@ -618,10 +621,41 @@ const openMaterial = (material) => {
   currentFile.value = material
 }
 
-const markAsCompleted = () => {
+const registerMaterialCompletion = async (materialType, materialKey) => {
+  if (!materialType || !materialKey) return
+  const dedupeKey = `${materialType}:${materialKey}`
+  if (completedMaterialKeys.has(dedupeKey)) return
+  completedMaterialKeys.add(dedupeKey)
+
+  const user = authService.getCurrentUser()
+  if (!user || !courseProgram.value?.id) return
+
+  await courseService.markMaterialComplete(courseProgram.value.id, materialType, materialKey)
+}
+
+const handleMaterialViewed = async ({ file, type }) => {
+  if (!file || !courseProgram.value?.id) return
+  const typeMap = {
+    video: 'video',
+    pdf: 'pdf'
+  }
+  const materialType = typeMap[type] || 'presentation'
+  const materialKey =
+    file.objectName ||
+    file.objectKey ||
+    file.id ||
+    file.original_name ||
+    file.originalName ||
+    `lesson:${currentLessonIndex.value}-topic:${currentTopicIndex.value}`
+  await registerMaterialCompletion(materialType, materialKey)
+}
+
+const markAsCompleted = async () => {
   completedTopics.value.add(currentTopicId.value)
   localStorage.setItem('completedTopics', JSON.stringify([...completedTopics.value]))
   ElMessage.success('Урок отмечен как завершенный!')
+  const topicKey = currentTopic.value?.topicKey || currentTopicId.value
+  await registerMaterialCompletion('text', `topic:${topicKey}`)
 }
 
 const previousLesson = () => {
@@ -763,12 +797,20 @@ const handleTestCompleted = async ({ score, isPassed }) => {
     try {
       const user = authService.getCurrentUser()
       if (user && testToSave.id) {
-        // Save result to database via API
-        // This will be implemented in the next step
         const testId = testToSave.id
         const testType = isFinalTestMode.value ? 'final' : 'lesson'
-        
-        // For now, save to localStorage
+        const totalQuestions = Array.isArray(testToSave.questions) ? testToSave.questions.length : 0
+        const correctAnswers = totalQuestions > 0 ? Math.round((score / 100) * totalQuestions) : 0
+
+        await testService.saveTestResult({
+          test_id: testId,
+          test_type: testType,
+          score,
+          is_passed: isPassed,
+          correct_answers: correctAnswers,
+          total_questions: totalQuestions
+        })
+
         const testKey = isFinalTestMode.value ? `final_${testId}` : testId
         passedTests.value.add(testKey)
         savePassedTests()

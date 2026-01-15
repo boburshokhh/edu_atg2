@@ -237,7 +237,7 @@
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent } from 'vue'
+import { ref, defineAsyncComponent, watch } from 'vue'
 
 // Lazy load viewers
 const EducationalVideoPlayer = defineAsyncComponent(() => import('../video/EducationalVideoPlayer.vue'))
@@ -270,12 +270,13 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['download-file', 'previous', 'next', 'mark-complete'])
+const emit = defineEmits(['download-file', 'previous', 'next', 'mark-complete', 'material-viewed'])
 
 // Refs
 const contentContainer = ref(null)
 const pdfViewerRef = ref(null)
 const isViewerFullscreen = ref(false)
+const lastEmittedKey = ref(null)
 
 // Zoom state (for non-PDF content)
 const zoom = ref(100)
@@ -348,6 +349,25 @@ if (typeof document !== 'undefined') {
     isViewerFullscreen.value = !!document.fullscreenElement
   })
 }
+
+watch(
+  () => props.currentFile,
+  (file) => {
+    if (!file) return
+    const key =
+      file.objectName ||
+      file.objectKey ||
+      file.id ||
+      file.original_name ||
+      file.originalName
+    if (key && key === lastEmittedKey.value) return
+    lastEmittedKey.value = key
+    emit('material-viewed', {
+      file,
+      type: props.currentFileType
+    })
+  }
+)
 </script>
 
 <style scoped>

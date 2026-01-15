@@ -212,17 +212,17 @@
                         v-for="course in userCourses" 
                         :key="course.id"
                         class="group flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all cursor-pointer"
-                        @click="$router.push(`/course/${course.course_id || course.id}`)"
+                        @click="$router.push(`/station/${course.course_program?.station_id || course.station_id}/courses`)"
                       >
                         <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform">
                           <el-icon :size="isMobile ? 24 : 28">
-                            <component :is="course.course?.icon || 'Monitor'" />
+                            <component :is="course.course_program?.icon || 'Monitor'" />
                           </el-icon>
                         </div>
                         <div class="flex-1 min-w-0 w-full">
                           <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
                             <h3 class="font-bold text-gray-900 text-base sm:text-lg leading-tight group-hover:text-blue-600 transition-colors">
-                              {{ course.course?.title || course.title }}
+                              {{ course.course_program?.title || course.title }}
                             </h3>
                             <span 
                               class="px-2.5 py-1 rounded-full text-xs font-medium shrink-0"
@@ -288,7 +288,7 @@
                   name="stats"
                 >
                   <div class="p-4 sm:p-6">
-                    <UserStatistics :detailed="true" />
+                    <UserStatistics :detailed="true" :stats="courseStats" />
                   </div>
                 </el-tab-pane>
 
@@ -516,6 +516,7 @@ import VueEasyLightbox from 'vue-easy-lightbox'
 import { ElMessage } from 'element-plus'
 import authService from '@/services/auth'
 import userProfileService from '@/services/userProfile'
+import courseService from '@/services/courseService'
 import stationService from '@/services/stationService'
 import { 
   Edit, Camera, Message, OfficeBuilding, Suitcase, ArrowRight, Lock,
@@ -575,6 +576,18 @@ export default {
     const userStats = ref({
       completedCourses: 0,
       hoursStudied: 0
+    })
+    const courseStats = ref({
+      active_courses: 0,
+      completed_courses: 0,
+      materials: {
+        video: 0,
+        pdf: 0,
+        text: 0,
+        presentation: 0,
+        test: 0
+      },
+      average_test_score: 0
     })
     
     const userCourses = ref([])
@@ -746,14 +759,16 @@ export default {
         
         // 2. Загружаем статистику
         const statsPromise = userProfileService.getUserStats(currentUser.id)
+        const courseStatsPromise = courseService.getUserCourseStats()
         
-        // 3. Загружаем курсы
-        const coursesPromise = userProfileService.getUserCourses(currentUser.id)
+        // 3. Загружаем курсы программ
+        const coursesPromise = courseService.getUserCoursePrograms()
         
         // Ждем все запросы
-        const [profileResult, statsResult, coursesResult] = await Promise.all([
+        const [profileResult, statsResult, courseStatsResult, coursesResult] = await Promise.all([
           profilePromise,
           statsPromise,
+          courseStatsPromise,
           coursesPromise
         ])
         
@@ -797,6 +812,11 @@ export default {
             completedCourses: statsResult.data.completed_courses || 0,
             hoursStudied: Math.round(statsResult.data.total_hours_studied || 0)
           }
+        }
+
+        if (courseStatsResult.success && courseStatsResult.data) {
+          courseStats.value = courseStatsResult.data
+          userStats.value.completedCourses = courseStatsResult.data.completed_courses || userStats.value.completedCourses
         }
         
         // Обрабатываем курсы
@@ -880,6 +900,7 @@ export default {
       stations,
       user,
       userStats,
+      courseStats,
       userCourses,
       settingsForm,
       editForm,

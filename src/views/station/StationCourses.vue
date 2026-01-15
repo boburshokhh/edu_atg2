@@ -78,6 +78,9 @@
             <CourseSidebar
               :sidebar-video-url="sidebarVideoUrl"
               :loading-sidebar-video="loadingSidebarVideo"
+              :is-enrolled="isEnrolled"
+              :progress-percent="courseProgress.progress_percent"
+              :status="courseProgress.status"
               @start-learning="startLearning"
               @video-error="handleVideoError"
             />
@@ -100,6 +103,14 @@
       @next="playNextVideo"
       @previous="playPreviousVideo"
     />
+
+    <EnrollCourseModal
+      v-model="showEnrollModal"
+      :course-program="courseProgram"
+      :is-first-enrollment="!isEnrolled"
+      :loading="enrollLoading"
+      @confirm="confirmEnroll"
+    />
 </template>
 
 <script>
@@ -111,10 +122,12 @@ import CourseCurriculum from '@/components/course/CourseCurriculum.vue'
 import StationHero from '@/components/course/StationHero.vue'
 import CourseAboutTab from '@/components/course/CourseAboutTab.vue'
 import CourseSidebar from '@/components/course/CourseSidebar.vue'
+import EnrollCourseModal from '@/components/course/EnrollCourseModal.vue'
 import courseMaterials from '@/data/courseMaterials.json'
 import minioService from '@/services/minioService'
 import authService from '@/services/auth'
 import stationService from '@/services/stationService'
+import courseService from '@/services/courseService'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -124,7 +137,8 @@ export default {
     CourseCurriculum,
     StationHero,
     CourseAboutTab,
-    CourseSidebar
+    CourseSidebar,
+    EnrollCourseModal
   },
   setup() {
     const route = useRoute()
@@ -173,6 +187,13 @@ export default {
     const currentVideo = ref(null)
     const currentVideoIndex = ref(0)
     const allVideos = ref([]) // Все видео из текущего урока/темы
+    const showEnrollModal = ref(false)
+    const enrollLoading = ref(false)
+    const isEnrolled = ref(false)
+    const courseProgress = ref({
+      progress_percent: 0,
+      status: 'not_started'
+    })
 
 
     const courseProgram = computed(() => courseProgramData.value)
@@ -637,6 +658,23 @@ export default {
       // TODO: Реализовать логику запуска итогового теста
     }
 
+    const loadEnrollment = async () => {
+      if (!isAuthenticated.value || !courseProgram.value?.id) {
+        isEnrolled.value = false
+        return
+      }
+      const result = await courseService.getCourseProgramProgress(courseProgram.value.id)
+      if (result.success && result.data) {
+        courseProgress.value = {
+          progress_percent: result.data.progress_percent || 0,
+          status: result.data.status || 'not_started'
+        }
+        isEnrolled.value = true
+      } else if (result.error && result.error.includes('Enrollment not found')) {
+        isEnrolled.value = false
+      }
+    }
+
     // Начать обучение
     const startLearning = () => {
       if (!isAuthenticated.value) {
@@ -657,6 +695,10 @@ export default {
         })
         return
       }
+      if (!isEnrolled.value) {
+        showEnrollModal.value = true
+        return
+      }
       // Переходим к первому уроку и первой теме
       router.push({
         name: 'lesson-viewer',
@@ -666,6 +708,23 @@ export default {
           topicIndex: 0
         }
       })
+    }
+
+    const confirmEnroll = async () => {
+      if (!courseProgram.value?.id) {
+        ElMessage.error('Не удалось определить программу курса')
+        return
+      }
+      enrollLoading.value = true
+      const result = await courseService.enrollInCourseProgram(courseProgram.value.id)
+      enrollLoading.value = false
+      if (!result.success) {
+        ElMessage.error(result.error || 'Не удалось записаться на курс')
+        return
+      }
+      showEnrollModal.value = false
+      await loadEnrollment()
+      startLearning()
     }
 
     const loadStationAndProgram = async () => {
@@ -693,6 +752,7 @@ export default {
       loadAllMaterials()
       // Загружаем видео для бокового меню
       loadSidebarVideo()
+      await loadEnrollment()
     })
 
     return {
@@ -719,6 +779,11 @@ export default {
       handleStartFinalTest,
       // Start learning
       startLearning,
+      confirmEnroll,
+      showEnrollModal,
+      enrollLoading,
+      isEnrolled,
+      courseProgress,
       // Sidebar video
       sidebarVideoUrl,
       loadingSidebarVideo,

@@ -5,6 +5,11 @@ from apps.courses import views
 urlpatterns = [
     path("stations/<int:stationId>", views.CoursesByStationView.as_view()),
     path("me/enrollments", views.MyEnrollmentsView.as_view()),
+    path("me/programs", views.MyCourseProgramsView.as_view()),
+    path("me/stats", views.MyCourseProgramsStatsView.as_view()),
+    path("programs/<int:courseProgramId>/enroll", views.EnrollCourseProgramView.as_view()),
+    path("programs/<int:courseProgramId>/progress", views.CourseProgramProgressView.as_view()),
+    path("programs/<int:courseProgramId>/materials/complete", views.CourseProgramMaterialCompleteView.as_view()),
     path("<uuid:courseId>/programs", views.CourseProgramsView.as_view()),
     path("<uuid:courseId>/enroll", views.EnrollCourseView.as_view()),
     path("<uuid:courseId>", views.CourseDetailView.as_view()),

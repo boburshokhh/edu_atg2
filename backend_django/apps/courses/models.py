@@ -228,6 +228,39 @@ class UserCourse(models.Model):
         managed = False
 
 
+class UserCourseProgram(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    user_id = models.UUIDField()
+    course_program_id = models.IntegerField()
+    progress_percent = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, default="not_started")
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    hours_studied = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    last_activity = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "user_course_programs"
+        managed = False
+
+
+class UserCourseMaterial(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    user_id = models.UUIDField()
+    course_program_id = models.IntegerField()
+    material_type = models.CharField(max_length=20)
+    material_key = models.TextField()
+    is_completed = models.BooleanField(default=False)
+    viewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_course_materials"
+        managed = False
+
+
 class Certificate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     user_id = models.UUIDField()

@@ -7,14 +7,14 @@
           <div class="stat-icon bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white">
             <el-icon><Trophy /></el-icon>
           </div>
-          <span class="text-sm text-gray-500 font-medium">Общий рейтинг</span>
+          <span class="text-sm text-gray-500 font-medium">Средний балл</span>
         </div>
         <div class="flex items-end gap-2">
           <div class="text-4xl font-bold text-gray-900">
-            94/100
+            {{ averageTestScore }}/100
           </div>
-          <div class="text-sm text-green-500 flex items-center mb-1.5 font-medium bg-green-50 px-2 py-0.5 rounded">
-            <el-icon><Top /></el-icon> +2.5%
+          <div class="text-sm text-gray-400 mb-1.5">
+            по тестам
           </div>
         </div>
       </div>
@@ -24,14 +24,14 @@
           <div class="stat-icon bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white">
             <el-icon><Timer /></el-icon>
           </div>
-          <span class="text-sm text-gray-500 font-medium">Время обучения</span>
+          <span class="text-sm text-gray-500 font-medium">Активные курсы</span>
         </div>
         <div class="flex items-end gap-2">
           <div class="text-4xl font-bold text-gray-900">
-            42.5 ч
+            {{ activeCourses }}
           </div>
           <div class="text-sm text-gray-400 mb-1.5">
-            всего
+            в процессе
           </div>
         </div>
       </div>
@@ -45,10 +45,10 @@
         </div>
         <div class="flex items-end gap-2">
           <div class="text-4xl font-bold text-gray-900">
-            18
+            {{ testsCompleted }}
           </div>
           <div class="text-sm text-green-500 mb-1.5 font-medium">
-            17 успешно
+            {{ completedCourses }} курсов
           </div>
         </div>
       </div>
@@ -265,18 +265,38 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import VueApexCharts from 'vue3-apexcharts'
-import { Trophy, Timer, Files, Top, Warning, ArrowRight, Reading } from '@element-plus/icons-vue'
+import { Trophy, Timer, Files, Warning, ArrowRight, Reading } from '@element-plus/icons-vue'
 import { stationsData } from '@/data/stationsData.js'
 
 export default {
   name: 'UserStatistics',
   components: {
     apexchart: VueApexCharts,
-    Trophy, Timer, Files, Top, Warning, ArrowRight, Reading
+    Trophy, Timer, Files, Warning, ArrowRight, Reading
   },
-  setup() {
+  props: {
+    detailed: {
+      type: Boolean,
+      default: false
+    },
+    stats: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  setup(props) {
+    const averageTestScore = computed(() => Math.round(props.stats?.average_test_score || 0))
+    const activeCourses = computed(() => props.stats?.active_courses || 0)
+    const completedCourses = computed(() => props.stats?.completed_courses || 0)
+    const testsCompleted = computed(() => props.stats?.materials?.test || 0)
+    const materialStats = computed(() => ({
+      video: props.stats?.materials?.video || 0,
+      pdf: props.stats?.materials?.pdf || 0,
+      text: props.stats?.materials?.text || 0,
+      presentation: props.stats?.materials?.presentation || 0
+    }))
     // Используем данные из stationsData для реалистичности
     const courseData = stationsData[1].courseProgram
 
@@ -365,10 +385,10 @@ export default {
     })
 
     // --- Donut Chart (Распределение) ---
-    const donutSeries = ref([55, 25, 20])
+    const donutSeries = ref([0, 0, 0])
     const donutOptions = ref({
       chart: { type: 'donut', fontFamily: 'Inter, sans-serif' },
-      labels: ['Интерактивные уроки', 'Видео-лекции', 'Тестирование'],
+      labels: ['Видео', 'PDF', 'Тексты и презентации'],
       colors: ['#3b82f6', '#f59e0b', '#10b981'],
       plotOptions: {
         pie: {
@@ -382,7 +402,7 @@ export default {
                 show: true,
                 label: 'Всего',
                 color: '#64748b',
-                formatter: () => '42.5ч'
+                formatter: (w) => String(w.globals.seriesTotals.reduce((a, b) => a + b, 0))
               }
             }
           }
@@ -429,6 +449,18 @@ export default {
     // --- Mock Data Generation from Real Content ---
     const recentTests = ref([])
     const weakTopics = ref([])
+
+    watch(
+      materialStats,
+      (stats) => {
+        donutSeries.value = [
+          stats.video,
+          stats.pdf,
+          stats.text + stats.presentation
+        ]
+      },
+      { immediate: true }
+    )
 
     onMounted(() => {
       // Генерация истории тестов на основе реальных тем
@@ -518,7 +550,11 @@ export default {
       barSeries, barOptions,
       recentTests,
       weakTopics,
-      getScoreColor, getTextScoreColor
+      getScoreColor, getTextScoreColor,
+      averageTestScore,
+      activeCourses,
+      completedCourses,
+      testsCompleted
     }
   }
 }

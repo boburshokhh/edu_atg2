@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from django.db import transaction
+from django.db import transaction, models
 from django.http import JsonResponse
 from django.utils import timezone
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -11,8 +11,12 @@ from apps.courses.models import (
     Course,
     CourseProgram,
     UserCourse,
+    UserCourseProgram,
+    UserCourseMaterial,
     CourseComment,
     CourseProgramLessonTest,
+    CourseProgramLesson,
+    CourseProgramTopic,
     FinalTest,
     TestQuestion,
     TestQuestionOption,
@@ -88,6 +92,229 @@ class EnrollCourseView(APIView):
                 },
             )
         return JsonResponse({"success": True})
+
+
+def _get_course_program_material_totals(course_program_id: int) -> dict:
+    lesson_ids = list(
+        CourseProgramLesson.objects.filter(course_program_id=course_program_id).values_list("id", flat=True)
+    )
+    if not lesson_ids:
+        return {"total_units": 0, "topics": 0, "files": 0, "tests": 0}
+
+    topics_count = (
+        CourseProgramTopic.objects.filter(lesson_id__in=lesson_ids, is_active=True).count()
+    )
+
+    files_count = 0
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM course_program_topic_files f
+            JOIN course_program_topics t ON t.id = f.course_program_topic_id
+            JOIN course_program_lessons l ON l.id = t.course_program_lesson_id
+            WHERE l.course_program_id = %s AND f.is_active = true
+            """,
+            [course_program_id],
+        )
+        files_count = cursor.fetchone()[0]
+
+    lesson_tests_count = CourseProgramLessonTest.objects.filter(
+        lesson_id__in=lesson_ids, is_active=True
+    ).count()
+    final_tests_count = FinalTest.objects.filter(
+        course_program_id=course_program_id, is_active=True
+    ).count()
+    tests_count = lesson_tests_count + final_tests_count
+
+    materials_count = files_count if files_count > 0 else topics_count
+    total_units = materials_count + tests_count
+    return {
+        "total_units": total_units,
+        "topics": topics_count,
+        "files": files_count,
+        "tests": tests_count,
+    }
+
+
+class EnrollCourseProgramView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, courseProgramId: int):
+        user_id = request.user.id
+        now = timezone.now()
+        with transaction.atomic():
+            enrollment, created = UserCourseProgram.objects.get_or_create(
+                user_id=user_id,
+                course_program_id=courseProgramId,
+                defaults={
+                    "progress_percent": 0,
+                    "status": "in_progress",
+                    "started_at": now,
+                },
+            )
+        return JsonResponse(
+            {
+                "success": True,
+                "created": created,
+                "data": {
+                    "course_program_id": enrollment.course_program_id,
+                    "progress_percent": enrollment.progress_percent,
+                    "status": enrollment.status,
+                    "started_at": enrollment.started_at.isoformat() if enrollment.started_at else None,
+                    "completed_at": enrollment.completed_at.isoformat() if enrollment.completed_at else None,
+                },
+            }
+        )
+
+
+class CourseProgramProgressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, courseProgramId: int):
+        user_id = request.user.id
+        enrollment = UserCourseProgram.objects.filter(
+            user_id=user_id, course_program_id=courseProgramId
+        ).first()
+        if not enrollment:
+            return JsonResponse({"error": "Enrollment not found"}, status=404)
+
+        totals = _get_course_program_material_totals(courseProgramId)
+        completed_count = UserCourseMaterial.objects.filter(
+            user_id=user_id, course_program_id=courseProgramId, is_completed=True
+        ).count()
+
+        total_units = totals["total_units"]
+        progress_percent = (
+            min(100, round((completed_count / total_units) * 100))
+            if total_units > 0
+            else enrollment.progress_percent
+        )
+
+        if progress_percent != enrollment.progress_percent:
+            enrollment.progress_percent = progress_percent
+        if progress_percent >= 100 and enrollment.status != "completed":
+            enrollment.status = "completed"
+            enrollment.completed_at = timezone.now()
+        elif progress_percent > 0 and enrollment.status == "not_started":
+            enrollment.status = "in_progress"
+            if not enrollment.started_at:
+                enrollment.started_at = timezone.now()
+        enrollment.last_activity = timezone.now()
+        enrollment.save(update_fields=["progress_percent", "status", "completed_at", "started_at", "last_activity"])
+
+        return JsonResponse(
+            {
+                "data": {
+                    "course_program_id": enrollment.course_program_id,
+                    "progress_percent": enrollment.progress_percent,
+                    "status": enrollment.status,
+                    "started_at": enrollment.started_at.isoformat() if enrollment.started_at else None,
+                    "completed_at": enrollment.completed_at.isoformat() if enrollment.completed_at else None,
+                    "totals": totals,
+                    "completed_units": completed_count,
+                }
+            }
+        )
+
+
+class CourseProgramMaterialCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, courseProgramId: int):
+        user_id = request.user.id
+        material_type = request.data.get("material_type")
+        material_key = request.data.get("material_key")
+
+        if not material_type or not material_key:
+            return JsonResponse({"error": "material_type and material_key are required"}, status=400)
+
+        with transaction.atomic():
+            material, _created = UserCourseMaterial.objects.get_or_create(
+                user_id=user_id,
+                course_program_id=courseProgramId,
+                material_type=material_type,
+                material_key=material_key,
+                defaults={
+                    "is_completed": True,
+                    "viewed_at": timezone.now(),
+                },
+            )
+            if not material.is_completed:
+                material.is_completed = True
+                material.viewed_at = timezone.now()
+                material.save(update_fields=["is_completed", "viewed_at"])
+
+        return CourseProgramProgressView().get(request, courseProgramId)
+
+
+class MyCourseProgramsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_id = request.user.id
+        enrollments = list(
+            UserCourseProgram.objects.filter(user_id=user_id).order_by("-last_activity").values(
+                "course_program_id",
+                "progress_percent",
+                "status",
+                "started_at",
+                "completed_at",
+                "last_activity",
+            )
+        )
+        program_ids = [e["course_program_id"] for e in enrollments]
+        programs = {
+            p["id"]: p
+            for p in CourseProgram.objects.filter(id__in=program_ids).values(
+                "id", "title", "description", "station_id", "duration", "lessons_count", "topics_count", "tests_count"
+            )
+        }
+
+        data = []
+        for e in enrollments:
+            program = programs.get(e["course_program_id"])
+            if not program:
+                continue
+            data.append(
+                {
+                    **e,
+                    "course_program": program,
+                }
+            )
+
+        return JsonResponse({"data": data})
+
+
+class MyCourseProgramsStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_id = request.user.id
+        enrollments = UserCourseProgram.objects.filter(user_id=user_id)
+        active_courses = enrollments.filter(status="in_progress").count()
+        completed_courses = enrollments.filter(status="completed").count()
+
+        material_counts = UserCourseMaterial.objects.filter(
+            user_id=user_id, is_completed=True
+        ).values("material_type")
+        counts_by_type = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+        for row in material_counts.annotate(count=models.Count("id")):
+            counts_by_type[row["material_type"]] = row["count"]
+
+        test_scores = TestResult.objects.filter(user_id=user_id).values_list("score", flat=True)
+        avg_score = round(sum(test_scores) / len(test_scores), 2) if test_scores else 0
+
+        return JsonResponse(
+            {
+                "data": {
+                    "active_courses": active_courses,
+                    "completed_courses": completed_courses,
+                    "materials": counts_by_type,
+                    "average_test_score": avg_score,
+                }
+            }
+        )
 
 
 class MyEnrollmentsView(APIView):
@@ -820,6 +1047,35 @@ class TestResultCreateView(APIView):
                 time_spent=time_spent,
                 answers_data=answers_data
             )
+
+            course_program_id = None
+            if test_type == "final":
+                course_program_id = test.course_program_id
+            else:
+                lesson = CourseProgramLesson.objects.filter(id=test.lesson_id).values("course_program_id").first()
+                if lesson:
+                    course_program_id = lesson["course_program_id"]
+
+            if course_program_id:
+                UserCourseProgram.objects.get_or_create(
+                    user_id=user_id,
+                    course_program_id=course_program_id,
+                    defaults={
+                        "progress_percent": 0,
+                        "status": "in_progress",
+                        "started_at": timezone.now(),
+                    },
+                )
+                UserCourseMaterial.objects.update_or_create(
+                    user_id=user_id,
+                    course_program_id=course_program_id,
+                    material_type="test",
+                    material_key=f"{test_type}:{test_id}",
+                    defaults={
+                        "is_completed": True,
+                        "viewed_at": timezone.now(),
+                    },
+                )
             
             logger.info(f"[TestResultCreateView] Result created successfully: id={result.id}")
             
