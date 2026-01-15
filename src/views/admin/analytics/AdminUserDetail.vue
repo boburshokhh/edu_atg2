@@ -3,9 +3,27 @@
     <div class="max-w-6xl mx-auto space-y-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <el-avatar :src="user?.avatar_url" :size="64">
-            {{ (user?.full_name || user?.username || 'U').charAt(0) }}
-          </el-avatar>
+          <div 
+            class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-offset-2 transition-all hover:ring-offset-4 shrink-0 cursor-pointer"
+            :class="getAvatarUrl(user) && !imageError
+              ? 'ring-blue-500' 
+              : 'bg-gradient-to-br from-blue-600 to-blue-700 ring-gray-300'"
+            @click="getAvatarUrl(user) && !imageError ? showAvatarPreview = true : null"
+          >
+            <img 
+              v-if="getAvatarUrl(user) && !imageError" 
+              :src="getAvatarUrl(user)" 
+              :alt="user?.full_name || user?.username"
+              class="w-full h-full object-cover transition-transform duration-300"
+              @error="handleImageError"
+            >
+            <div
+              v-else
+              class="w-full h-full flex items-center justify-center text-white text-xl font-semibold"
+            >
+              {{ (user?.full_name || user?.username || 'U').charAt(0).toUpperCase() }}
+            </div>
+          </div>
           <div>
             <h1 class="text-2xl font-semibold text-gray-900">
               {{ user?.full_name || user?.username }}
@@ -91,9 +109,25 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import VueApexCharts from 'vue3-apexcharts'
 import adminAnalyticsService from '@/services/adminAnalyticsService'
+import { getFrontendUrl } from '@/services/minioService'
 
 const route = useRoute()
 const userData = ref(null)
+const imageError = ref(false)
+const showAvatarPreview = ref(false)
+
+const getAvatarUrl = (user) => {
+  if (!user?.avatar_url) return null
+  try {
+    return getFrontendUrl(user.avatar_url)
+  } catch {
+    return user.avatar_url
+  }
+}
+
+const handleImageError = () => {
+  imageError.value = true
+}
 
 const user = computed(() => userData.value?.user)
 const enrollments = computed(() => userData.value?.enrollments || [])

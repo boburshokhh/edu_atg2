@@ -14,13 +14,30 @@
         @click="$router.push(`/admin/analytics/users/${user.user_id}`)"
       >
         <div class="flex items-center gap-3">
-          <el-avatar :src="user.avatar_url" :size="48">
-            {{ (user.full_name || user.username || 'U').charAt(0) }}
-          </el-avatar>
-          <div class="flex-1">
-            <div class="font-semibold text-gray-900">{{ user.full_name || user.username }}</div>
-            <div class="text-xs text-gray-500">{{ user.email }}</div>
-            <div class="text-xs text-gray-400">{{ user.position || 'Должность не указана' }}</div>
+          <div 
+            class="w-12 h-12 rounded-full overflow-hidden ring-2 ring-offset-2 transition-all hover:ring-offset-4 shrink-0"
+            :class="getAvatarUrl(user) && !imageErrors[user.user_id]
+              ? 'ring-blue-500' 
+              : 'bg-gradient-to-br from-blue-600 to-blue-700 ring-gray-300'"
+          >
+            <img 
+              v-if="getAvatarUrl(user) && !imageErrors[user.user_id]" 
+              :src="getAvatarUrl(user)" 
+              :alt="user.full_name || user.username"
+              class="w-full h-full object-cover transition-transform duration-300"
+              @error="() => handleImageError(user.user_id)"
+            >
+            <div
+              v-else
+              class="w-full h-full flex items-center justify-center text-white text-sm font-semibold"
+            >
+              {{ (user.full_name || user.username || 'U').charAt(0).toUpperCase() }}
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-gray-900 truncate">{{ user.full_name || user.username }}</div>
+            <div class="text-xs text-gray-500 truncate">{{ user.email }}</div>
+            <div class="text-xs text-gray-400 truncate">{{ user.position || 'Должность не указана' }}</div>
           </div>
         </div>
         <div class="mt-4 space-y-2">
@@ -42,9 +59,24 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import adminAnalyticsService from '@/services/adminAnalyticsService'
+import { getFrontendUrl } from '@/services/minioService'
 
 const users = ref([])
 const search = ref('')
+const imageErrors = ref({})
+
+const getAvatarUrl = (user) => {
+  if (!user.avatar_url) return null
+  try {
+    return getFrontendUrl(user.avatar_url)
+  } catch {
+    return user.avatar_url
+  }
+}
+
+const handleImageError = (userId) => {
+  imageErrors.value[userId] = true
+}
 
 const filteredUsers = computed(() => {
   const query = search.value.trim().toLowerCase()

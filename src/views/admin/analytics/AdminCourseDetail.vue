@@ -48,12 +48,29 @@
           <el-table-column label="Пользователь" min-width="240">
             <template #default="{ row }">
               <div class="flex items-center gap-3">
-                <el-avatar :src="row.avatar_url" :size="36">
-                  {{ (row.full_name || row.username || 'U').charAt(0) }}
-                </el-avatar>
-                <div>
-                  <div class="font-medium text-gray-900">{{ row.full_name || row.username }}</div>
-                  <div class="text-xs text-gray-500">{{ row.email }}</div>
+                <div 
+                  class="w-9 h-9 rounded-full overflow-hidden ring-2 ring-offset-2 transition-all shrink-0"
+                  :class="getAvatarUrl(row) && !imageErrors[row.user_id]
+                    ? 'ring-blue-500' 
+                    : 'bg-gradient-to-br from-blue-600 to-blue-700 ring-gray-300'"
+                >
+                  <img 
+                    v-if="getAvatarUrl(row) && !imageErrors[row.user_id]" 
+                    :src="getAvatarUrl(row)" 
+                    :alt="row.full_name || row.username"
+                    class="w-full h-full object-cover"
+                    @error="() => handleImageError(row.user_id)"
+                  >
+                  <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center text-white text-xs font-semibold"
+                  >
+                    {{ (row.full_name || row.username || 'U').charAt(0).toUpperCase() }}
+                  </div>
+                </div>
+                <div class="min-w-0">
+                  <div class="font-medium text-gray-900 truncate">{{ row.full_name || row.username }}</div>
+                  <div class="text-xs text-gray-500 truncate">{{ row.email }}</div>
                 </div>
               </div>
             </template>
@@ -77,10 +94,25 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import VueApexCharts from 'vue3-apexcharts'
 import adminAnalyticsService from '@/services/adminAnalyticsService'
+import { getFrontendUrl } from '@/services/minioService'
 
 const route = useRoute()
 const course = ref(null)
 const participants = ref([])
+const imageErrors = ref({})
+
+const getAvatarUrl = (user) => {
+  if (!user.avatar_url) return null
+  try {
+    return getFrontendUrl(user.avatar_url)
+  } catch {
+    return user.avatar_url
+  }
+}
+
+const handleImageError = (userId) => {
+  imageErrors.value[userId] = true
+}
 
 const statusSeries = computed(() => [
   course.value?.enrollments?.by_status?.not_started || 0,
