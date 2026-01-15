@@ -67,6 +67,21 @@ class AdminAnalyticsService {
     return data.data || []
   }
 
+  async getStationsAnalytics() {
+    const data = await apiRequest('/courses/admin/analytics/stations')
+    return data.data || []
+  }
+
+  async getStationDetail(stationId) {
+    const data = await apiRequest(`/courses/admin/analytics/stations/${stationId}`)
+    return data.data
+  }
+
+  async getStationParticipants(stationId) {
+    const data = await apiRequest(`/courses/admin/analytics/stations/${stationId}/participants`)
+    return data.data || []
+  }
+
   async getUserDetail(userId) {
     const data = await apiRequest(`/courses/admin/analytics/users/${userId}`)
     return data.data

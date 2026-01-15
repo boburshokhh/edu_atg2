@@ -24,6 +24,9 @@
           <el-tab-pane label="Курсы" name="courses">
             <AdminCourseAnalytics />
           </el-tab-pane>
+          <el-tab-pane label="Станции" name="stations">
+            <AdminStationAnalytics />
+          </el-tab-pane>
           <el-tab-pane label="Пользователи" name="users">
             <AdminUserAnalytics />
           </el-tab-pane>
@@ -42,6 +45,7 @@ import { ArrowLeft } from '@element-plus/icons-vue'
 import AdminAnalyticsOverview from './AdminAnalyticsOverview.vue'
 import AdminCourseAnalytics from './AdminCourseAnalytics.vue'
 import AdminUserAnalytics from './AdminUserAnalytics.vue'
+import AdminStationAnalytics from './AdminStationAnalytics.vue'
 import AdminMaterialAnalytics from './AdminMaterialAnalytics.vue'
 
 const activeTab = ref('overview')

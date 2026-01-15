@@ -257,6 +257,39 @@ def _build_activity_timeline(days: int = 30, course_program_id: int | None = Non
     return list(timeline.values())
 
 
+def _build_station_activity_timeline(days: int, station_id: int) -> list[dict]:
+    program_ids = list(
+        CourseProgram.objects.filter(station_id=station_id).values_list("id", flat=True)
+    )
+    since = timezone.now().date() - timedelta(days=days - 1)
+    dates = [since + timedelta(days=i) for i in range(days)]
+    timeline = {d.isoformat(): {"date": d.isoformat(), "enrollments": 0, "completions": 0, "materials_viewed": 0} for d in dates}
+
+    if not program_ids:
+        return list(timeline.values())
+
+    def _fetch_counts(table: str, date_column: str, label: str):
+        query = f"""
+            SELECT DATE({date_column}) AS day, COUNT(*)
+            FROM {table}
+            WHERE {date_column} >= %s AND course_program_id IN %s
+            GROUP BY day
+            ORDER BY day
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(query, [since, tuple(program_ids)])
+            for day, count in cursor.fetchall():
+                day_key = day.isoformat()
+                if day_key in timeline:
+                    timeline[day_key][label] = int(count)
+
+    _fetch_counts("user_course_programs", "created_at", "enrollments")
+    _fetch_counts("user_course_programs", "completed_at", "completions")
+    _fetch_counts("user_course_materials", "viewed_at", "materials_viewed")
+
+    return list(timeline.values())
+
+
 class EnrollCourseProgramView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -482,6 +515,554 @@ class AdminAnalyticsOverviewView(APIView):
                 }
             }
         )
+
+
+class AdminAnalyticsStationsView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        stations = list(Station.objects.all().values("id", "name", "short_name", "status"))
+
+        program_counts = {
+            row["station_id"]: row["count"]
+            for row in CourseProgram.objects.values("station_id").annotate(count=models.Count("id"))
+        }
+
+        enrollment_stats = {}
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT cp.station_id,
+                       COUNT(*) AS total,
+                       SUM(CASE WHEN ucp.status = 'in_progress' THEN 1 ELSE 0 END) AS active,
+                       SUM(CASE WHEN ucp.status = 'completed' THEN 1 ELSE 0 END) AS completed,
+                       AVG(ucp.progress_percent) AS avg_progress,
+                       SUM(ucp.hours_studied) AS total_hours,
+                       COUNT(DISTINCT ucp.user_id) AS unique_users,
+                       MAX(ucp.last_activity) AS last_activity
+                FROM user_course_programs ucp
+                JOIN course_programs cp ON cp.id = ucp.course_program_id
+                GROUP BY cp.station_id
+                """
+            )
+            for row in cursor.fetchall():
+                (
+                    station_id,
+                    total,
+                    active,
+                    completed,
+                    avg_progress,
+                    total_hours,
+                    unique_users,
+                    last_activity,
+                ) = row
+                enrollment_stats[int(station_id)] = {
+                    "total": int(total or 0),
+                    "active": int(active or 0),
+                    "completed": int(completed or 0),
+                    "avg_progress": float(avg_progress or 0),
+                    "total_hours": float(total_hours or 0),
+                    "unique_users": int(unique_users or 0),
+                    "last_activity": last_activity.isoformat() if last_activity else None,
+                }
+
+        active_users_map = {}
+        since = timezone.now() - timedelta(days=30)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT cp.station_id, COUNT(DISTINCT ucp.user_id)
+                FROM user_course_programs ucp
+                JOIN course_programs cp ON cp.id = ucp.course_program_id
+                WHERE ucp.last_activity >= %s
+                GROUP BY cp.station_id
+                """,
+                [since],
+            )
+            for station_id, count in cursor.fetchall():
+                active_users_map[int(station_id)] = int(count or 0)
+
+        test_stats_map = {}
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT cp.station_id,
+                       AVG(r.score) AS avg_score,
+                       COUNT(*) AS total_attempts,
+                       SUM(CASE WHEN r.is_passed THEN 1 ELSE 0 END) AS passed_count
+                FROM test_results r
+                LEFT JOIN course_program_lesson_tests lt ON lt.id = r.test_id AND r.test_type = 'lesson'
+                LEFT JOIN course_program_lessons l ON l.id = lt.course_program_lesson_id
+                LEFT JOIN final_tests ft ON ft.id = r.test_id AND r.test_type = 'final'
+                LEFT JOIN course_programs cp ON cp.id = COALESCE(l.course_program_id, ft.course_program_id)
+                GROUP BY cp.station_id
+                """
+            )
+            for station_id, avg_score, total_attempts, passed_count in cursor.fetchall():
+                total_attempts = int(total_attempts or 0)
+                passed_count = int(passed_count or 0)
+                test_stats_map[int(station_id)] = {
+                    "average_score": round(float(avg_score or 0), 2),
+                    "total_attempts": total_attempts,
+                    "pass_rate": round((passed_count / total_attempts) * 100, 2) if total_attempts else 0,
+                }
+
+        totals_by_station = {s["id"]: {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0} for s in stations}
+        completed_by_station = {s["id"]: {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0} for s in stations}
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT cp.station_id, COUNT(*)
+                FROM course_program_topics t
+                JOIN course_program_lessons l ON l.id = t.course_program_lesson_id
+                JOIN course_programs cp ON cp.id = l.course_program_id
+                WHERE t.is_active = true
+                GROUP BY cp.station_id
+                """
+            )
+            for station_id, count in cursor.fetchall():
+                totals_by_station[int(station_id)]["text"] = int(count or 0)
+
+            cursor.execute(
+                """
+                SELECT cp.station_id, f.file_type, COUNT(*)
+                FROM course_program_topic_files f
+                JOIN course_program_topics t ON t.id = f.course_program_topic_id
+                JOIN course_program_lessons l ON l.id = t.course_program_lesson_id
+                JOIN course_programs cp ON cp.id = l.course_program_id
+                WHERE f.is_active = true
+                GROUP BY cp.station_id, f.file_type
+                """
+            )
+            for station_id, file_type, count in cursor.fetchall():
+                key = "presentation"
+                if file_type == "video":
+                    key = "video"
+                elif file_type == "pdf":
+                    key = "pdf"
+                totals_by_station[int(station_id)][key] = int(count or 0)
+
+            cursor.execute(
+                """
+                SELECT cp.station_id, COUNT(*)
+                FROM course_program_lesson_tests lt
+                JOIN course_program_lessons l ON l.id = lt.course_program_lesson_id
+                JOIN course_programs cp ON cp.id = l.course_program_id
+                WHERE lt.is_active = true
+                GROUP BY cp.station_id
+                """
+            )
+            for station_id, count in cursor.fetchall():
+                totals_by_station[int(station_id)]["test"] += int(count or 0)
+
+            cursor.execute(
+                """
+                SELECT cp.station_id, COUNT(*)
+                FROM final_tests ft
+                JOIN course_programs cp ON cp.id = ft.course_program_id
+                WHERE ft.is_active = true
+                GROUP BY cp.station_id
+                """
+            )
+            for station_id, count in cursor.fetchall():
+                totals_by_station[int(station_id)]["test"] += int(count or 0)
+
+            cursor.execute(
+                """
+                SELECT cp.station_id, ucm.material_type, COUNT(*)
+                FROM user_course_materials ucm
+                JOIN course_programs cp ON cp.id = ucm.course_program_id
+                WHERE ucm.is_completed = true
+                GROUP BY cp.station_id, ucm.material_type
+                """
+            )
+            for station_id, material_type, count in cursor.fetchall():
+                completed_by_station[int(station_id)][material_type] = int(count or 0)
+
+        data = []
+        for station in stations:
+            station_id = station["id"]
+            enroll = enrollment_stats.get(station_id, {})
+            tests = test_stats_map.get(station_id, {})
+            totals = totals_by_station.get(station_id, {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0})
+            completed = completed_by_station.get(station_id, {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0})
+            total_materials = sum(totals.values())
+            data.append(
+                {
+                    "station_id": station_id,
+                    "name": station["name"],
+                    "short_name": station["short_name"],
+                    "status": station["status"],
+                    "course_programs": program_counts.get(station_id, 0),
+                    "total_enrollments": enroll.get("total", 0),
+                    "active_enrollments": enroll.get("active", 0),
+                    "completed_enrollments": enroll.get("completed", 0),
+                    "unique_users": enroll.get("unique_users", 0),
+                    "average_progress": round(float(enroll.get("avg_progress", 0)), 2),
+                    "average_test_score": tests.get("average_score", 0),
+                    "total_materials": total_materials,
+                    "materials_by_type": totals,
+                    "completed_materials_by_type": completed,
+                    "active_users": active_users_map.get(station_id, 0),
+                    "last_activity": enroll.get("last_activity"),
+                }
+            )
+
+        return JsonResponse({"data": data, "total": len(data)})
+
+
+class AdminAnalyticsStationDetailView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request, stationId: int):
+        station = Station.objects.filter(id=stationId).values(
+            "id", "name", "short_name", "description", "status", "location", "type"
+        ).first()
+        if not station:
+            return JsonResponse({"error": "Station not found"}, status=404)
+
+        programs = list(
+            CourseProgram.objects.filter(station_id=stationId).values(
+                "id", "title", "description", "lessons_count", "topics_count", "tests_count"
+            )
+        )
+        program_ids = [p["id"] for p in programs]
+
+        enrollments = UserCourseProgram.objects.filter(course_program_id__in=program_ids)
+        total_enrollments = enrollments.count()
+        status_counts = {
+            "not_started": enrollments.filter(status="not_started").count(),
+            "in_progress": enrollments.filter(status="in_progress").count(),
+            "completed": enrollments.filter(status="completed").count(),
+        }
+        unique_users = enrollments.values("user_id").distinct().count()
+        avg_progress = enrollments.aggregate(avg=models.Avg("progress_percent")).get("avg") or 0
+        total_hours = enrollments.aggregate(total=models.Sum("hours_studied")).get("total") or 0
+
+        buckets = {"0-20": 0, "21-40": 0, "41-60": 0, "61-80": 0, "81-100": 0}
+        for progress in enrollments.values_list("progress_percent", flat=True):
+            p = progress or 0
+            if p <= 20:
+                buckets["0-20"] += 1
+            elif p <= 40:
+                buckets["21-40"] += 1
+            elif p <= 60:
+                buckets["41-60"] += 1
+            elif p <= 80:
+                buckets["61-80"] += 1
+            else:
+                buckets["81-100"] += 1
+
+        totals_by_type = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+        completed_by_type = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT f.file_type, COUNT(*)
+                FROM course_program_topic_files f
+                JOIN course_program_topics t ON t.id = f.course_program_topic_id
+                JOIN course_program_lessons l ON l.id = t.course_program_lesson_id
+                JOIN course_programs cp ON cp.id = l.course_program_id
+                WHERE f.is_active = true AND cp.station_id = %s
+                GROUP BY f.file_type
+                """,
+                [stationId],
+            )
+            for file_type, count in cursor.fetchall():
+                key = "presentation"
+                if file_type == "video":
+                    key = "video"
+                elif file_type == "pdf":
+                    key = "pdf"
+                totals_by_type[key] = int(count or 0)
+
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM course_program_topics t
+                JOIN course_program_lessons l ON l.id = t.course_program_lesson_id
+                JOIN course_programs cp ON cp.id = l.course_program_id
+                WHERE t.is_active = true AND cp.station_id = %s
+                """,
+                [stationId],
+            )
+            totals_by_type["text"] = int(cursor.fetchone()[0] or 0)
+
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM course_program_lesson_tests lt
+                JOIN course_program_lessons l ON l.id = lt.course_program_lesson_id
+                JOIN course_programs cp ON cp.id = l.course_program_id
+                WHERE lt.is_active = true AND cp.station_id = %s
+                """,
+                [stationId],
+            )
+            totals_by_type["test"] += int(cursor.fetchone()[0] or 0)
+
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM final_tests ft
+                JOIN course_programs cp ON cp.id = ft.course_program_id
+                WHERE ft.is_active = true AND cp.station_id = %s
+                """,
+                [stationId],
+            )
+            totals_by_type["test"] += int(cursor.fetchone()[0] or 0)
+
+            cursor.execute(
+                """
+                SELECT ucm.material_type, COUNT(*)
+                FROM user_course_materials ucm
+                JOIN course_programs cp ON cp.id = ucm.course_program_id
+                WHERE ucm.is_completed = true AND cp.station_id = %s
+                GROUP BY ucm.material_type
+                """,
+                [stationId],
+            )
+            for material_type, count in cursor.fetchall():
+                completed_by_type[material_type] = int(count or 0)
+
+        material_stats = {}
+        for key in totals_by_type.keys():
+            total = totals_by_type[key]
+            completed = completed_by_type.get(key, 0)
+            completion_rate = round((completed / total) * 100, 2) if total else 0
+            material_stats[key] = {"total": total, "completed": completed, "completion_rate": completion_rate}
+
+        test_stats = {"average_score": 0, "total_attempts": 0, "pass_rate": 0}
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT AVG(r.score) AS avg_score,
+                       COUNT(*) AS total_attempts,
+                       SUM(CASE WHEN r.is_passed THEN 1 ELSE 0 END) AS passed_count
+                FROM test_results r
+                LEFT JOIN course_program_lesson_tests lt ON lt.id = r.test_id AND r.test_type = 'lesson'
+                LEFT JOIN course_program_lessons l ON l.id = lt.course_program_lesson_id
+                LEFT JOIN final_tests ft ON ft.id = r.test_id AND r.test_type = 'final'
+                LEFT JOIN course_programs cp ON cp.id = COALESCE(l.course_program_id, ft.course_program_id)
+                WHERE cp.station_id = %s
+                """,
+                [stationId],
+            )
+            row = cursor.fetchone()
+            if row:
+                avg_score, total_attempts, passed_count = row
+                total_attempts = int(total_attempts or 0)
+                passed_count = int(passed_count or 0)
+                test_stats = {
+                    "average_score": round(float(avg_score or 0), 2),
+                    "total_attempts": total_attempts,
+                    "pass_rate": round((passed_count / total_attempts) * 100, 2) if total_attempts else 0,
+                }
+
+        courses_data = []
+        for program in programs:
+            course_program_id = program["id"]
+            enroll = UserCourseProgram.objects.filter(course_program_id=course_program_id)
+            status_counts_course = {
+                "not_started": enroll.filter(status="not_started").count(),
+                "in_progress": enroll.filter(status="in_progress").count(),
+                "completed": enroll.filter(status="completed").count(),
+            }
+            totals_by_type_course = _get_material_counts_by_type_for_course(course_program_id)
+            completed_by_type_course = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+            for row in UserCourseMaterial.objects.filter(
+                course_program_id=course_program_id, is_completed=True
+            ).values("material_type").annotate(count=models.Count("id")):
+                completed_by_type_course[row["material_type"]] = row["count"]
+
+            buckets_course = {"0-20": 0, "21-40": 0, "41-60": 0, "61-80": 0, "81-100": 0}
+            for progress in enroll.values_list("progress_percent", flat=True):
+                p = progress or 0
+                if p <= 20:
+                    buckets_course["0-20"] += 1
+                elif p <= 40:
+                    buckets_course["21-40"] += 1
+                elif p <= 60:
+                    buckets_course["41-60"] += 1
+                elif p <= 80:
+                    buckets_course["61-80"] += 1
+                else:
+                    buckets_course["81-100"] += 1
+
+            test_stats_course = _get_course_test_score_stats(course_program_id)
+
+            courses_data.append(
+                {
+                    "course_program_id": course_program_id,
+                    "title": program["title"],
+                    "description": program.get("description"),
+                    "lessons_count": program.get("lessons_count", 0),
+                    "topics_count": program.get("topics_count", 0),
+                    "tests_count": program.get("tests_count", 0),
+                    "total_enrollments": enroll.count(),
+                    "active_enrollments": status_counts_course["in_progress"],
+                    "completed_enrollments": status_counts_course["completed"],
+                    "average_progress": round(float(enroll.aggregate(avg=models.Avg("progress_percent")).get("avg") or 0), 2),
+                    "materials": {
+                        "video": {"total": totals_by_type_course["video"], "completed": completed_by_type_course["video"]},
+                        "pdf": {"total": totals_by_type_course["pdf"], "completed": completed_by_type_course["pdf"]},
+                        "text": {"total": totals_by_type_course["text"], "completed": completed_by_type_course["text"]},
+                        "presentation": {"total": totals_by_type_course["presentation"], "completed": completed_by_type_course["presentation"]},
+                        "test": {"total": totals_by_type_course["test"], "completed": completed_by_type_course["test"]},
+                    },
+                    "test_results": test_stats_course,
+                    "progress_distribution": [
+                        {"range": key, "count": value} for key, value in buckets_course.items()
+                    ],
+                }
+            )
+
+        most_viewed = []
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT ucm.material_key, ucm.material_type, cp.title, COUNT(*) AS view_count
+                FROM user_course_materials ucm
+                JOIN course_programs cp ON cp.id = ucm.course_program_id
+                WHERE ucm.is_completed = true AND cp.station_id = %s
+                GROUP BY ucm.material_key, ucm.material_type, cp.title
+                ORDER BY view_count DESC
+                LIMIT 20
+                """,
+                [stationId],
+            )
+            for material_key, material_type, title, view_count in cursor.fetchall():
+                most_viewed.append(
+                    {
+                        "material_key": material_key,
+                        "material_type": material_type,
+                        "course_title": title,
+                        "view_count": int(view_count),
+                    }
+                )
+
+        activity_timeline = _build_station_activity_timeline(30, stationId)
+
+        return JsonResponse(
+            {
+                "data": {
+                    "station": station,
+                    "overview": {
+                        "total_courses": len(programs),
+                        "total_enrollments": total_enrollments,
+                        "active_enrollments": status_counts["in_progress"],
+                        "completed_enrollments": status_counts["completed"],
+                        "unique_users": unique_users,
+                        "average_progress": round(float(avg_progress or 0), 2),
+                        "average_test_score": test_stats["average_score"],
+                        "total_hours_studied": float(total_hours or 0),
+                    },
+                    "enrollments": {
+                        "by_status": status_counts,
+                        "progress_distribution": [
+                            {"range": key, "count": value} for key, value in buckets.items()
+                        ],
+                    },
+                    "materials": {
+                        "by_type": material_stats,
+                        "most_viewed": most_viewed,
+                    },
+                    "test_results": test_stats,
+                    "courses": courses_data,
+                    "activity_timeline": activity_timeline,
+                }
+            }
+        )
+
+
+class AdminAnalyticsStationParticipantsView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request, stationId: int):
+        program_ids = list(
+            CourseProgram.objects.filter(station_id=stationId).values_list("id", flat=True)
+        )
+        if not program_ids:
+            return JsonResponse({"data": [], "total": 0})
+
+        enrollment_stats = {
+            str(row["user_id"]): row
+            for row in UserCourseProgram.objects.filter(course_program_id__in=program_ids)
+            .values("user_id")
+            .annotate(
+                total=models.Count("id"),
+                active=models.Count("id", filter=models.Q(status="in_progress")),
+                completed=models.Count("id", filter=models.Q(status="completed")),
+                avg_progress=models.Avg("progress_percent"),
+                last_activity=models.Max("last_activity"),
+            )
+        }
+
+        user_ids = [row["user_id"] for row in enrollment_stats.values()]
+        users = {
+            str(u["id"]): u
+            for u in User.objects.filter(id__in=user_ids).values("id", "username", "full_name", "email")
+        }
+        profiles = {}
+        for profile in UserProfile.objects.filter(id__in=user_ids).values(
+            "id", "avatar_url", "position", "company"
+        ):
+            profile["avatar_url"] = _resolve_avatar_url(profile.get("avatar_url"))
+            profiles[str(profile["id"])] = profile
+
+        materials_map = {}
+        for row in UserCourseMaterial.objects.filter(
+            course_program_id__in=program_ids, is_completed=True
+        ).values("user_id", "material_type").annotate(count=models.Count("id")):
+            key = str(row["user_id"])
+            if key not in materials_map:
+                materials_map[key] = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+            materials_map[key][row["material_type"]] = row["count"]
+
+        test_scores = {}
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT r.user_id, AVG(r.score) AS avg_score
+                FROM test_results r
+                LEFT JOIN course_program_lesson_tests lt ON lt.id = r.test_id AND r.test_type = 'lesson'
+                LEFT JOIN course_program_lessons l ON l.id = lt.course_program_lesson_id
+                LEFT JOIN final_tests ft ON ft.id = r.test_id AND r.test_type = 'final'
+                LEFT JOIN course_programs cp ON cp.id = COALESCE(l.course_program_id, ft.course_program_id)
+                WHERE cp.station_id = %s
+                GROUP BY r.user_id
+                """,
+                [stationId],
+            )
+            for user_id, avg_score in cursor.fetchall():
+                test_scores[str(user_id)] = round(float(avg_score or 0), 2)
+
+        data = []
+        for user_id, stats in enrollment_stats.items():
+            user = users.get(user_id, {})
+            profile = profiles.get(user_id, {})
+            data.append(
+                {
+                    "user_id": user_id,
+                    "username": user.get("username"),
+                    "full_name": user.get("full_name"),
+                    "email": user.get("email"),
+                    "avatar_url": profile.get("avatar_url"),
+                    "position": profile.get("position"),
+                    "company": profile.get("company"),
+                    "total_enrollments": stats.get("total", 0),
+                    "active_courses": stats.get("active", 0),
+                    "completed_courses": stats.get("completed", 0),
+                    "average_progress": round(float(stats.get("avg_progress") or 0), 2),
+                    "average_test_score": test_scores.get(user_id, 0),
+                    "last_activity": stats.get("last_activity").isoformat() if stats.get("last_activity") else None,
+                    "materials_completed": materials_map.get(
+                        user_id, {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+                    ),
+                }
+            )
+
+        return JsonResponse({"data": data, "total": len(data)})
 
 
 class AdminAnalyticsCoursesView(APIView):
