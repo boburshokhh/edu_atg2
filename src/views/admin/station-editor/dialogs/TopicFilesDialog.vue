@@ -65,10 +65,19 @@
         border
       >
         <el-table-column
-          prop="fileType"
           label="Тип"
           width="110"
-        />
+          align="center"
+        >
+          <template #default="{ row }">
+            <div class="flex items-center justify-center">
+              <FileTypeIcon 
+                :file-type="row.fileType || 'document'" 
+                size="md"
+              />
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column
           prop="isMain"
           label="Основной"
@@ -155,6 +164,7 @@
 import { watch } from 'vue'
 import { Upload } from '@element-plus/icons-vue'
 import { useStationEditorContext } from '../context'
+import FileTypeIcon from '@/components/ui/FileTypeIcon.vue'
 
 const {
   showTopicFilesDialog,
