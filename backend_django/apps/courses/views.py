@@ -844,49 +844,49 @@ class AdminAnalyticsStationDetailView(APIView):
                 with connection.cursor() as cursor:
                     # Get lesson test IDs for programs in this station
                     cursor.execute(
-                    """
-                    SELECT lt.id
-                    FROM course_program_lesson_tests lt
-                    JOIN course_program_lessons l ON l.id = lt.course_program_lesson_id
-                    WHERE l.course_program_id = any(%s) AND lt.is_active = true
-                    """,
-                    [program_ids],
-                )
-                lesson_test_ids = [row[0] for row in cursor.fetchall()]
-                
-                # Get final test IDs for programs in this station
-                cursor.execute(
-                    """
-                    SELECT id
-                    FROM final_tests
-                    WHERE course_program_id = any(%s) AND is_active = true
-                    """,
-                    [program_ids],
-                )
-                final_test_ids = [row[0] for row in cursor.fetchall()]
-                
-                if lesson_test_ids or final_test_ids:
-                    all_test_ids = lesson_test_ids + final_test_ids
+                        """
+                        SELECT lt.id
+                        FROM course_program_lesson_tests lt
+                        JOIN course_program_lessons l ON l.id = lt.course_program_lesson_id
+                        WHERE l.course_program_id = any(%s) AND lt.is_active = true
+                        """,
+                        [program_ids],
+                    )
+                    lesson_test_ids = [row[0] for row in cursor.fetchall()]
+                    
+                    # Get final test IDs for programs in this station
                     cursor.execute(
                         """
-                        SELECT AVG(score) AS avg_score,
-                               COUNT(*) AS total_attempts,
-                               SUM(CASE WHEN is_passed THEN 1 ELSE 0 END) AS passed_count
-                        FROM test_results
-                        WHERE test_id = any(%s)
+                        SELECT id
+                        FROM final_tests
+                        WHERE course_program_id = any(%s) AND is_active = true
                         """,
-                        [all_test_ids],
+                        [program_ids],
                     )
-                    row = cursor.fetchone()
-                    if row and row[1] is not None and row[1] > 0:
-                        avg_score, total_attempts, passed_count = row
-                        total_attempts = int(total_attempts or 0)
-                        passed_count = int(passed_count or 0)
-                        test_stats = {
-                            "average_score": round(float(avg_score or 0), 2),
-                            "total_attempts": total_attempts,
-                            "pass_rate": round((passed_count / total_attempts) * 100, 2) if total_attempts else 0,
-                        }
+                    final_test_ids = [row[0] for row in cursor.fetchall()]
+                    
+                    if lesson_test_ids or final_test_ids:
+                        all_test_ids = lesson_test_ids + final_test_ids
+                        cursor.execute(
+                            """
+                            SELECT AVG(score) AS avg_score,
+                                   COUNT(*) AS total_attempts,
+                                   SUM(CASE WHEN is_passed THEN 1 ELSE 0 END) AS passed_count
+                            FROM test_results
+                            WHERE test_id = any(%s)
+                            """,
+                            [all_test_ids],
+                        )
+                        row = cursor.fetchone()
+                        if row and row[1] is not None and row[1] > 0:
+                            avg_score, total_attempts, passed_count = row
+                            total_attempts = int(total_attempts or 0)
+                            passed_count = int(passed_count or 0)
+                            test_stats = {
+                                "average_score": round(float(avg_score or 0), 2),
+                                "total_attempts": total_attempts,
+                                "pass_rate": round((passed_count / total_attempts) * 100, 2) if total_attempts else 0,
+                            }
 
             courses_data = []
             for program in programs:
