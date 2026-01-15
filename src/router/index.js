@@ -16,6 +16,7 @@ import StationEditor from '@/views/admin/StationEditor.vue'
 import DepartmentList from '@/views/admin/DepartmentList.vue'
 import DepartmentEditor from '@/views/admin/DepartmentEditor.vue'
 import AdminHome from '@/views/admin/AdminHome.vue'
+import CourseAnalytics from '@/views/admin/CourseAnalytics.vue'
 import RegisterProfile from '@/views/user/RegisterProfile.vue'
 import authService from '@/services/auth'
 
@@ -132,6 +133,12 @@ const routes = [
     name: 'AdminDepartmentEdit',
     component: DepartmentEditor,
     props: true,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/course-analytics',
+    name: 'AdminCourseAnalytics',
+    component: CourseAnalytics,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
 ]

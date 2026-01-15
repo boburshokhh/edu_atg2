@@ -317,6 +317,283 @@ class MyCourseProgramsStatsView(APIView):
         )
 
 
+class AdminCourseAnalyticsView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        station_id = request.GET.get("station_id")
+        if not station_id:
+            return JsonResponse({"error": "station_id is required"}, status=400)
+
+        try:
+            station_id = int(station_id)
+        except (ValueError, TypeError):
+            return JsonResponse({"error": "station_id must be an integer"}, status=400)
+
+        program_ids = list(
+            CourseProgram.objects.filter(station_id=station_id).values_list("id", flat=True)
+        )
+
+        if not program_ids:
+            return JsonResponse(
+                {
+                    "data": {
+                        "kpi": {
+                            "totalEnrollments": 0,
+                            "activeEnrollments": 0,
+                            "completedEnrollments": 0,
+                            "averageProgress": 0,
+                            "averageTestScore": 0,
+                            "completedMaterials": 0,
+                        },
+                        "charts": {
+                            "programEnrollments": [],
+                            "progressBuckets": [],
+                            "materials": [],
+                            "activityByDay": [],
+                        },
+                        "userTable": [],
+                        "programTable": [],
+                    }
+                }
+            )
+
+        enrollments_qs = UserCourseProgram.objects.filter(course_program_id__in=program_ids)
+        total_enrollments = enrollments_qs.count()
+        active_enrollments = enrollments_qs.filter(status="in_progress").count()
+        completed_enrollments = enrollments_qs.filter(status="completed").count()
+        average_progress = round(
+            enrollments_qs.aggregate(avg=models.Avg("progress_percent"))["avg"] or 0
+        )
+        completed_materials = UserCourseMaterial.objects.filter(
+            course_program_id__in=program_ids, is_completed=True
+        ).count()
+
+        avg_test_score = 0
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT AVG(r.score)
+                FROM test_results r
+                LEFT JOIN final_tests ft
+                  ON r.test_type = 'final' AND r.test_id = ft.id
+                LEFT JOIN course_program_lesson_tests lt
+                  ON r.test_type = 'lesson' AND r.test_id = lt.id
+                LEFT JOIN course_program_lessons l
+                  ON lt.course_program_lesson_id = l.id
+                WHERE (ft.course_program_id = ANY(%s) OR l.course_program_id = ANY(%s))
+                """,
+                [program_ids, program_ids],
+            )
+            avg_test_score = cursor.fetchone()[0] or 0
+
+        charts = {
+            "programEnrollments": [],
+            "progressBuckets": [],
+            "materials": [],
+            "activityByDay": [],
+        }
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT p.title, COUNT(u.id) AS enrollments
+                FROM course_programs p
+                LEFT JOIN user_course_programs u ON u.course_program_id = p.id
+                WHERE p.station_id = %s
+                GROUP BY p.title
+                ORDER BY enrollments DESC
+                LIMIT 10
+                """,
+                [station_id],
+            )
+            charts["programEnrollments"] = [
+                {"label": row[0], "value": int(row[1] or 0)} for row in cursor.fetchall()
+            ]
+
+            cursor.execute(
+                """
+                SELECT
+                  SUM(CASE WHEN u.progress_percent BETWEEN 0 AND 25 THEN 1 ELSE 0 END) AS b1,
+                  SUM(CASE WHEN u.progress_percent BETWEEN 26 AND 50 THEN 1 ELSE 0 END) AS b2,
+                  SUM(CASE WHEN u.progress_percent BETWEEN 51 AND 75 THEN 1 ELSE 0 END) AS b3,
+                  SUM(CASE WHEN u.progress_percent BETWEEN 76 AND 100 THEN 1 ELSE 0 END) AS b4
+                FROM user_course_programs u
+                JOIN course_programs p ON p.id = u.course_program_id
+                WHERE p.station_id = %s
+                """,
+                [station_id],
+            )
+            row = cursor.fetchone() or (0, 0, 0, 0)
+            charts["progressBuckets"] = [
+                {"label": "0-25%", "value": int(row[0] or 0)},
+                {"label": "26-50%", "value": int(row[1] or 0)},
+                {"label": "51-75%", "value": int(row[2] or 0)},
+                {"label": "76-100%", "value": int(row[3] or 0)},
+            ]
+
+            cursor.execute(
+                """
+                SELECT m.material_type, COUNT(*)
+                FROM user_course_materials m
+                JOIN course_programs p ON p.id = m.course_program_id
+                WHERE p.station_id = %s AND m.is_completed = true
+                GROUP BY m.material_type
+                """,
+                [station_id],
+            )
+            charts["materials"] = [
+                {"label": row[0], "value": int(row[1] or 0)} for row in cursor.fetchall()
+            ]
+
+            cursor.execute(
+                """
+                SELECT to_char(date_trunc('day', u.last_activity), 'YYYY-MM-DD') AS day, COUNT(*)
+                FROM user_course_programs u
+                JOIN course_programs p ON p.id = u.course_program_id
+                WHERE p.station_id = %s
+                GROUP BY day
+                ORDER BY day
+                """,
+                [station_id],
+            )
+            charts["activityByDay"] = [
+                {"label": row[0], "value": int(row[1] or 0)} for row in cursor.fetchall()
+            ]
+
+        user_table = []
+        program_table = []
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                WITH test_results_program AS (
+                    SELECT r.user_id,
+                           COALESCE(ft.course_program_id, l.course_program_id) AS course_program_id,
+                           r.score
+                    FROM test_results r
+                    LEFT JOIN final_tests ft
+                      ON r.test_type = 'final' AND r.test_id = ft.id
+                    LEFT JOIN course_program_lesson_tests lt
+                      ON r.test_type = 'lesson' AND r.test_id = lt.id
+                    LEFT JOIN course_program_lessons l
+                      ON lt.course_program_lesson_id = l.id
+                ),
+                materials_per_user AS (
+                    SELECT user_id, course_program_id, COUNT(*) AS materials_completed
+                    FROM user_course_materials
+                    WHERE is_completed = true
+                    GROUP BY user_id, course_program_id
+                ),
+                scores_per_user AS (
+                    SELECT user_id, course_program_id, AVG(score) AS average_score
+                    FROM test_results_program
+                    WHERE course_program_id IS NOT NULL
+                    GROUP BY user_id, course_program_id
+                )
+                SELECT ucp.user_id,
+                       COALESCE(u.full_name, u.username) AS user_name,
+                       p.title AS program_title,
+                       ucp.status,
+                       ucp.progress_percent,
+                       COALESCE(mpu.materials_completed, 0) AS materials_completed,
+                       COALESCE(spu.average_score, 0) AS average_score,
+                       ucp.last_activity,
+                       ucp.started_at,
+                       ucp.completed_at
+                FROM user_course_programs ucp
+                JOIN course_programs p ON p.id = ucp.course_program_id
+                JOIN users u ON u.id = ucp.user_id
+                LEFT JOIN materials_per_user mpu
+                  ON mpu.user_id = ucp.user_id AND mpu.course_program_id = ucp.course_program_id
+                LEFT JOIN scores_per_user spu
+                  ON spu.user_id = ucp.user_id AND spu.course_program_id = ucp.course_program_id
+                WHERE p.station_id = %s
+                ORDER BY ucp.last_activity DESC
+                LIMIT 200
+                """,
+                [station_id],
+            )
+            user_table = [
+                {
+                    "user_id": row[0],
+                    "user_name": row[1],
+                    "program_title": row[2],
+                    "status": row[3],
+                    "progress_percent": int(row[4] or 0),
+                    "materials_completed": int(row[5] or 0),
+                    "average_score": round(row[6] or 0, 2),
+                    "last_activity": row[7].isoformat() if row[7] else None,
+                    "started_at": row[8].isoformat() if row[8] else None,
+                    "completed_at": row[9].isoformat() if row[9] else None,
+                }
+                for row in cursor.fetchall()
+            ]
+
+            cursor.execute(
+                """
+                WITH test_results_program AS (
+                    SELECT COALESCE(ft.course_program_id, l.course_program_id) AS course_program_id,
+                           r.score
+                    FROM test_results r
+                    LEFT JOIN final_tests ft
+                      ON r.test_type = 'final' AND r.test_id = ft.id
+                    LEFT JOIN course_program_lesson_tests lt
+                      ON r.test_type = 'lesson' AND r.test_id = lt.id
+                    LEFT JOIN course_program_lessons l
+                      ON lt.course_program_lesson_id = l.id
+                ),
+                scores_per_program AS (
+                    SELECT course_program_id, AVG(score) AS average_score
+                    FROM test_results_program
+                    WHERE course_program_id IS NOT NULL
+                    GROUP BY course_program_id
+                )
+                SELECT p.title AS program_title,
+                       COUNT(ucp.id) AS enrollments,
+                       AVG(ucp.progress_percent) AS average_progress,
+                       SUM(CASE WHEN ucp.status = 'in_progress' THEN 1 ELSE 0 END) AS active_count,
+                       SUM(CASE WHEN ucp.status = 'completed' THEN 1 ELSE 0 END) AS completed_count,
+                       COALESCE(spp.average_score, 0) AS average_score
+                FROM course_programs p
+                LEFT JOIN user_course_programs ucp ON ucp.course_program_id = p.id
+                LEFT JOIN scores_per_program spp ON spp.course_program_id = p.id
+                WHERE p.station_id = %s
+                GROUP BY p.title, spp.average_score
+                ORDER BY enrollments DESC
+                """,
+                [station_id],
+            )
+            program_table = [
+                {
+                    "program_title": row[0],
+                    "enrollments": int(row[1] or 0),
+                    "average_progress": round(row[2] or 0, 2),
+                    "active_count": int(row[3] or 0),
+                    "completed_count": int(row[4] or 0),
+                    "average_score": round(row[5] or 0, 2),
+                }
+                for row in cursor.fetchall()
+            ]
+
+        return JsonResponse(
+            {
+                "data": {
+                    "kpi": {
+                        "totalEnrollments": total_enrollments,
+                        "activeEnrollments": active_enrollments,
+                        "completedEnrollments": completed_enrollments,
+                        "averageProgress": average_progress,
+                        "averageTestScore": round(avg_test_score, 2),
+                        "completedMaterials": completed_materials,
+                    },
+                    "charts": charts,
+                    "userTable": user_table,
+                    "programTable": program_table,
+                }
+            }
+        )
+
+
 class MyEnrollmentsView(APIView):
     permission_classes = [IsAuthenticated]
 
