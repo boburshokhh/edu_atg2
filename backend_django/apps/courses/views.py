@@ -27,6 +27,7 @@ from django.db import connection
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from apps.accounts.models import User, UserProfile, UserSession
 from apps.stations.models import Station
+from apps.files.minio_client import presign_get
 
 
 class IsAdmin(IsAuthenticated):
@@ -138,6 +139,17 @@ def _get_course_program_material_totals(course_program_id: int) -> dict:
         "files": files_count,
         "tests": tests_count,
     }
+
+
+def _resolve_avatar_url(avatar_url: str | None) -> str | None:
+    if not avatar_url:
+        return None
+    if avatar_url.startswith("avatars/"):
+        try:
+            return presign_get(avatar_url, expires_in=60 * 60 * 24 * 7)
+        except Exception:
+            return None
+    return avatar_url
 
 
 def _get_active_users_count(days: int = 30) -> int:
@@ -643,10 +655,12 @@ class AdminAnalyticsCourseParticipantsView(APIView):
             str(u["id"]): u
             for u in User.objects.filter(id__in=user_ids).values("id", "username", "full_name", "email")
         }
-        profiles = {
-            str(p["id"]): p
-            for p in UserProfile.objects.filter(id__in=user_ids).values("id", "avatar_url", "position", "company")
-        }
+        profiles = {}
+        for profile in UserProfile.objects.filter(id__in=user_ids).values(
+            "id", "avatar_url", "position", "company"
+        ):
+            profile["avatar_url"] = _resolve_avatar_url(profile.get("avatar_url"))
+            profiles[str(profile["id"])] = profile
 
         materials_map = {}
         for row in UserCourseMaterial.objects.filter(
@@ -713,10 +727,12 @@ class AdminAnalyticsUsersView(APIView):
         users = list(User.objects.all().values("id", "username", "full_name", "email", "role", "is_active", "created_at"))
         user_ids = [u["id"] for u in users]
 
-        profiles = {
-            str(p["id"]): p
-            for p in UserProfile.objects.filter(id__in=user_ids).values("id", "avatar_url", "position", "company")
-        }
+        profiles = {}
+        for profile in UserProfile.objects.filter(id__in=user_ids).values(
+            "id", "avatar_url", "position", "company"
+        ):
+            profile["avatar_url"] = _resolve_avatar_url(profile.get("avatar_url"))
+            profiles[str(profile["id"])] = profile
 
         enrollment_stats = {
             str(row["user_id"]): row
@@ -783,6 +799,7 @@ class AdminAnalyticsUserDetailView(APIView):
         profile = UserProfile.objects.filter(id=userId).values(
             "avatar_url", "position", "company"
         ).first() or {}
+        profile["avatar_url"] = _resolve_avatar_url(profile.get("avatar_url"))
 
         enrollments = list(
             UserCourseProgram.objects.filter(user_id=userId).values(
