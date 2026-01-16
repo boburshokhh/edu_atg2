@@ -210,7 +210,7 @@ const plyrConfig = computed(() => {
     resetOnEnd: false,
     hideControls: true,
     loadSprite: true,
-    iconUrl: null,
+    iconUrl: 'https://cdn.plyr.io/3.7.8/plyr.svg',
     blankVideo: null,
     storage: {
       enabled: true,
