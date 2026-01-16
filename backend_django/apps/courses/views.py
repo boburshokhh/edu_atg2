@@ -161,13 +161,11 @@ def _get_active_users_count(days: int = 30) -> int:
 
 
 def _get_material_counts_by_type_for_course(course_program_id: int) -> dict:
-    totals = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+    totals = {"video": 0, "pdf": 0, "test": 0}
     lesson_ids = list(
         CourseProgramLesson.objects.filter(course_program_id=course_program_id).values_list("id", flat=True)
     )
     if lesson_ids:
-        topics_count = CourseProgramTopic.objects.filter(lesson_id__in=lesson_ids, is_active=True).count()
-        totals["text"] = topics_count
         with connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -185,8 +183,6 @@ def _get_material_counts_by_type_for_course(course_program_id: int) -> dict:
                     totals["video"] += count
                 elif file_type == "pdf":
                     totals["pdf"] += count
-                else:
-                    totals["presentation"] += count
 
         totals["test"] = CourseProgramLessonTest.objects.filter(
             lesson_id__in=lesson_ids, is_active=True
@@ -485,7 +481,7 @@ class AdminAnalyticsOverviewView(APIView):
         avg_progress = UserCourseProgram.objects.aggregate(avg=models.Avg("progress_percent")).get("avg") or 0
         avg_test_score = TestResult.objects.aggregate(avg=models.Avg("score")).get("avg") or 0
 
-        materials_by_type = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+        materials_by_type = {"video": 0, "pdf": 0, "test": 0}
         for row in UserCourseMaterial.objects.filter(is_completed=True).values("material_type").annotate(count=models.Count("id")):
             materials_by_type[row["material_type"]] = row["count"]
 
@@ -758,8 +754,8 @@ class AdminAnalyticsStationDetailView(APIView):
                 else:
                     buckets["81-100"] += 1
 
-            totals_by_type = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
-            completed_by_type = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+            totals_by_type = {"video": 0, "pdf": 0, "test": 0}
+            completed_by_type = {"video": 0, "pdf": 0, "test": 0}
             with connection.cursor() as cursor:
                 cursor.execute(
                 """
@@ -774,25 +770,10 @@ class AdminAnalyticsStationDetailView(APIView):
                     [stationId],
                 )
                 for file_type, count in cursor.fetchall():
-                    key = "presentation"
                     if file_type == "video":
-                        key = "video"
+                        totals_by_type["video"] += int(count or 0)
                     elif file_type == "pdf":
-                        key = "pdf"
-                    totals_by_type[key] = int(count or 0)
-
-                cursor.execute(
-                """
-                SELECT COUNT(*)
-                FROM course_program_topics t
-                JOIN course_program_lessons l ON l.id = t.course_program_lesson_id
-                JOIN course_programs cp ON cp.id = l.course_program_id
-                WHERE t.is_active = true AND cp.station_id = %s
-                """,
-                    [stationId],
-                )
-                result = cursor.fetchone()
-                totals_by_type["text"] = int(result[0] or 0) if result else 0
+                        totals_by_type["pdf"] += int(count or 0)
 
                 cursor.execute(
                     """
@@ -898,7 +879,7 @@ class AdminAnalyticsStationDetailView(APIView):
                     "completed": enroll.filter(status="completed").count(),
                 }
                 totals_by_type_course = _get_material_counts_by_type_for_course(course_program_id)
-                completed_by_type_course = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+                completed_by_type_course = {"video": 0, "pdf": 0, "test": 0}
                 for row in UserCourseMaterial.objects.filter(
                     course_program_id=course_program_id, is_completed=True
                 ).values("material_type").annotate(count=models.Count("id")):
@@ -935,8 +916,6 @@ class AdminAnalyticsStationDetailView(APIView):
                     "materials": {
                         "video": {"total": totals_by_type_course["video"], "completed": completed_by_type_course["video"]},
                         "pdf": {"total": totals_by_type_course["pdf"], "completed": completed_by_type_course["pdf"]},
-                        "text": {"total": totals_by_type_course["text"], "completed": completed_by_type_course["text"]},
-                        "presentation": {"total": totals_by_type_course["presentation"], "completed": completed_by_type_course["presentation"]},
                         "test": {"total": totals_by_type_course["test"], "completed": completed_by_type_course["test"]},
                     },
                     "test_results": test_stats_course,
@@ -1232,8 +1211,6 @@ class AdminAnalyticsCourseDetailView(APIView):
                         "by_type": {
                             "video": {"total": totals_by_type["video"], "completed": completed_by_type["video"]},
                             "pdf": {"total": totals_by_type["pdf"], "completed": completed_by_type["pdf"]},
-                            "text": {"total": totals_by_type["text"], "completed": completed_by_type["text"]},
-                            "presentation": {"total": totals_by_type["presentation"], "completed": completed_by_type["presentation"]},
                             "test": {"total": totals_by_type["test"], "completed": completed_by_type["test"]},
                         }
                     },
@@ -1451,7 +1428,7 @@ class AdminAnalyticsUserDetailView(APIView):
                 }
             )
 
-        materials_by_type = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+        materials_by_type = {"video": 0, "pdf": 0, "test": 0}
         for row in UserCourseMaterial.objects.filter(
             user_id=userId, is_completed=True
         ).values("material_type").annotate(count=models.Count("id")):
@@ -1463,7 +1440,7 @@ class AdminAnalyticsUserDetailView(APIView):
         ).values("course_program_id", "material_type").annotate(count=models.Count("id")):
             course_id = row["course_program_id"]
             if course_id not in materials_by_course:
-                materials_by_course[course_id] = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+                materials_by_course[course_id] = {"video": 0, "pdf": 0, "test": 0}
             materials_by_course[course_id][row["material_type"]] = row["count"]
 
         materials_by_course_list = []
@@ -1529,7 +1506,7 @@ class AdminAnalyticsMaterialsView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        totals = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+        totals = {"video": 0, "pdf": 0, "test": 0}
         with connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -1544,20 +1521,17 @@ class AdminAnalyticsMaterialsView(APIView):
                     totals["video"] += count
                 elif file_type == "pdf":
                     totals["pdf"] += count
-                else:
-                    totals["presentation"] += count
 
-        totals["text"] = CourseProgramTopic.objects.filter(is_active=True).count()
         totals["test"] = CourseProgramLessonTest.objects.filter(is_active=True).count() + FinalTest.objects.filter(is_active=True).count()
 
-        completed = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+        completed = {"video": 0, "pdf": 0, "test": 0}
         for row in UserCourseMaterial.objects.filter(is_completed=True).values("material_type").annotate(count=models.Count("id")):
             completed[row["material_type"]] = row["count"]
 
         by_course = []
         for program in CourseProgram.objects.all().values("id", "title"):
             totals_by_type = _get_material_counts_by_type_for_course(program["id"])
-            completed_by_type = {"video": 0, "pdf": 0, "text": 0, "presentation": 0, "test": 0}
+            completed_by_type = {"video": 0, "pdf": 0, "test": 0}
             for row in UserCourseMaterial.objects.filter(
                 course_program_id=program["id"], is_completed=True
             ).values("material_type").annotate(count=models.Count("id")):
@@ -1569,8 +1543,6 @@ class AdminAnalyticsMaterialsView(APIView):
                     "materials": {
                         "video": {"total": totals_by_type["video"], "viewed": completed_by_type["video"]},
                         "pdf": {"total": totals_by_type["pdf"], "viewed": completed_by_type["pdf"]},
-                        "text": {"total": totals_by_type["text"], "viewed": completed_by_type["text"]},
-                        "presentation": {"total": totals_by_type["presentation"], "viewed": completed_by_type["presentation"]},
                         "test": {"total": totals_by_type["test"], "completed": completed_by_type["test"]},
                     },
                 }

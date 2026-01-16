@@ -148,7 +148,7 @@ const activitySeries = computed(() => [
 
 const materialOptions = computed(() => ({
   chart: { type: 'radar', toolbar: { show: false } },
-  labels: ['Видео', 'PDF', 'Тексты', 'Презентации', 'Тесты'],
+  labels: ['Видео', 'PDF', 'Тесты'],
   colors: ['#0ea5e9']
 }))
 const materialSeries = computed(() => [
@@ -157,8 +157,6 @@ const materialSeries = computed(() => [
     data: [
       course.value?.materials?.by_type?.video?.completed || 0,
       course.value?.materials?.by_type?.pdf?.completed || 0,
-      course.value?.materials?.by_type?.text?.completed || 0,
-      course.value?.materials?.by_type?.presentation?.completed || 0,
       course.value?.materials?.by_type?.test?.completed || 0
     ]
   }

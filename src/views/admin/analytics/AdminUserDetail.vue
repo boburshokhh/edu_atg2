@@ -149,13 +149,11 @@ const averageScore = computed(() => {
 const materialsSeries = computed(() => [
   userData.value?.materials?.by_type?.video || 0,
   userData.value?.materials?.by_type?.pdf || 0,
-  userData.value?.materials?.by_type?.text || 0,
-  userData.value?.materials?.by_type?.presentation || 0,
   userData.value?.materials?.by_type?.test || 0
 ])
 const materialsOptions = computed(() => ({
-  labels: ['Видео', 'PDF', 'Тексты', 'Презентации', 'Тесты'],
-  colors: ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'],
+  labels: ['Видео', 'PDF', 'Тесты'],
+  colors: ['#3b82f6', '#f59e0b', '#ef4444'],
   legend: { position: 'bottom' }
 }))
 

@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <div v-for="(item, key) in materialsByType" :key="key" class="stat-card">
         <div class="stat-label">{{ labels[key] }}</div>
         <div class="stat-value">{{ item.total || 0 }}</div>
@@ -40,8 +40,6 @@ const data = ref({ by_type: {}, most_viewed: [] })
 const labels = {
   video: 'Видео',
   pdf: 'PDF',
-  text: 'Тексты',
-  presentation: 'Презентации',
   test: 'Тесты'
 }
 
@@ -51,7 +49,7 @@ const mostViewed = computed(() => data.value.most_viewed || [])
 const donutSeries = computed(() => Object.keys(labels).map(key => materialsByType.value[key]?.total || 0))
 const donutOptions = computed(() => ({
   labels: Object.values(labels),
-  colors: ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'],
+  colors: ['#3b82f6', '#f59e0b', '#ef4444'],
   legend: { position: 'bottom' }
 }))
 

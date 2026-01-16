@@ -224,8 +224,8 @@ const activitySeries = computed(() => [
 ])
 
 const materialsOptions = computed(() => ({
-  labels: ['Видео', 'PDF', 'Тексты', 'Презентации', 'Тесты'],
-  colors: ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'],
+  labels: ['Видео', 'PDF', 'Тесты'],
+  colors: ['#3b82f6', '#f59e0b', '#ef4444'],
   legend: { position: 'bottom' }
 }))
 const materialsSeries = computed(() => {
@@ -233,8 +233,6 @@ const materialsSeries = computed(() => {
   return [
     data.video?.total || 0,
     data.pdf?.total || 0,
-    data.text?.total || 0,
-    data.presentation?.total || 0,
     data.test?.total || 0
   ]
 })
