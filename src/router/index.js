@@ -10,7 +10,6 @@ import Departments from '@/components/Departments.vue'
 import LessonViewer from '@/views/lesson/LessonViewer.vue'
 import Profile from '@/views/user/Profile.vue'
 import Login from '@/views/public/Login.vue'
-import Dashboard from '@/views/user/Dashboard.vue'
 import StationList from '@/views/admin/StationList.vue'
 import StationEditor from '@/views/admin/StationEditor.vue'
 import DepartmentList from '@/views/admin/DepartmentList.vue'
@@ -73,12 +72,6 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: Dashboard,
     meta: { requiresAuth: true }
   },
   {
