@@ -24,9 +24,53 @@
       </video>
     </div>
 
+    <!-- Resume overlay -->
+    <div
+      v-if="showResumePrompt"
+      class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20"
+    >
+      <div class="text-center text-white p-6 max-w-md">
+        <svg
+          class="w-16 h-16 mx-auto mb-4 text-blue-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <p class="text-lg mb-2">Продолжить просмотр?</p>
+        <p class="text-gray-300 mb-6">Вы остановились на {{ formatTime(savedPosition) }}</p>
+        <div class="flex gap-3 justify-center">
+          <button
+            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            @click="resumeFromSaved"
+          >
+            Продолжить
+          </button>
+          <button
+            class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+            @click="startFromBeginning"
+          >
+            С начала
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Loading overlay -->
     <div
-      v-if="isLoading"
+      v-if="isLoading && !showResumePrompt"
       class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10"
     >
       <div class="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
@@ -69,6 +113,8 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Plyr from 'plyr'
 import 'plyr/dist/plyr.css'
 import { createVideoSource } from '@/services/videoStreamService'
+import courseService from '@/services/courseService'
+import authService from '@/services/auth'
 
 const props = defineProps({
   // Источник видео: может быть URL (string) или объект с информацией
@@ -136,6 +182,24 @@ const props = defineProps({
   progressKey: {
     type: String,
     default: null
+  },
+  // Course context for backend sync
+  courseProgramId: {
+    type: Number,
+    default: null
+  },
+  lessonId: {
+    type: Number,
+    default: null
+  },
+  topicId: {
+    type: Number,
+    default: null
+  },
+  // Material key for uniquely identifying this video
+  materialKey: {
+    type: String,
+    default: null
   }
 })
 
@@ -161,6 +225,20 @@ const loadingText = ref('Загрузка видео...')
 const error = ref(null)
 const isFullscreen = ref(false)
 
+// Auto-resume state
+const showResumePrompt = ref(false)
+const savedPosition = ref(0)
+const lastSaveTime = ref(0)
+const videoDuration = ref(0)
+const SAVE_INTERVAL_MS = 10000 // Save every 10 seconds
+
+// Effective material key for backend tracking
+const effectiveMaterialKey = computed(() => {
+  if (props.materialKey) return props.materialKey
+  if (typeof props.source === 'string') return props.source
+  return props.source?.objectKey || props.source?.objectName || props.source?.url || null
+})
+
 // Вычисляемые свойства
 const progressStorageKey = computed(() => {
   if (props.progressKey) {
@@ -171,6 +249,51 @@ const progressStorageKey = computed(() => {
     : props.source?.objectKey || props.source?.url || 'default'
   return `video_progress_${sourceKey}`
 })
+
+// Format time as MM:SS
+const formatTime = (seconds) => {
+  if (!seconds || seconds < 0) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+// Resume from saved position
+const resumeFromSaved = () => {
+  showResumePrompt.value = false
+  if (player.value && savedPosition.value > 0) {
+    player.value.currentTime = savedPosition.value
+    try {
+      player.value.play()
+    } catch (e) {
+      console.warn('Autoplay after resume blocked:', e)
+    }
+  }
+}
+
+// Start video from beginning
+const startFromBeginning = () => {
+  showResumePrompt.value = false
+  savedPosition.value = 0
+  clearProgress()
+  if (player.value) {
+    player.value.currentTime = 0
+    try {
+      player.value.play()
+    } catch (e) {
+      console.warn('Autoplay blocked:', e)
+    }
+  }
+}
+
+// Check if user is authenticated
+const isAuthenticated = () => {
+  try {
+    return authService.isAuthenticated()
+  } catch {
+    return false
+  }
+}
 
 // Конфигурация Plyr для образовательных платформ
 const plyrConfig = computed(() => {

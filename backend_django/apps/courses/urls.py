@@ -39,6 +39,10 @@ urlpatterns = [
     path("tests/lesson/<int:lesson_id>", views.LessonTestView.as_view()),
     path("tests/course-program/<int:course_program_id>", views.PublicTestView.as_view()),
     path("tests", views.TestsListView.as_view()),
+    # Material progress endpoints for auto-resume
+    path("progress/save", views.SaveMaterialProgressView.as_view()),
+    path("progress/batch", views.BatchMaterialProgressView.as_view()),
+    path("progress/<path:material_key>", views.GetMaterialProgressView.as_view()),
 ]
 
 

@@ -294,6 +294,36 @@ class CourseComment(models.Model):
         ordering = ["-created_at"]
 
 
+class UserMaterialProgress(models.Model):
+    """Tracks user progress in course materials (videos, PDFs) for auto-resume."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    user_id = models.UUIDField()
+    course_program_id = models.IntegerField()
+    lesson_id = models.IntegerField(null=True, blank=True)
+    topic_id = models.IntegerField(null=True, blank=True)
+    material_key = models.TextField()  # objectKey файла (MinIO key)
+    material_type = models.CharField(max_length=20)  # 'video', 'pdf', 'document'
+
+    # Progress tracking
+    position_seconds = models.IntegerField(default=0)  # текущая позиция для видео
+    duration_seconds = models.IntegerField(null=True, blank=True)  # общая длительность
+    progress_percent = models.IntegerField(default=0)  # процент просмотра (0-100)
+    is_completed = models.BooleanField(default=False)  # материал полностью просмотрен
+
+    # Timestamps
+    last_viewed_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_material_progress"
+        managed = True  # Django создаст и будет управлять таблицей
+        unique_together = [["user_id", "course_program_id", "material_key"]]
+        indexes = [
+            models.Index(fields=["user_id", "course_program_id"]),
+            models.Index(fields=["material_key"]),
+        ]
+
+
 
 
 

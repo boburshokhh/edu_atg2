@@ -101,6 +101,71 @@ class CourseService {
       return { success: false, error: error.message }
     }
   }
+
+  /**
+   * Save material progress (video position, PDF page, etc.)
+   * @param {Object} progressData - Progress data to save
+   * @param {number} progressData.course_program_id - Course program ID
+   * @param {string} progressData.material_key - Unique material identifier (objectKey)
+   * @param {string} progressData.material_type - Type: 'video', 'pdf', 'document'
+   * @param {number} progressData.position_seconds - Current position in seconds (for video)
+   * @param {number} progressData.duration_seconds - Total duration in seconds
+   * @param {number} progressData.lesson_id - Optional lesson ID
+   * @param {number} progressData.topic_id - Optional topic ID
+   */
+  async saveMaterialProgress(progressData) {
+    try {
+      const data = await apiRequest('/courses/progress/save', {
+        method: 'POST',
+        body: JSON.stringify(progressData),
+      })
+      return { success: true, data: data.data }
+    } catch (error) {
+      console.error('Error saving material progress:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Get progress for a specific material
+   * @param {string} materialKey - Material identifier (objectKey)
+   * @param {number} courseProgramId - Optional course program ID for filtering
+   */
+  async getMaterialProgress(materialKey, courseProgramId = null) {
+    try {
+      let url = `/courses/progress/${encodeURIComponent(materialKey)}`
+      if (courseProgramId) {
+        url += `?course_program_id=${courseProgramId}`
+      }
+      const data = await apiRequest(url)
+      return { success: true, data: data.data, found: data.found }
+    } catch (error) {
+      console.error('Error loading material progress:', error)
+      return { success: false, error: error.message, found: false }
+    }
+  }
+
+  /**
+   * Get progress for multiple materials at once (batch request)
+   * @param {string[]} materialKeys - Array of material identifiers
+   * @param {number} courseProgramId - Optional course program ID for filtering
+   */
+  async getBatchMaterialProgress(materialKeys, courseProgramId = null) {
+    try {
+      const body = { material_keys: materialKeys }
+      if (courseProgramId) {
+        body.course_program_id = courseProgramId
+      }
+      const data = await apiRequest('/courses/progress/batch', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+      return { success: true, data: data.data, found: data.found }
+    } catch (error) {
+      console.error('Error loading batch material progress:', error)
+      return { success: false, error: error.message, data: {} }
+    }
+  }
 }
 
 export default new CourseService()

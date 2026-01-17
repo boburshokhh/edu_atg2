@@ -14,6 +14,7 @@ from apps.courses.models import (
     UserCourse,
     UserCourseProgram,
     UserCourseMaterial,
+    UserMaterialProgress,
     CourseComment,
     CourseProgramLessonTest,
     CourseProgramLesson,
@@ -2403,3 +2404,152 @@ class UserTestResultsView(APIView):
         })
 
 
+class SaveMaterialProgressView(APIView):
+    """POST /api/courses/progress/save - Save progress for a material (video/PDF)"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_id = request.user.id
+        data = request.data
+
+        # Required fields
+        course_program_id = data.get('course_program_id')
+        material_key = data.get('material_key')
+        material_type = data.get('material_type', 'video')
+
+        if not course_program_id or not material_key:
+            return JsonResponse({
+                'error': 'course_program_id and material_key are required'
+            }, status=400)
+
+        # Progress fields
+        position_seconds = int(data.get('position_seconds', 0))
+        duration_seconds = data.get('duration_seconds')
+        if duration_seconds is not None:
+            duration_seconds = int(duration_seconds)
+        
+        # Calculate progress percent
+        progress_percent = 0
+        if duration_seconds and duration_seconds > 0:
+            progress_percent = min(100, round((position_seconds / duration_seconds) * 100))
+        else:
+            progress_percent = int(data.get('progress_percent', 0))
+
+        # Determine if completed (>= 95% watched)
+        is_completed = progress_percent >= 95 or data.get('is_completed', False)
+
+        # Optional context fields
+        lesson_id = data.get('lesson_id')
+        topic_id = data.get('topic_id')
+
+        with transaction.atomic():
+            progress, created = UserMaterialProgress.objects.update_or_create(
+                user_id=user_id,
+                course_program_id=course_program_id,
+                material_key=material_key,
+                defaults={
+                    'material_type': material_type,
+                    'lesson_id': lesson_id,
+                    'topic_id': topic_id,
+                    'position_seconds': position_seconds,
+                    'duration_seconds': duration_seconds,
+                    'progress_percent': progress_percent,
+                    'is_completed': is_completed,
+                }
+            )
+
+        return JsonResponse({
+            'success': True,
+            'data': {
+                'id': str(progress.id),
+                'material_key': progress.material_key,
+                'position_seconds': progress.position_seconds,
+                'duration_seconds': progress.duration_seconds,
+                'progress_percent': progress.progress_percent,
+                'is_completed': progress.is_completed,
+                'last_viewed_at': progress.last_viewed_at.isoformat(),
+            }
+        })
+
+
+class GetMaterialProgressView(APIView):
+    """GET /api/courses/progress/<material_key> - Get progress for a specific material"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, material_key):
+        user_id = request.user.id
+        course_program_id = request.query_params.get('course_program_id')
+
+        filters = {
+            'user_id': user_id,
+            'material_key': material_key,
+        }
+        if course_program_id:
+            filters['course_program_id'] = int(course_program_id)
+
+        progress = UserMaterialProgress.objects.filter(**filters).order_by('-last_viewed_at').first()
+
+        if not progress:
+            return JsonResponse({
+                'data': None,
+                'found': False
+            })
+
+        return JsonResponse({
+            'data': {
+                'id': str(progress.id),
+                'course_program_id': progress.course_program_id,
+                'material_key': progress.material_key,
+                'material_type': progress.material_type,
+                'lesson_id': progress.lesson_id,
+                'topic_id': progress.topic_id,
+                'position_seconds': progress.position_seconds,
+                'duration_seconds': progress.duration_seconds,
+                'progress_percent': progress.progress_percent,
+                'is_completed': progress.is_completed,
+                'last_viewed_at': progress.last_viewed_at.isoformat(),
+            },
+            'found': True
+        })
+
+
+class BatchMaterialProgressView(APIView):
+    """POST /api/courses/progress/batch - Get progress for multiple materials"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_id = request.user.id
+        material_keys = request.data.get('material_keys', [])
+        course_program_id = request.data.get('course_program_id')
+
+        if not material_keys:
+            return JsonResponse({'data': {}, 'found': 0})
+
+        filters = {
+            'user_id': user_id,
+            'material_key__in': material_keys,
+        }
+        if course_program_id:
+            filters['course_program_id'] = int(course_program_id)
+
+        progress_list = UserMaterialProgress.objects.filter(**filters)
+
+        result = {}
+        for progress in progress_list:
+            result[progress.material_key] = {
+                'id': str(progress.id),
+                'course_program_id': progress.course_program_id,
+                'material_type': progress.material_type,
+                'lesson_id': progress.lesson_id,
+                'topic_id': progress.topic_id,
+                'position_seconds': progress.position_seconds,
+                'duration_seconds': progress.duration_seconds,
+                'progress_percent': progress.progress_percent,
+                'is_completed': progress.is_completed,
+                'last_viewed_at': progress.last_viewed_at.isoformat(),
+            }
+
+        return JsonResponse({
+            'data': result,
+            'found': len(result)
+        })
